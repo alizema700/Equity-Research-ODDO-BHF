@@ -1,0 +1,1353 @@
+import os
+import json
+import sqlite3
+from io import BytesIO
+from datetime import datetime
+from typing import List, Optional, Dict, Any, Tuple
+
+import anyio
+
+from dotenv import load_dotenv
+
+# Load .env from the project directory (same folder as this file),
+# so it works even if you start uvicorn from a different working directory.
+BASE_DIR = os.path.dirname(__file__)
+ENV_PATH = os.path.join(BASE_DIR, ".env")
+load_dotenv(dotenv_path=ENV_PATH, override=True)
+
+from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+
+from openai import OpenAI
+
+# Optional PDF generation (install: pip install reportlab)
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.pdfgen import canvas
+except Exception:  # pragma: no cover
+    A4 = None
+    mm = None
+    canvas = None
+
+
+# =========================
+# Config
+# =========================
+
+DB_PATH = os.environ.get("CLIENT_DB_PATH", os.path.join(BASE_DIR, "data.db"))
+
+# SQLite-only (built-in sqlite3; no aiosqlite / SQLAlchemy)
+DATABASE_URL = f"sqlite:///{DB_PATH}"
+
+OPENAI_API_KEY = (os.environ.get("OPENAI_API_KEY") or "").strip()
+OPENAI_MODEL = (os.environ.get("OPENAI_MODEL") or "gpt-5-mini").strip()
+
+oa = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+
+
+app = FastAPI(title="Client Storytelling Prototype (DB-only)")
+
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+if os.path.isdir(FRONTEND_DIR):
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
+
+# =========================
+# DB helpers (sqlite3 only)
+# =========================
+
+def _sqlite_connect() -> sqlite3.Connection:
+    # One connection per query (safe/simple). `row_factory` gives dict-like rows.
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def _query_one(sql: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    params = params or {}
+    conn = _sqlite_connect()
+    try:
+        cur = conn.execute(sql, params)
+        row = cur.fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def _query_all(sql: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    params = params or {}
+    conn = _sqlite_connect()
+    try:
+        cur = conn.execute(sql, params)
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+async def fetch_one(sql: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    # Run blocking sqlite3 in a thread so FastAPI stays responsive.
+    return await anyio.to_thread.run_sync(_query_one, sql, params)
+
+
+async def fetch_all(sql: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    # Run blocking sqlite3 in a thread so FastAPI stays responsive.
+    return await anyio.to_thread.run_sync(_query_all, sql, params)
+
+
+async def table_exists(table_name: str) -> bool:
+    row = await fetch_one(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=:t",
+        {"t": table_name},
+    )
+    return bool(row)
+
+
+# =========================
+# Core data access (matches your schema)
+# =========================
+
+async def search_clients(q: str, limit: int = 20) -> List[Dict[str, Any]]:
+    q_like = f"%{q.strip()}%"
+    # SQLite doesn't support ILIKE; use case-insensitive matching via LOWER(...)
+    return await fetch_all(
+        """
+        SELECT
+            client_id,
+            client_name,
+            firm_name,
+            client_type,
+            region,
+            primary_contact_name,
+            primary_contact_role
+        FROM src_clients
+        WHERE LOWER(COALESCE(primary_contact_name, '')) LIKE LOWER(:q)
+           OR LOWER(COALESCE(client_name, '')) LIKE LOWER(:q)
+           OR LOWER(COALESCE(firm_name, '')) LIKE LOWER(:q)
+        ORDER BY firm_name, primary_contact_name
+        LIMIT :limit
+        """,
+        {"q": q_like, "limit": limit},
+    )
+
+async def get_client_header(client_id: int) -> Dict[str, Any]:
+    row = await fetch_one(
+        """
+        SELECT
+            client_id,
+            client_name,
+            firm_name,
+            client_type,
+            region,
+            primary_contact_name,
+            primary_contact_role
+        FROM src_clients
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    if not row:
+        raise ValueError(f"Client not found for client_id={client_id}")
+    return row
+
+async def get_client_profile(client_id: int) -> Dict[str, Any]:
+    row = await fetch_one(
+        """
+        SELECT
+            engagement_level,
+            investment_style,
+            risk_score,
+            risk_appetite,
+            dominant_topic,
+            dominant_topic_share,
+            dominant_theme,
+            profile_confidence_score,
+            profile_confidence_level,
+            updated_at
+        FROM int_client_profile
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+async def get_client_portfolio_summary(client_id: int) -> Dict[str, Any]:
+    row = await fetch_one(
+        """
+        SELECT
+            trade_count,
+            top_sector,
+            top_sector_share,
+            top_theme,
+            top_theme_share,
+            buy_rate,
+            side_bias,
+            size_proxy,
+            concentration_index,
+            concentration_flag,
+            direction_flag,
+            activity_flag,
+            size_aggressiveness_score,
+            updated_at
+        FROM int_client_portfolio_summary
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+async def get_client_availability(client_id: int) -> Dict[str, Any]:
+    row = await fetch_one(
+        """
+        SELECT
+            best_day,
+            best_hour,
+            best_time_window,
+            availability_score,
+            availability_confidence,
+            call_count,
+            avg_call_duration_min,
+            updated_at
+        FROM int_client_availability
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+async def get_latest_portfolio_snapshot_id(client_id: int) -> Optional[int]:
+    row = await fetch_one(
+        """
+        SELECT snapshot_id
+        FROM src_portfolio_snapshots
+        WHERE client_id = :client_id
+        ORDER BY as_of_date DESC, created_at DESC, snapshot_id DESC
+        LIMIT 1
+        """,
+        {"client_id": client_id},
+    )
+    return int(row["snapshot_id"]) if row and row.get("snapshot_id") is not None else None
+
+async def get_top_positions(client_id: int, limit: int = 15) -> List[Dict[str, Any]]:
+    snap_id = await get_latest_portfolio_snapshot_id(client_id)
+    if not snap_id:
+        return []
+
+    return await fetch_all(
+        """
+        SELECT
+            p.position_id,
+            p.snapshot_id,
+            p.stock_id,
+            s.ticker,
+            s.company_name,
+            s.sector,
+            s.theme_tag,
+            p.quantity,
+            p.avg_cost,
+            p.market_value,
+            p.weight,
+            p.currency
+        FROM src_positions p
+        JOIN src_stocks s ON s.stock_id = p.stock_id
+        WHERE p.snapshot_id = :snapshot_id
+        ORDER BY p.weight DESC, p.market_value DESC
+        LIMIT :limit
+        """,
+        {"snapshot_id": snap_id, "limit": limit},
+    )
+
+async def get_recent_trades(client_id: int, limit: int = 15) -> List[Dict[str, Any]]:
+    return await fetch_all(
+        """
+        SELECT
+            trade_id,
+            trade_timestamp,
+            instrument_name,
+            ticker,
+            sector,
+            theme_tag,
+            side,
+            notional_bucket,
+            stock_id
+        FROM src_trade_executions
+        WHERE client_id = :client_id
+        ORDER BY trade_timestamp DESC, trade_id DESC
+        LIMIT :limit
+        """,
+        {"client_id": client_id, "limit": limit},
+    )
+
+async def get_recent_calls(client_id: int, limit: int = 8) -> List[Dict[str, Any]]:
+    return await fetch_all(
+        """
+        SELECT
+            c.call_id,
+            c.call_timestamp,
+            c.direction,
+            c.duration_minutes,
+            c.discussed_company,
+            c.discussed_sector,
+            c.related_report_id,
+            c.notes_raw,
+            c.stock_id,
+            s.ticker AS stock_ticker,
+            s.company_name AS stock_company_name,
+            s.sector AS stock_sector,
+            s.theme_tag AS stock_theme_tag
+        FROM src_call_logs c
+        LEFT JOIN src_stocks s ON s.stock_id = c.stock_id
+        WHERE c.client_id = :client_id
+        ORDER BY c.call_timestamp DESC, c.call_id DESC
+        LIMIT :limit
+        """,
+        {"client_id": client_id, "limit": limit},
+    )
+
+async def get_recent_reads_daysdiff(client_id: int, limit: int = 12) -> List[Dict[str, Any]]:
+    return await fetch_all(
+        """
+        SELECT
+            event_id,
+            report_id,
+            report_code,
+            report_type,
+            report_sector,
+            report_company,
+            report_ticker,
+            report_title,
+            publish_timestamp,
+            read_timestamp,
+            days_diff
+        FROM ana_readership_daysdiff
+        WHERE client_id = :client_id
+        ORDER BY read_timestamp DESC, event_id DESC
+        LIMIT :limit
+        """,
+        {"client_id": client_id, "limit": limit},
+    )
+
+async def get_call_position_hints(client_id: int, limit: int = 20) -> List[Dict[str, Any]]:
+    return await fetch_all(
+        """
+        SELECT
+            stock_id,
+            ticker,
+            mention_count,
+            holding_hints,
+            add_hints,
+            reduce_hints,
+            diversification_hints,
+            risk_mgmt_hints,
+            last_mention_ts
+        FROM ana_call_position_hints
+        WHERE client_id = :client_id
+        ORDER BY mention_count DESC, last_mention_ts DESC
+        LIMIT :limit
+        """,
+        {"client_id": client_id, "limit": limit},
+    )
+
+async def get_topic_signals(client_id: int) -> Dict[str, Any]:
+    row = await fetch_one(
+        """
+        SELECT
+            top_topic,
+            top_topic_share,
+            top_topic_count,
+            last_signal_ts
+        FROM ana_client_topic_signals
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+async def get_trade_summary(client_id: int) -> Dict[str, Any]:
+    row = await fetch_one(
+        """
+        SELECT
+            trade_count,
+            top_sector,
+            top_sector_share,
+            top_theme,
+            top_theme_share,
+            buy_rate,
+            side_bias,
+            size_proxy,
+            herfindahl_concentration,
+            last_trade_ts
+        FROM ana_client_trade_summary
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+async def get_call_patterns(client_id: int) -> Dict[str, Any]:
+    row = await fetch_one(
+        """
+        SELECT
+            call_count,
+            avg_call_duration,
+            best_weekday_num,
+            best_hour,
+            best_time_window,
+            timing_confidence,
+            last_call_ts
+        FROM ana_client_call_patterns
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+async def get_readership_summary(client_id: int) -> Dict[str, Any]:
+    row = await fetch_one(
+        """
+        SELECT
+            reads_n,
+            avg_days_diff,
+            late_read_ratio,
+            last_read_ts
+        FROM ana_client_readership_summary
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+
+# =========================
+# Stock universe + market fields (based ONLY on your tables)
+# =========================
+
+async def get_stock_by_ticker(ticker: str) -> Optional[Dict[str, Any]]:
+    return await fetch_one(
+        """
+        SELECT
+            stock_id,
+            company_name,
+            ticker,
+            sector,
+            region,
+            market_cap_bucket,
+            theme_tag,
+            created_at
+        FROM src_stocks
+        WHERE ticker = :ticker
+        """,
+        {"ticker": ticker},
+    )
+
+async def get_stock_market_fields(stock_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+    """Returns latest close + latest vol fields for each stock_id."""
+    if not stock_ids:
+        return {}
+
+    out: Dict[int, Dict[str, Any]] = {int(sid): {} for sid in stock_ids}
+
+    # SQLite (uses IN (...))
+    placeholders = ",".join([":id" + str(i) for i in range(len(stock_ids))])
+    id_params = {"id" + str(i): int(stock_ids[i]) for i in range(len(stock_ids))}
+
+    prices = await fetch_all(
+        f"""
+        SELECT p.stock_id, p.close, p.currency, p.price_date
+        FROM src_stock_prices p
+        JOIN (
+            SELECT stock_id, MAX(price_date) AS max_date
+            FROM src_stock_prices
+            WHERE stock_id IN ({placeholders})
+            GROUP BY stock_id
+        ) mx
+          ON mx.stock_id = p.stock_id AND mx.max_date = p.price_date
+        """,
+        id_params,
+    )
+
+    vols = await fetch_all(
+        f"""
+        SELECT v.stock_id, v.vol_20d, v.vol_60d, v.vol_date
+        FROM src_stock_volatility v
+        JOIN (
+            SELECT stock_id, MAX(vol_date) AS max_date
+            FROM src_stock_volatility
+            WHERE stock_id IN ({placeholders})
+            GROUP BY stock_id
+        ) mx
+          ON mx.stock_id = v.stock_id AND mx.max_date = v.vol_date
+        """,
+        id_params,
+    )
+
+    for r in prices:
+        out[int(r["stock_id"])].update(
+            {
+                "last_close": r.get("close"),
+                "price_currency": r.get("currency"),
+                "price_date": r.get("price_date"),
+            }
+        )
+    for r in vols:
+        out[int(r["stock_id"])].update(
+            {
+                "vol_20d": r.get("vol_20d"),
+                "vol_60d": r.get("vol_60d"),
+                "vol_date": r.get("vol_date"),
+            }
+        )
+    return out
+
+def vol_bucket(vol_60d: Optional[float]) -> str:
+    # Only bucket if we have a number; otherwise unknown
+    if vol_60d is None:
+        return "unknown"
+    try:
+        v = float(vol_60d)
+    except Exception:
+        return "unknown"
+    # simple buckets (no external market assumptions)
+    if v < 0.20:
+        return "low"
+    if v < 0.35:
+        return "medium"
+    return "high"
+
+
+# =========================
+# Build client context (DB-only)
+# =========================
+
+async def build_avoid_tickers(client_id: int) -> List[str]:
+    avoid = set()
+
+    for h in await get_top_positions(client_id, limit=15):
+        if h.get("ticker"):
+            avoid.add(h["ticker"])
+
+    for t in await get_recent_trades(client_id, limit=15):
+        if t.get("ticker"):
+            avoid.add(t["ticker"])
+
+    return sorted(avoid)
+
+async def build_candidate_universe(client_id: int, max_candidates: int = 120) -> List[Dict[str, Any]]:
+    """
+    Build a reasonable candidate set from src_stocks using client signals:
+      - hinted tickers (ana_call_position_hints)
+      - read tickers (ana_readership_daysdiff.report_ticker)
+      - call-linked stock_id (src_call_logs.stock_id)
+      - portfolio top_sector/top_theme (int_client_portfolio_summary)
+      - plus diversifiers (other sectors)
+    Returns list of stock rows from src_stocks.
+    """
+    prof = await get_client_profile(client_id)
+    psum = await get_client_portfolio_summary(client_id)
+
+    top_sector = (psum.get("top_sector") or "").strip()
+    top_theme = (psum.get("top_theme") or "").strip()
+    dom_theme = (prof.get("dominant_theme") or "").strip()
+
+    avoid = set(await build_avoid_tickers(client_id))
+
+    hinted = await get_call_position_hints(client_id, limit=30)
+    hinted_tickers = [h.get("ticker") for h in hinted if h.get("ticker")]
+    hinted_tickers = [t for t in hinted_tickers if t not in avoid]
+
+    reads = await get_recent_reads_daysdiff(client_id, limit=20)
+    read_tickers = [r.get("report_ticker") for r in reads if r.get("report_ticker")]
+    read_tickers = [t for t in read_tickers if t not in avoid]
+
+    calls = await get_recent_calls(client_id, limit=12)
+    call_tickers = []
+    call_stock_ids = []
+    for c in calls:
+        if c.get("stock_ticker"):
+            call_tickers.append(c["stock_ticker"])
+        if c.get("stock_id"):
+            call_stock_ids.append(int(c["stock_id"]))
+    call_tickers = [t for t in call_tickers if t and t not in avoid]
+
+    # 1) Direct ticker picks
+    ticker_pool = []
+    for t in hinted_tickers[:25] + read_tickers[:25] + call_tickers[:25]:
+        if t and t not in ticker_pool:
+            ticker_pool.append(t)
+
+    stocks_by_ticker: List[Dict[str, Any]] = []
+    if ticker_pool:
+        placeholders = ",".join([":t" + str(i) for i in range(len(ticker_pool))])
+        params = {"t" + str(i): ticker_pool[i] for i in range(len(ticker_pool))}
+        stocks_by_ticker = await fetch_all(
+            f"""
+            SELECT
+                stock_id,
+                company_name,
+                ticker,
+                sector,
+                region,
+                market_cap_bucket,
+                theme_tag,
+                created_at
+            FROM src_stocks
+            WHERE ticker IN ({placeholders})
+            """,
+            params,
+        )
+
+    # 2) Stock IDs from calls
+    stocks_by_id: List[Dict[str, Any]] = []
+    if call_stock_ids:
+        unique_ids = []
+        for sid in call_stock_ids:
+            if sid not in unique_ids:
+                unique_ids.append(sid)
+
+        placeholders = ",".join([":id" + str(i) for i in range(len(unique_ids))])
+        params = {"id" + str(i): int(unique_ids[i]) for i in range(len(unique_ids))}
+        stocks_by_id = await fetch_all(
+            f"""
+            SELECT
+                stock_id,
+                company_name,
+                ticker,
+                sector,
+                region,
+                market_cap_bucket,
+                theme_tag,
+                created_at
+            FROM src_stocks
+            WHERE stock_id IN ({placeholders})
+            """,
+            params,
+        )
+
+    # 3) Sector/theme focused
+    sector_theme_stocks: List[Dict[str, Any]] = []
+    conds = []
+    params: List[Any] = []
+    if top_sector:
+        conds.append(f"sector = :p{len(params)}")
+        params.append(top_sector)
+    if top_theme:
+        conds.append(f"theme_tag = :p{len(params)}")
+        params.append(top_theme)
+    if dom_theme and dom_theme != top_theme:
+        conds.append(f"theme_tag = :p{len(params)}")
+        params.append(dom_theme)
+
+    if conds:
+        where = " OR ".join(conds)
+        sector_theme_stocks = await fetch_all(
+            f"""
+            SELECT
+                stock_id,
+                company_name,
+                ticker,
+                sector,
+                region,
+                market_cap_bucket,
+                theme_tag,
+                created_at
+            FROM src_stocks
+            WHERE ({where})
+            LIMIT 120
+            """,
+            {f"p{i}": params[i] for i in range(len(params))},
+        )
+
+    # 4) Diversifiers: pick from other sectors
+    diversifiers: List[Dict[str, Any]] = []
+    if top_sector:
+        diversifiers = await fetch_all(
+            """
+            SELECT
+                stock_id,
+                company_name,
+                ticker,
+                sector,
+                region,
+                market_cap_bucket,
+                theme_tag,
+                created_at
+            FROM src_stocks
+            WHERE sector != :top_sector
+            LIMIT 120
+            """,
+            {"top_sector": top_sector},
+        )
+    else:
+        diversifiers = await fetch_all(
+            """
+            SELECT
+                stock_id,
+                company_name,
+                ticker,
+                sector,
+                region,
+                market_cap_bucket,
+                theme_tag,
+                created_at
+            FROM src_stocks
+            LIMIT 120
+            """
+        )
+
+    # merge unique by stock_id, remove avoid tickers
+    merged: Dict[int, Dict[str, Any]] = {}
+    for group in (stocks_by_ticker, stocks_by_id, sector_theme_stocks, diversifiers):
+        for s in group:
+            sid = int(s["stock_id"])
+            if s.get("ticker") in avoid:
+                continue
+            merged[sid] = s
+
+    # trim
+    out = list(merged.values())[:max_candidates]
+    return out
+
+async def build_client_context(client_id: int) -> Dict[str, Any]:
+    client = await get_client_header(client_id)
+    profile = await get_client_profile(client_id)
+    portfolio_summary = await get_client_portfolio_summary(client_id)
+    availability = await get_client_availability(client_id)
+
+    top_positions = await get_top_positions(client_id, limit=15)
+    recent_trades = await get_recent_trades(client_id, limit=15)
+    recent_calls = await get_recent_calls(client_id, limit=10)
+
+    reads_daysdiff = await get_recent_reads_daysdiff(client_id, limit=12)
+    readership_summary = await get_readership_summary(client_id)
+
+    call_hints = await get_call_position_hints(client_id, limit=20)
+    topic_signals = await get_topic_signals(client_id)
+    trade_summary = await get_trade_summary(client_id)
+    call_patterns = await get_call_patterns(client_id)
+
+    avoid_tickers = await build_avoid_tickers(client_id)
+
+    return {
+        "client": client,
+        "profile": profile,
+        "portfolio_summary": portfolio_summary,
+        "availability": availability,
+        "signals": {
+            "recent_calls": recent_calls,
+            "recent_trades": recent_trades,
+            "recent_reads_daysdiff": reads_daysdiff,
+            "readership_summary": readership_summary,
+            "call_position_hints": call_hints,
+            "topic_signals": topic_signals,
+            "trade_summary": trade_summary,
+            "call_patterns": call_patterns,
+        },
+        "holdings": {"top_positions": top_positions},
+        "constraints": {"avoid_tickers": avoid_tickers},
+    }
+
+
+# =========================
+# OpenAI calls
+# =========================
+
+def llm_text(prompt: str) -> str:
+    """Return plain text from the LLM.
+
+    We intentionally use Chat Completions here for maximum compatibility with
+    older `openai` Python SDK versions that do not support `oa.responses.*`.
+    """
+    if oa is None:
+        raise RuntimeError("OPENAI_API_KEY is missing. Put it in .env or export it in your shell.")
+
+    resp = oa.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant. Follow instructions precisely."},
+            {"role": "user", "content": prompt},
+        ],
+    )
+
+    txt = (resp.choices[0].message.content or "").strip()
+    return txt
+
+def llm_json(prompt: str) -> Dict[str, Any]:
+    """
+    Best-effort JSON-only response. If the model returns text around JSON,
+    we try to extract the first {...} block.
+    """
+    txt = llm_text(prompt)
+    if not txt:
+        raise ValueError("LLM returned empty output.")
+
+    # direct parse first
+    try:
+        return json.loads(txt)
+    except Exception:
+        pass
+
+    # try to extract JSON object
+    start = txt.find("{")
+    end = txt.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        snippet = txt[start:end + 1]
+        try:
+            return json.loads(snippet)
+        except Exception:
+            pass
+
+    raise ValueError("LLM did not return valid JSON.")
+
+
+# =========================
+# API models
+# =========================
+
+class ShortlistRequest(BaseModel):
+    client_id: int
+    instruction: Optional[str] = None
+    max_candidates: int = 120
+    max_words: int = 320
+
+class StoryForStockRequest(BaseModel):
+    client_id: int
+    selected_ticker: str = Field(..., min_length=1)
+    mode: str = "FULL"  # FULL or BULLETS
+    instruction: Optional[str] = None
+    max_words: int = 260
+
+
+# =========================
+# Prompt builders (DB-only, no hallucinated fields)
+# =========================
+
+def prompt_for_shortlist(
+    client_ctx: Dict[str, Any],
+    candidates: List[Dict[str, Any]],
+    candidates_market: Dict[int, Dict[str, Any]],
+    instruction: str,
+    max_words: int,
+) -> str:
+    """
+    We ask for strict JSON output to drive the UI cards.
+    """
+    avoid = client_ctx.get("constraints", {}).get("avoid_tickers", []) or []
+
+    # Compact candidate payload
+    cand_payload = []
+    for s in candidates:
+        sid = int(s["stock_id"])
+        m = candidates_market.get(sid, {})
+        cand_payload.append(
+            {
+                "stock_id": sid,
+                "ticker": s.get("ticker"),
+                "company_name": s.get("company_name"),
+                "sector": s.get("sector"),
+                "theme_tag": s.get("theme_tag"),
+                "region": s.get("region"),
+                "market_cap_bucket": s.get("market_cap_bucket"),
+                "last_close": m.get("last_close"),
+                "price_currency": m.get("price_currency"),
+                "price_date": m.get("price_date"),
+                "vol_20d": m.get("vol_20d"),
+                "vol_60d": m.get("vol_60d"),
+                "vol_date": m.get("vol_date"),
+            }
+        )
+
+    minimal_ctx = {
+        "client": client_ctx.get("client", {}),
+        "profile": client_ctx.get("profile", {}),
+        "portfolio_summary": client_ctx.get("portfolio_summary", {}),
+        "availability": client_ctx.get("availability", {}),
+        "signals": client_ctx.get("signals", {}),
+        "holdings": client_ctx.get("holdings", {}),
+        "constraints": client_ctx.get("constraints", {}),
+        "candidates": cand_payload,
+    }
+
+    return f"""
+You are an AI equity sales assistant supporting a sell-side analyst.
+
+CRITICAL DATA RULES
+- Use ONLY the JSON provided.
+- Do NOT invent facts. If missing, write null / "unknown".
+- You MUST select stocks ONLY from candidates[].
+
+GOAL
+Create a client-personalized shortlist of exactly 10 stocks for this client, optimized for:
+- client risk_appetite + investment_style
+- their dominant exposure (portfolio_summary top_sector/top_theme) and diversification
+- signals: call notes (notes_raw), call_position_hints, readership_daysdiff (days_diff), recent_trades
+- avoid repeating holdings/recent trades unless clearly justified (avoid_tickers is provided)
+
+OUTPUT (STRICT JSON ONLY)
+Return ONE JSON object with exactly these keys:
+{{
+  "shortlist": [
+    {{
+      "stock_id": <int>,
+      "ticker": <string>,
+      "company_name": <string>,
+      "sector": <string>,
+      "theme_tag": <string|null>,
+      "last_close": <number|null>,
+      "price_currency": <string|null>,
+      "vol_20d": <number|null>,
+      "vol_60d": <number|null>,
+      "vol_bucket": <"low"|"medium"|"high"|"unknown">,
+      "why_bullets": [<string>, <string>, <string>]
+    }},
+    ...
+  ],
+  "top_picks": [<ticker1>, <ticker2>],
+  "notes_for_analyst": [<string>, <string>, ...]
+}}
+
+RULES
+- shortlist must have EXACTLY 10 items
+- why_bullets must be EXACTLY 3 bullets per stock
+- top_picks must be EXACTLY 2 tickers and must be in shortlist
+- vol_bucket: decide using vol_60d only if present; else "unknown"
+- Do NOT output markdown. Do NOT output extra keys. JSON only.
+
+ANALYST INSTRUCTION:
+{instruction}
+
+JSON INPUT:
+{json.dumps(minimal_ctx, ensure_ascii=False)}
+
+Max length guidance: ~{max_words} words worth of JSON strings.
+""".strip()
+
+def prompt_for_story(
+    client_ctx: Dict[str, Any],
+    selected_stock: Dict[str, Any],
+    instruction: str,
+    mode: str,
+    max_words: int
+) -> str:
+    mode = (mode or "FULL").upper()
+    if mode not in ("FULL", "BULLETS"):
+        mode = "FULL"
+
+    # For story, we pass a small structured pack (no giant universe)
+    pack = {
+        "client": client_ctx.get("client", {}),
+        "profile": client_ctx.get("profile", {}),
+        "portfolio_summary": client_ctx.get("portfolio_summary", {}),
+        "availability": client_ctx.get("availability", {}),
+        "signals": client_ctx.get("signals", {}),
+        "holdings": client_ctx.get("holdings", {}),
+        "constraints": client_ctx.get("constraints", {}),
+        "selected_stock": selected_stock,
+    }
+
+    return f"""
+You are an AI equity sales assistant supporting a sell-side analyst.
+
+CRITICAL DATA RULES
+- Use ONLY the JSON provided.
+- Do NOT invent facts. If something is missing, say "unknown" (do NOT guess performance/returns/events).
+- You MUST reference concrete evidence from the signals when available:
+  - src_call_logs.notes_raw and discussed_company/discussed_sector
+  - ana_readership_daysdiff.days_diff + publish_timestamp/read_timestamp
+  - recent trades and holdings
+  - call_position_hints (mention_count, add/reduce/diversification/risk_mgmt hints)
+
+OUTPUT
+Mode FULL:
+- A persuasive, client-specific sales narrative (WHAT / WHY), usable as call prep.
+Mode BULLETS:
+- 6–8 bullets max (call cheat-sheet), no long paragraphs.
+
+MANDATORY STRUCTURE
+WHAT:
+- What this stock represents for THIS client (angle + role in portfolio context)
+
+WHY:
+- Why it fits THIS client:
+  • risk_appetite + investment_style
+  • diversification vs current top_sector/top_theme exposure
+  • evidence from calls/reads/trades (include days_diff when relevant)
+  • why now (timing + engagement)
+
+Also include:
+- 2 ready-to-use talking points
+- 1 smart confirmation question to ask the client
+
+STYLE
+- Sales-oriented, client-centric, but not hype.
+- Max length about {max_words} words.
+
+MODE: {mode}
+ANALYST INSTRUCTION:
+{instruction}
+
+JSON INPUT:
+{json.dumps(pack, ensure_ascii=False)}
+""".strip()
+
+
+# =========================
+# PDF export (Shortlist report)
+# =========================
+
+def _require_pdf_deps() -> None:
+    if canvas is None or A4 is None or mm is None:
+        raise RuntimeError(
+            "PDF export requires 'reportlab'. Install it with: pip install reportlab"
+        )
+
+
+def build_shortlist_pdf_bytes(client_ctx: Dict[str, Any], shortlist_payload: Dict[str, Any]) -> bytes:
+    """Build a simple A4 PDF with client essentials + shortlist. Returns raw PDF bytes."""
+    _require_pdf_deps()
+
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    W, H = A4
+
+    def _line(y: float, text: str, size: int = 11) -> float:
+        # Avoid crashes on None / non-string values
+        safe = str(text) if text is not None else ""
+        c.setFont("Helvetica", size)
+        c.drawString(20 * mm, y, safe)
+        return y
+
+    def _new_page() -> float:
+        c.showPage()
+        c.setFont("Helvetica", 11)
+        return H - 20 * mm
+
+    y = H - 20 * mm
+
+    client = client_ctx.get("client", {}) or {}
+    profile = client_ctx.get("profile", {}) or {}
+    psum = client_ctx.get("portfolio_summary", {}) or {}
+    avail = client_ctx.get("availability", {}) or {}
+
+    _line(y, "Client Storytelling – Shortlist Report", 16); y -= 10 * mm
+    _line(y, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}"); y -= 8 * mm
+
+    _line(y, f"Client: {client.get('client_name','')}  | Firm: {client.get('firm_name','')}"); y -= 6 * mm
+    _line(y, f"Type: {client.get('client_type','')}  | Region: {client.get('region','')}"); y -= 6 * mm
+    _line(y, f"Primary contact: {client.get('primary_contact_name','')} ({client.get('primary_contact_role','')})"); y -= 10 * mm
+
+    _line(y, "Key Profile Signals", 13); y -= 7 * mm
+    _line(y, f"Investment style: {profile.get('investment_style','unknown')}"); y -= 6 * mm
+    _line(y, f"Risk appetite: {profile.get('risk_appetite','unknown')} | Risk score: {profile.get('risk_score','unknown')}"); y -= 6 * mm
+    _line(y, f"Dominant theme: {profile.get('dominant_theme','unknown')}"); y -= 10 * mm
+
+    _line(y, "Portfolio Summary", 13); y -= 7 * mm
+    _line(y, f"Top sector: {psum.get('top_sector','unknown')} ({psum.get('top_sector_share','unknown')})"); y -= 6 * mm
+    _line(y, f"Top theme: {psum.get('top_theme','unknown')} ({psum.get('top_theme_share','unknown')})"); y -= 10 * mm
+
+    _line(y, "Availability", 13); y -= 7 * mm
+    _line(y, f"Best time window: {avail.get('best_time_window','unknown')} | Score: {avail.get('availability_score','unknown')}"); y -= 10 * mm
+
+    top_picks = shortlist_payload.get("top_picks", []) or []
+    notes = shortlist_payload.get("notes_for_analyst", []) or []
+    shortlist = shortlist_payload.get("shortlist", []) or []
+
+    _line(y, f"Top picks: {', '.join([str(x) for x in top_picks]) if top_picks else '—'}", 12); y -= 10 * mm
+
+    _line(y, "Shortlist (10)", 13); y -= 7 * mm
+    for i, it in enumerate(shortlist[:10], start=1):
+        if y < 30 * mm:
+            y = _new_page()
+
+        t = it.get("ticker", "—") if isinstance(it, dict) else "—"
+        name = it.get("company_name", "—") if isinstance(it, dict) else "—"
+        sector = it.get("sector", "—") if isinstance(it, dict) else "—"
+        vb = it.get("vol_bucket", "unknown") if isinstance(it, dict) else "unknown"
+        _line(y, f"{i}. {t} – {name} | {sector} | vol: {vb}", 10); y -= 5 * mm
+
+        why = it.get("why_bullets", []) if isinstance(it, dict) else []
+        if not isinstance(why, list):
+            why = []
+        for b in why[:3]:
+            if y < 30 * mm:
+                y = _new_page()
+            _line(y, f"   • {str(b)}", 9); y -= 4.5 * mm
+        y -= 2 * mm
+
+    if notes:
+        if y < 50 * mm:
+            y = _new_page()
+        _line(y, "Notes for analyst", 13); y -= 7 * mm
+        for n in notes[:12]:
+            if y < 30 * mm:
+                y = _new_page()
+            _line(y, f"• {str(n)}", 10); y -= 5 * mm
+
+    c.showPage()
+    c.save()
+    buf.seek(0)
+    return buf.getvalue()
+
+# =========================
+# API endpoints
+# =========================
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    if os.path.isfile(index_path):
+        with open(index_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h3>Backend is running.</h3><p>Use /api/health or /api/search?q=...</p>"
+
+@app.get("/api/health")
+async def api_health():
+    try:
+        for t in [
+            "src_clients", "src_stocks", "src_call_logs", "src_trade_executions",
+            "src_stock_prices", "src_stock_volatility",
+            "src_portfolio_snapshots", "src_positions",
+            "ana_readership_daysdiff", "int_client_profile", "int_client_portfolio_summary",
+        ]:
+            _ = await table_exists(t)
+
+        row = await fetch_one("SELECT COUNT(*) AS n FROM src_clients")
+        return {
+            "ok": True,
+            "clients": row["n"] if row else None,
+            "database_url": DATABASE_URL,
+            "db_path": DB_PATH,
+            "model": OPENAI_MODEL,
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": str(e),
+            "database_url": DATABASE_URL,
+            "db_path": DB_PATH,
+            "model": OPENAI_MODEL,
+        }
+
+@app.get("/api/env")
+def api_env():
+    return {
+        "openai_key_present": bool(OPENAI_API_KEY),
+        "openai_model": OPENAI_MODEL,
+        "db_path": DB_PATH,
+        "database_url": DATABASE_URL,
+        "base_dir": BASE_DIR,
+        "env_path": ENV_PATH,
+        "cwd": os.getcwd(),
+    }
+
+@app.get("/api/search")
+async def api_search(q: str = Query(..., min_length=1), limit: int = 20):
+    try:
+        return {"results": await search_clients(q, limit=limit)}
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e), "results": []})
+
+@app.get("/api/client/{client_id}")
+async def api_client(client_id: int):
+    """
+    DB-only client view for UI (facts + constraints + last calls/trades/reads)
+    This does NOT depend on int_story_context_snapshot.
+    """
+    try:
+        ctx = await build_client_context(client_id)
+        return {
+            "client": ctx.get("client", {}),
+            "profile": ctx.get("profile", {}),
+            "portfolio_summary": ctx.get("portfolio_summary", {}),
+            "availability": ctx.get("availability", {}),
+            "signals": ctx.get("signals", {}),
+            "holdings": ctx.get("holdings", {}),
+            "constraints": ctx.get("constraints", {}),
+        }
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+@app.post("/api/shortlist")
+async def api_shortlist(req: ShortlistRequest):
+    """
+    Returns structured shortlist for frontend cards:
+      {
+        "shortlist": [...10 items...],
+        "top_picks": [...2 tickers...],
+        "notes_for_analyst": [...],
+        "shortlist_text": "<raw json text from LLM>"
+      }
+    """
+    try:
+        if oa is None:
+            raise RuntimeError("OPENAI_API_KEY is missing or not loaded. Check /api/env and ensure .env is in the project folder next to server.py.")
+        ctx = await build_client_context(req.client_id)
+
+        instruction = (req.instruction or "").strip()
+        if not instruction:
+            instruction = "Rank 10 stocks that fit this client; prioritize personalization + diversification; use calls/reads (days_diff) as evidence."
+
+        candidates = await build_candidate_universe(req.client_id, max_candidates=req.max_candidates)
+
+        if not candidates:
+            raise ValueError("No candidates found in src_stocks for shortlist generation.")
+
+        stock_ids = [int(s["stock_id"]) for s in candidates]
+        market = await get_stock_market_fields(stock_ids)
+
+        # Build prompt
+        prompt = prompt_for_shortlist(
+            client_ctx=ctx,
+            candidates=candidates,
+            candidates_market=market,
+            instruction=instruction,
+            max_words=req.max_words,
+        )
+
+        # LLM JSON
+        data = llm_json(prompt)
+
+        shortlist = data.get("shortlist")
+        top_picks = data.get("top_picks")
+        notes = data.get("notes_for_analyst")
+
+        if not isinstance(shortlist, list) or len(shortlist) != 10:
+            raise ValueError("LLM JSON invalid: shortlist must be a list of exactly 10 items.")
+        if not isinstance(top_picks, list) or len(top_picks) != 2:
+            raise ValueError("LLM JSON invalid: top_picks must be a list of exactly 2 tickers.")
+
+        # Post-process: ensure vol_bucket exists and is consistent with vol_60d
+        cleaned = []
+        for item in shortlist:
+            if not isinstance(item, dict):
+                continue
+            # Ensure required keys exist (don’t invent values; default to None/unknown)
+            sid = item.get("stock_id")
+            try:
+                sid_int = int(sid) if sid is not None else None
+            except Exception:
+                sid_int = None
+
+            v60 = item.get("vol_60d")
+            bucket = item.get("vol_bucket")
+            if bucket not in ("low", "medium", "high", "unknown"):
+                bucket = vol_bucket(v60)
+
+            why = item.get("why_bullets")
+            if not isinstance(why, list):
+                why = []
+            # Keep exactly 3 strings
+            why = [str(x) for x in why][:3]
+            while len(why) < 3:
+                why.append("unknown (insufficient evidence in provided signals)")
+
+            cleaned.append(
+                {
+                    "stock_id": sid_int,
+                    "ticker": item.get("ticker"),
+                    "company_name": item.get("company_name"),
+                    "sector": item.get("sector"),
+                    "theme_tag": item.get("theme_tag"),
+                    "last_close": item.get("last_close"),
+                    "price_currency": item.get("price_currency"),
+                    "vol_20d": item.get("vol_20d"),
+                    "vol_60d": item.get("vol_60d"),
+                    "vol_bucket": bucket,
+                    "why_bullets": why,
+                }
+            )
+
+        # Keep only 10
+        cleaned = cleaned[:10]
+
+        return {
+            "client_id": req.client_id,
+            "model": OPENAI_MODEL,
+            "shortlist": cleaned,
+            "top_picks": top_picks,
+            "notes_for_analyst": notes if isinstance(notes, list) else [],
+            "shortlist_text": json.dumps(data, ensure_ascii=False, indent=2),
+        }
+
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+@app.post("/api/story_for_stock")
+async def api_story_for_stock(req: StoryForStockRequest):
+    try:
+        if oa is None:
+            raise RuntimeError("OPENAI_API_KEY is missing or not loaded. Check /api/env and ensure .env is in the project folder next to server.py.")
+        ctx = await build_client_context(req.client_id)
+
+        instruction = (req.instruction or "").strip()
+        if not instruction:
+            instruction = "Make it persuasive and client-specific. Use WHAT/WWHY and cite calls/reads/trades evidence."
+
+        ticker = req.selected_ticker.strip()
+        stock = await get_stock_by_ticker(ticker)
+        if not stock:
+            raise ValueError(f"Ticker '{ticker}' not found in src_stocks.")
+
+        # Enrich selected stock with latest close + latest vol
+        market = await get_stock_market_fields([int(stock["stock_id"])])
+        m = market.get(int(stock["stock_id"]), {})
+        selected_stock = {
+            **stock,
+            "last_close": m.get("last_close"),
+            "price_currency": m.get("price_currency"),
+            "price_date": m.get("price_date"),
+            "vol_20d": m.get("vol_20d"),
+            "vol_60d": m.get("vol_60d"),
+            "vol_bucket": vol_bucket(m.get("vol_60d")),
+            "vol_date": m.get("vol_date"),
+        }
+
+        prompt = prompt_for_story(
+            client_ctx=ctx,
+            selected_stock=selected_stock,
+            instruction=instruction,
+            mode=req.mode,
+            max_words=req.max_words,
+        )
+
+        story = llm_text(prompt)
+
+        return {
+            "client_id": req.client_id,
+            "model": OPENAI_MODEL,
+            "selected_ticker": ticker,
+            "mode": (req.mode or "FULL").upper(),
+            "story": story,
+        }
+
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+# PDF endpoint for shortlist report
+@app.post("/api/shortlist.pdf")
+async def api_shortlist_pdf(req: ShortlistRequest):
+    """Generate a PDF report (client essentials + shortlist) and return it as a download."""
+    try:
+        _require_pdf_deps()
+
+        # Reuse the same shortlist generator to ensure the PDF matches the UI
+        payload = await api_shortlist(req)
+        if isinstance(payload, JSONResponse):
+            return payload
+        if isinstance(payload, dict) and payload.get("error"):
+            return JSONResponse(status_code=200, content=payload)
+
+        ctx = await build_client_context(req.client_id)
+        pdf_bytes = build_shortlist_pdf_bytes(ctx, payload)
+
+        filename = f"shortlist_client_{req.client_id}.pdf"
+        return StreamingResponse(
+            BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})

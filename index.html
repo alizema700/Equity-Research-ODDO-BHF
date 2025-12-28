@@ -1,0 +1,1710 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Client Console</title>
+
+  <style>
+    :root{
+      --bg:#0b0b0c;
+      --bg2:#121216;
+      --panel:#ffffff;
+      --panel2:#f6f6f7;
+      --panel3:#fbfbfc;
+      --text:#0b0b0c;
+      --muted:#6b6b72;
+      --border:#e2e2e6;
+      --accent:#c1121f;
+      --accent2:#8a0d16;
+      --shadow: 0 18px 50px rgba(0,0,0,.20);
+      --radius:16px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 400px at 10% -10%, rgba(193,18,31,.20), transparent 60%),
+                  linear-gradient(180deg, var(--bg), var(--bg2));
+      color:#fff;
+    }
+
+    /* ===== Topbar ===== */
+    .topbar{
+      position:sticky; top:0; z-index:30;
+      background: rgba(11,11,12,.88);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid rgba(255,255,255,.10);
+      padding:14px 16px;
+      display:flex; gap:12px; align-items:center;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px; min-width:280px;
+    }
+    .logoBox{
+      width:36px; height:36px; border-radius:12px;
+      background: rgba(193,18,31,.15);
+      border:1px solid rgba(193,18,31,.35);
+      display:grid; place-items:center;
+      font-weight:1000;
+      letter-spacing:.12em;
+      color:#fff;
+      user-select:none;
+      padding:6px;
+      overflow:hidden;
+    }
+
+    .brandLogo{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,.25));
+    }
+    .brandText b{
+      display:block;
+      font-size:12px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+    }
+    .brandText span{
+      display:block;
+      margin-top:3px;
+      font-size:12px;
+      color: rgba(255,255,255,.70);
+    }
+    .searchRow{ flex:1; display:flex; gap:10px; align-items:center; }
+    .search{
+      flex:1;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.16);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:12px;
+      outline:none;
+    }
+    .btn{
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color:#fff;
+      font-weight:900;
+      transition: transform .08s ease, border-color .08s ease, background .08s ease;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(193,18,31,.55); }
+    .btn.primary{
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border:0;
+    }
+    .chip{
+      font-size:12px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.82);
+      white-space:nowrap;
+      user-select:none;
+    }
+    .chip.ok{
+      border-color: rgba(193,18,31,.55);
+      background: rgba(193,18,31,.12);
+      color:#fff;
+    }
+    .chip.warn{
+      border-color: rgba(255,255,255,.22);
+      background: rgba(255,255,255,.08);
+      color:#fff;
+    }
+
+    /* ===== Layout ===== */
+    .wrap{
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 16px;
+      display:grid;
+      grid-template-columns: 440px 1fr;
+      gap:14px;
+      align-items:start;
+    }
+    .card{
+      background: var(--panel);
+      color: var(--text);
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    /* ===== Results Drawer ===== */
+    .resultsDrawer{
+      position:fixed;
+      top:64px; left:16px;
+      width:min(560px, calc(100vw - 32px));
+      max-height: calc(100vh - 96px);
+      overflow:auto;
+      background:#fff;
+      color:#111;
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow: 0 28px 70px rgba(0,0,0,.35);
+      display:none;
+      z-index:40;
+    }
+    .drawerHead{
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px 12px;
+      border-bottom:1px solid var(--border);
+      background:#fff;
+      position:sticky; top:0;
+      z-index:2;
+    }
+    .drawerHead b{
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:#111;
+    }
+    .drawerBody{ padding:12px; }
+
+    .resultItem{
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: var(--panel2);
+      cursor:pointer;
+      margin-bottom:10px;
+      transition: transform .08s ease, border-color .08s ease;
+    }
+    .resultItem:hover{ transform: translateY(-1px); border-color: rgba(193,18,31,.45); }
+    .riTop{ display:flex; justify-content:space-between; gap:10px; }
+    .riName{ font-weight:1000; font-size:14px; }
+    .riBadge{
+      font-size:11px;
+      padding:6px 9px;
+      border-radius:999px;
+      background: rgba(193,18,31,.10);
+      border:1px solid rgba(193,18,31,.30);
+      color:#111;
+      white-space:nowrap;
+    }
+    .riMeta{
+      margin-top:6px;
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.35;
+    }
+
+    /* ===== Left: Category Accordion ===== */
+    .leftHead{
+      padding:14px 14px;
+      border-bottom:1px solid var(--border);
+      background:#fff;
+      display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+    }
+    .leftHead .title{
+      font-weight:1000; font-size:14px; letter-spacing:.10em; text-transform:uppercase;
+    }
+    .leftHead .sub{
+      margin-top:4px; font-size:12px; color:var(--muted);
+      line-height:1.35;
+    }
+    .miniActions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .btnLight{
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:#111;
+      font-weight:900;
+      transition: transform .08s ease, border-color .08s ease;
+      user-select:none;
+    }
+    .btnLight:hover{ transform: translateY(-1px); border-color: rgba(193,18,31,.55); }
+    .btnLight.primary{
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border:0;
+      color:#fff;
+    }
+
+    .accordion{ padding:12px; background:#fff; }
+    .accItem{
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      margin-bottom:10px;
+      background: var(--panel3);
+    }
+    .accBtn{
+      width:100%;
+      background:#fff;
+      border:0;
+      cursor:pointer;
+      padding:12px 12px;
+      display:flex; justify-content:space-between; align-items:center;
+      font-weight:1000;
+      color:#111;
+    }
+    .accBtn:hover{ background: rgba(193,18,31,.04); }
+    .accBtn b{
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+    .accBtn span{
+      font-size:12px; color:var(--muted);
+      font-weight:900;
+    }
+    .accBody{
+      display:none;
+      padding:12px;
+      border-top:1px solid var(--border);
+      background: var(--panel2);
+    }
+    .accItem.open .accBody{ display:block; }
+
+    .kv{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:7px 0;
+      border-bottom:1px dashed var(--border);
+      font-size:12px;
+    }
+    .kv:last-child{ border-bottom:0; }
+    .kv span:first-child{ color: var(--muted); }
+    .kv span:last-child{ font-weight:1000; text-align:right; color:#111; }
+
+    .pill{
+      font-size:11px;
+      padding:6px 9px;
+      border-radius:999px;
+      background: rgba(193,18,31,.10);
+      border:1px solid rgba(193,18,31,.30);
+      color:#111;
+      white-space:nowrap;
+      font-weight:900;
+    }
+    .tags{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .tag{
+      font-size:12px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: #fff;
+      color:#111;
+      font-weight:900;
+    }
+    .tag.red{
+      border-color: rgba(193,18,31,.35);
+      background: rgba(193,18,31,.06);
+    }
+
+    .note{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+      margin-bottom:10px;
+    }
+    .noteTop{
+      display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+      margin-bottom:6px;
+    }
+    .noteTop b{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color: var(--accent); }
+    .noteTop span{ font-size:12px; color: var(--muted); font-weight:900; }
+    .noteText{ font-size:12px; color:#111; line-height:1.45; white-space:pre-wrap; }
+
+    /* ===== Right: Workspace ===== */
+    .workspaceHead{
+      padding:14px 16px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      background:#fff;
+    }
+    .workspaceHead .title{
+      font-weight:1000;
+      font-size:18px;
+      margin:0;
+      color:#111;
+    }
+    .workspaceHead .sub{
+      margin-top:4px;
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.35;
+    }
+
+    .workspaceBody{
+      padding:14px 16px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+      background:#fff;
+    }
+
+    /* Stepper */
+    .stepper{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px;
+      background: var(--panel2);
+    }
+    .stepLeft{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .step{
+      display:flex; gap:10px; align-items:center;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      font-weight:1000;
+      font-size:12px;
+      color:#111;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(107,107,114,.35);
+    }
+    .step.done .dot{ background: rgba(193,18,31,.85); }
+    .step.active{ border-color: rgba(193,18,31,.55); background: rgba(193,18,31,.05); }
+
+    /* Tabs */
+    .tabs{
+      display:flex; gap:10px; flex-wrap:wrap;
+      border-bottom:1px solid var(--border);
+      padding-bottom:10px;
+    }
+    .tabBtn{
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:#111;
+      font-weight:1000;
+      font-size:12px;
+    }
+    .tabBtn.active{
+      border-color: rgba(193,18,31,.55);
+      background: rgba(193,18,31,.06);
+    }
+    .tabPanel{ display:none; }
+    .tabPanel.active{ display:block; }
+
+    .input{
+      width:100%;
+      border-radius:14px;
+      border:1px solid var(--border);
+      padding:10px;
+      font-size:13px;
+      outline:none;
+      background:#fff;
+      color:#111;
+    }
+
+    .helperList{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .helperBtn{
+      cursor:pointer;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: var(--panel2);
+      color:#111;
+      font-weight:1000;
+      font-size:12px;
+      user-select:none;
+    }
+    .helperBtn:hover{ border-color: rgba(193,18,31,.55); }
+
+    /* Shortlist cards */
+    .stockGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+    .stockCard{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
+      padding:12px;
+      transition: transform .08s ease, border-color .08s ease;
+      cursor:pointer;
+      overflow:hidden;
+    }
+    .stockCard:hover{ transform: translateY(-1px); border-color: rgba(193,18,31,.55); }
+    .stockCard.active{ border-color: rgba(193,18,31,.80); box-shadow: 0 14px 30px rgba(193,18,31,.10); }
+
+    .stockTop{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+      margin-bottom:8px;
+    }
+    .stockTop h4{
+      margin:0;
+      font-size:14px;
+      font-weight:1000;
+      color:#111;
+    }
+    .stockMeta{
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.35;
+      margin-top:2px;
+    }
+    .miniPills{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .miniPill{
+      font-size:11px;
+      padding:6px 9px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: var(--panel2);
+      color:#111;
+      font-weight:1000;
+    }
+
+    .whyList{
+      margin:10px 0 0;
+      padding-left:16px;
+      color:#111;
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    /* Evidence drawer per card */
+    .evidenceBar{
+      margin-top:10px;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+    }
+    .evidenceBtn{
+      cursor:pointer;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      color:#111;
+      font-weight:1000;
+      font-size:12px;
+    }
+    .evidenceBtn:hover{ border-color: rgba(193,18,31,.55); }
+    .evidenceBody{
+      margin-top:10px;
+      display:none;
+      border-top:1px dashed var(--border);
+      padding-top:10px;
+      color:#111;
+      font-size:12px;
+      line-height:1.5;
+      white-space:pre-wrap;
+    }
+    .stockCard.showEvidence .evidenceBody{ display:block; }
+
+    .actionsRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:8px;
+    }
+
+    .storyPanel{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:#fff;
+      padding:12px;
+      margin-top:10px;
+    }
+    .storyPanel h4{
+      margin:0 0 8px 0;
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      color:#111;
+    }
+    .storyText{
+      font-size:13px;
+      line-height:1.55;
+      color:#111;
+      white-space:pre-wrap;
+      word-break:break-word;
+      margin:0;
+    }
+
+    .explainBox{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background: var(--panel2);
+      padding:12px;
+      color:#111;
+    }
+    .explainBox b{
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      display:block;
+    }
+    .explainBox .small{
+      margin-top:8px;
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.45;
+    }
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:12px;
+      white-space:pre-wrap;
+      word-break:break-word;
+      margin:10px 0 0;
+      background:#0b0b0c;
+      color:#fff;
+      padding:12px;
+      border-radius:12px;
+      overflow:auto;
+      max-height: 45vh;
+    }
+
+    /* ===== NEW: Modal ===== */
+    .overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      z-index:80;
+    }
+    .modal{
+      position:fixed;
+      top:50%; left:50%;
+      transform: translate(-50%,-50%);
+      width:min(680px, calc(100vw - 32px));
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow: 0 28px 70px rgba(0,0,0,.40);
+      display:none;
+      z-index:90;
+      overflow:hidden;
+      color:#111;
+    }
+    .modalHead{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+      background:#fff;
+    }
+    .modalHead b{
+      font-size:12px;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+    }
+    .modalBody{
+      padding:14px;
+      background: var(--panel2);
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 160px 1fr;
+      gap:10px;
+      align-items:center;
+      margin-bottom:10px;
+    }
+    .row label{
+      font-size:12px;
+      color: var(--muted);
+      font-weight:900;
+    }
+    .row input{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px;
+      font-size:13px;
+      outline:none;
+      background:#fff;
+      color:#111;
+    }
+    .modalFoot{
+      padding:12px 14px;
+      border-top:1px solid var(--border);
+      background:#fff;
+      display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .miniHelp{
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.45;
+    }
+
+    @media(max-width: 1150px){
+      .wrap{ grid-template-columns: 1fr; }
+      .stockGrid{ grid-template-columns: 1fr; }
+      .brand{ min-width: 220px; }
+      .row{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logoBox" aria-label="ODDO BHF">
+        <img class="brandLogo" src="/static/image/Oddo_BHF_logo.svg.png" alt="ODDO BHF" onerror="this.onerror=null;this.src='image/Oddo_BHF_logo.svg.png';" />
+      </div>
+      <div class="brandText">
+        <b>Client Console</b>
+        <span>Organized workflow • DB-backed • Explainable</span>
+      </div>
+    </div>
+
+    <div class="searchRow">
+      <input id="q" class="search" placeholder="Suche nach Person oder Firma… (z.B. Oskar Zimmer)" />
+      <button id="searchBtn" class="btn primary">Search</button>
+      <button id="clearBtn" class="btn">Clear</button>
+
+      <!-- NEW: Settings + Health -->
+      <button id="settingsBtn" class="btn" title="API Base URL + x-api-key">API</button>
+      <button id="healthBtn" class="btn" title="Ping /api/health">Health</button>
+
+      <span id="chip" class="chip">No client loaded</span>
+    </div>
+  </div>
+
+  <!-- RESULTS DRAWER -->
+  <div id="drawer" class="resultsDrawer">
+    <div class="drawerHead">
+      <b>Search results</b>
+      <button id="closeDrawerBtn" class="btnLight">Close</button>
+    </div>
+    <div id="drawerBody" class="drawerBody"></div>
+  </div>
+
+  <!-- NEW: API Modal -->
+  <div id="overlay" class="overlay"></div>
+  <div id="apiModal" class="modal" role="dialog" aria-modal="true">
+    <div class="modalHead">
+      <b>API Settings</b>
+      <button id="closeModalBtn" class="btnLight">Close</button>
+    </div>
+    <div class="modalBody">
+      <div class="row">
+        <label for="apiBase">API Base URL</label>
+        <input id="apiBase" placeholder="(leer = same-origin) z.B. http://127.0.0.1:8000" />
+      </div>
+      <div class="row">
+        <label for="apiKey">x-api-key</label>
+        <input id="apiKey" placeholder="optional (nur wenn APP_API_KEY aktiv ist)" />
+      </div>
+      <div class="miniHelp">
+        - Wenn dein Frontend über <b>FastAPI /</b> ausgeliefert wird: Base URL leer lassen.<br/>
+        - Wenn du das HTML separat öffnest (file://) oder über einen anderen Server: Base URL auf dein Backend setzen.
+      </div>
+    </div>
+    <div class="modalFoot">
+      <button id="saveSettingsBtn" class="btnLight primary">Save</button>
+      <button id="clearSettingsBtn" class="btnLight">Clear saved</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- LEFT: CATEGORIES -->
+    <aside class="card">
+      <div class="leftHead">
+        <div>
+          <div class="title">Client Intelligence</div>
+          <div class="sub" id="leftSub">Load a client to unlock categories.</div>
+        </div>
+        <div class="miniActions">
+          <button id="expandAllBtn" class="btnLight" disabled>Expand</button>
+          <button id="collapseAllBtn" class="btnLight" disabled>Collapse</button>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <!-- Basics -->
+        <div class="accItem" data-acc="basics">
+          <button class="accBtn" onclick="toggleAcc('basics')">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <b>Basics</b>
+              <span id="basicsHint">—</span>
+            </div>
+            <span>Toggle</span>
+          </button>
+          <div class="accBody">
+            <div class="kv"><span>Firm</span><span id="firm">—</span></div>
+            <div class="kv"><span>Person</span><span id="person">—</span></div>
+            <div class="kv"><span>Role</span><span id="role">—</span></div>
+            <div class="kv"><span>Type</span><span id="type">—</span></div>
+            <div class="kv"><span>Region</span><span id="region">—</span></div>
+          </div>
+        </div>
+
+        <!-- Profile -->
+        <div class="accItem" data-acc="profile">
+          <button class="accBtn" onclick="toggleAcc('profile')">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <b>Profile</b>
+              <span class="pill" id="profilePill">—</span>
+            </div>
+            <span>Toggle</span>
+          </button>
+          <div class="accBody">
+            <div class="kv"><span>Engagement</span><span id="engagement">—</span></div>
+            <div class="kv"><span>Investment style</span><span id="styleVal">—</span></div>
+            <div class="kv"><span>Risk appetite</span><span id="riskVal">—</span></div>
+            <div class="kv"><span>Dominant topic</span><span id="domTopic">—</span></div>
+            <div class="kv"><span>Confidence</span><span id="profileConf">—</span></div>
+            <div style="margin-top:10px; color:var(--muted); font-size:12px; line-height:1.45;">
+              Source: <b>int_client_profile</b> (no guessing)
+            </div>
+          </div>
+        </div>
+
+        <!-- Constraints -->
+        <div class="accItem" data-acc="constraints">
+          <button class="accBtn" onclick="toggleAcc('constraints')">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <b>Constraints</b>
+              <span class="pill" id="constraintsPill">—</span>
+            </div>
+            <span>Toggle</span>
+          </button>
+          <div class="accBody">
+            <div class="kv"><span>Top sector</span><span id="topSector">—</span></div>
+            <div class="kv"><span>Top theme</span><span id="topTheme">—</span></div>
+            <div class="kv"><span>Concentration</span><span id="concVal">—</span></div>
+            <div style="margin-top:10px;">
+              <div style="font-size:12px; font-weight:1000; letter-spacing:.12em; text-transform:uppercase; color:#111;">
+                Avoid repeating
+              </div>
+              <div class="tags" id="avoidTags"><span class="tag">—</span></div>
+              <div style="margin-top:10px; color:var(--muted); font-size:12px; line-height:1.45;">
+                Source: <b>int_client_portfolio_summary</b> + holdings/trades derived by backend
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Availability -->
+        <div class="accItem" data-acc="availability">
+          <button class="accBtn" onclick="toggleAcc('availability')">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <b>Availability</b>
+              <span class="pill" id="availPill">—</span>
+            </div>
+            <span>Toggle</span>
+          </button>
+          <div class="accBody">
+            <div class="kv"><span>Best day</span><span id="bestDay">—</span></div>
+            <div class="kv"><span>Best time window</span><span id="bestTime">—</span></div>
+            <div class="kv"><span>Confidence</span><span id="availConf">—</span></div>
+            <div style="margin-top:10px; color:var(--muted); font-size:12px; line-height:1.45;">
+              Source: <b>int_client_availability</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calls -->
+        <div class="accItem" data-acc="calls">
+          <button class="accBtn" onclick="toggleAcc('calls')">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <b>Calls</b>
+              <span id="callsHint">—</span>
+            </div>
+            <span>Toggle</span>
+          </button>
+          <div class="accBody" id="callsList">
+            <div class="note">
+              <div class="noteTop"><b>INFO</b><span>—</span></div>
+              <div class="noteText">Select a client to load calls (notes_raw).</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reads -->
+        <div class="accItem" data-acc="reads">
+          <button class="accBtn" onclick="toggleAcc('reads')">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <b>Reads</b>
+              <span id="readsHint">—</span>
+            </div>
+            <span>Toggle</span>
+          </button>
+          <div class="accBody" id="readsList">
+            <div class="note">
+              <div class="noteTop"><b>INFO</b><span>—</span></div>
+              <div class="noteText">Select a client to load reads (days_diff).</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trades -->
+        <div class="accItem" data-acc="trades">
+          <button class="accBtn" onclick="toggleAcc('trades')">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <b>Trades</b>
+              <span id="tradesHint">—</span>
+            </div>
+            <span>Toggle</span>
+          </button>
+          <div class="accBody" id="tradesList">
+            <div class="note">
+              <div class="noteTop"><b>INFO</b><span>—</span></div>
+              <div class="noteText">Select a client to load trades.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT: WORKSPACE -->
+    <section class="card">
+      <div class="workspaceHead">
+        <div>
+          <div class="title" id="mainTitle">Workspace</div>
+          <div class="sub" id="mainSub">Search a client → shortlist → pick a stock → generate story/bullets.</div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button id="copyBtn" class="btnLight" disabled>Copy output</button>
+          <button id="clearBtn2" class="btnLight" disabled>Clear</button>
+        </div>
+      </div>
+
+      <div class="workspaceBody">
+        <!-- Stepper -->
+        <div class="stepper">
+          <div class="stepLeft">
+            <div class="step" id="step1"><div class="dot"></div>1) Shortlist</div>
+            <div class="step" id="step2"><div class="dot"></div>2) Pick</div>
+            <div class="step" id="step3"><div class="dot"></div>3) Output</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <span class="pill" id="selStockPill">No stock selected</span>
+            <button id="shortlistBtn" class="btnLight primary" disabled>Generate shortlist</button>
+          </div>
+        </div>
+
+        <!-- Instruction + Helper Buttons -->
+        <textarea id="instruction" class="input" placeholder="Optional instruction (e.g., 'avoid top sector', 'focus on defensives', 'address objections from last calls')."></textarea>
+
+        <div class="helperList">
+          <button class="helperBtn" onclick="applyHelper('Diversify away from top sector; propose adjacent exposure.')">Diversify</button>
+          <button class="helperBtn" onclick="applyHelper('Use last call notes_raw heavily; address objections explicitly.')">Use last calls</button>
+          <button class="helperBtn" onclick="applyHelper('Prefer ideas linked to late reads (high days_diff).')">Late reads</button>
+          <button class="helperBtn" onclick="applyHelper('Avoid high volatility; keep it conservative.')">Conservative</button>
+          <button class="helperBtn" onclick="applyHelper('Make it punchy: max 6 bullets, no long paragraphs.')">Punchy</button>
+          <button class="helperBtn" onclick="applyHelper('Ask 2 smart questions to confirm constraints (risk/style/exposure).')">2 questions</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tabBtn active" id="tabShortlist" onclick="switchTab('shortlist')">Shortlist</button>
+          <button class="tabBtn" id="tabExplain" onclick="switchTab('explain')">Explain</button>
+          <button class="tabBtn" id="tabOutput" onclick="switchTab('output')">Output</button>
+          <button class="tabBtn" id="tabDebug" onclick="switchTab('debug')">Debug</button>
+        </div>
+
+        <!-- TAB: Shortlist -->
+        <div class="tabPanel active" id="panel_shortlist">
+          <div id="shortlistArea" class="stockGrid"></div>
+
+          <div class="actionsRow">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button id="storyBtn" class="btnLight primary" disabled>Generate Story (FULL)</button>
+              <button id="bulletsBtn" class="btnLight" disabled>Generate Bullets</button>
+              <button id="pdfBtn" class="btnLight" disabled>Download PDF</button>
+            </div>
+            <div style="color:var(--muted); font-size:12px; line-height:1.35;">
+              Shortlist is generated from DB universe (<b>src_stocks</b>) + client signals.
+              <br/>
+              <b>Compliance:</b> AI-generated suggestions may be inaccurate. Not investment advice. Analyst must verify facts, suitability, and approvals.
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Explainability -->
+        <div class="tabPanel" id="panel_explain">
+          <div class="explainBox">
+            <b>Explainability (not a black box)</b>
+            <div class="small">
+              This is not “LLM magic”: we show the shortlist rationales the backend returns (top picks, analyst notes,
+              and per-stock why_bullets + evidence).
+            </div>
+            <div class="mono" id="explainText">—</div>
+          </div>
+        </div>
+
+        <!-- TAB: Output -->
+        <div class="tabPanel" id="panel_output">
+          <div class="storyPanel" id="outPanel" style="display:none;">
+            <h4 id="outTitle">Output</h4>
+            <pre class="storyText" id="out">—</pre>
+          </div>
+
+          <div class="explainBox" style="margin-top:12px;">
+            <b>Selected stock context</b>
+            <div class="small">We show what is known (sector/theme/vol/close) + why_bullets (from shortlist) so output is auditable.</div>
+            <div class="mono" id="selectedContext">No stock selected.</div>
+          </div>
+        </div>
+
+        <!-- TAB: Debug -->
+        <div class="tabPanel" id="panel_debug">
+          <div class="explainBox">
+            <b>Debug hints</b>
+            <div class="small">
+              If something looks empty, it usually means the DB view/table has no rows for that client,
+              or the backend query returns nulls. This panel shows lightweight status (counts), not snapshots.
+            </div>
+            <div class="mono" id="debugText">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<div style="max-width:1600px;margin:0 auto;padding:0 16px 18px 16px;color:rgba(255,255,255,.70);font-size:12px;line-height:1.45;">
+  <b>Disclaimer:</b> This tool may generate incorrect or incomplete information. Internal use only. Not investment advice.
+  Users remain responsible for compliance checks, factual verification, and client suitability assessment.
+</div>
+<script>
+  // ===== NEW: API Settings (localStorage) =====
+  const LS_BASE = "cc_api_base";
+  const LS_KEY  = "cc_api_key";
+
+  function getApiBase(){
+    const v = (localStorage.getItem(LS_BASE) || "").trim();
+    return v; // "" = same-origin
+  }
+  function getApiKey(){
+    return (localStorage.getItem(LS_KEY) || "").trim();
+  }
+  function apiUrl(path){
+    const base = getApiBase();
+    if(!base) return path;
+    return base.replace(/\/+$/,"") + path;
+  }
+  function authHeaders(){
+    const k = getApiKey();
+    return k ? { "x-api-key": k } : {};
+  }
+
+  function openModal(){
+    document.getElementById("apiBase").value = getApiBase();
+    document.getElementById("apiKey").value  = getApiKey();
+    document.getElementById("overlay").style.display = "block";
+    document.getElementById("apiModal").style.display = "block";
+  }
+  function closeModal(){
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("apiModal").style.display = "none";
+  }
+  function saveModal(){
+    localStorage.setItem(LS_BASE, (document.getElementById("apiBase").value || "").trim());
+    localStorage.setItem(LS_KEY,  (document.getElementById("apiKey").value || "").trim());
+    closeModal();
+  }
+  function clearModal(){
+    localStorage.removeItem(LS_BASE);
+    localStorage.removeItem(LS_KEY);
+    document.getElementById("apiBase").value = "";
+    document.getElementById("apiKey").value  = "";
+  }
+
+  // ===== State =====
+  let selectedId = null;
+  let currentPayload = null; // GET /api/client/{id}
+  let selectedTicker = null;
+  let selectedStockObj = null;
+  let lastOut = "";
+  let lastShortlist = [];
+  let lastExplain = "";
+  let lastShortlistReq = null;
+
+  const el = (id) => document.getElementById(id);
+
+  // ===== UI helpers =====
+  function setChip(text, mode="ok"){
+    el("chip").textContent = text;
+    el("chip").classList.remove("ok","warn");
+    if(mode==="ok") el("chip").classList.add("ok");
+    if(mode==="warn") el("chip").classList.add("warn");
+  }
+  function safe(v, fb="—"){ return (v===null||v===undefined||v==="") ? fb : v; }
+
+  function openDrawer(html){
+    el("drawerBody").innerHTML = html;
+    el("drawer").style.display = "block";
+  }
+  function closeDrawer(){ el("drawer").style.display = "none"; }
+
+  function toggleAcc(name){
+    const node = document.querySelector(`.accItem[data-acc="${name}"]`);
+    if(node) node.classList.toggle("open");
+  }
+  function setAccOpen(name, open){
+    const node = document.querySelector(`.accItem[data-acc="${name}"]`);
+    if(!node) return;
+    node.classList.toggle("open", !!open);
+  }
+  function expandAll(){
+    document.querySelectorAll(".accItem").forEach(x => x.classList.add("open"));
+  }
+  function collapseAll(){
+    document.querySelectorAll(".accItem").forEach(x => x.classList.remove("open"));
+  }
+
+  function switchTab(name){
+    const map = ["shortlist","explain","output","debug"];
+    map.forEach(k=>{
+      el("tab"+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle("active", k===name);
+      el("panel_"+k).classList.toggle("active", k===name);
+    });
+  }
+
+  function setStep(step, state){
+    const s = el(step);
+    if(!s) return;
+    s.classList.remove("active","done");
+    if(state==="active") s.classList.add("active");
+    if(state==="done") s.classList.add("done");
+  }
+
+  function showOutput(title, text){
+    el("outTitle").textContent = title;
+    el("out").textContent = text || "(No output)";
+    el("outPanel").style.display = "block";
+    lastOut = text || "";
+    el("copyBtn").disabled = !lastOut;
+    setStep("step3","done");
+    switchTab("output");
+  }
+
+  function applyHelper(text){
+    const box = el("instruction");
+    const cur = box.value.trim();
+    box.value = cur ? (cur + "\n" + text) : text;
+    box.focus();
+  }
+
+  function clearWorkspace(){
+    el("shortlistArea").innerHTML = "";
+    el("outPanel").style.display = "none";
+    el("out").textContent = "—";
+    el("explainText").textContent = "—";
+    el("selectedContext").textContent = "No stock selected.";
+    el("debugText").textContent = "—";
+
+    lastOut = "";
+    lastShortlist = [];
+    lastExplain = "";
+    selectedTicker = null;
+    selectedStockObj = null;
+
+    el("selStockPill").textContent = "No stock selected";
+    el("copyBtn").disabled = true;
+    el("storyBtn").disabled = true;
+    el("bulletsBtn").disabled = true;
+    if(el("pdfBtn")) el("pdfBtn").disabled = true;
+
+    setStep("step1","active");
+    setStep("step2","");
+    setStep("step3","");
+    switchTab("shortlist");
+  }
+
+  // ===== Render: Left side =====
+  function renderLeft(payload){
+    const client = payload?.client || {};
+    const profile = payload?.profile || {};
+    const avail = payload?.availability || {};
+    const psum = payload?.portfolio_summary || {};
+    const constraints = payload?.constraints || {};
+    const signals = payload?.signals || {};
+
+    el("leftSub").textContent = client.firm_name
+      ? `Loaded: ${safe(client.firm_name)} • ${safe(client.primary_contact_name, client.client_name)}`
+      : "Load a client to unlock categories.";
+
+    el("firm").textContent = safe(client.firm_name);
+    el("person").textContent = safe(client.primary_contact_name, client.client_name);
+    el("role").textContent = safe(client.primary_contact_role);
+    el("type").textContent = safe(client.client_type);
+    el("region").textContent = safe(client.region);
+    el("basicsHint").textContent = client.firm_name ? "loaded" : "—";
+
+    const risk = safe(profile.risk_appetite, "unknown");
+    const style = safe(profile.investment_style, "unknown");
+    el("profilePill").textContent = profile.profile_confidence_level ? profile.profile_confidence_level : "profile";
+    el("engagement").textContent = safe(profile.engagement_level, "unknown");
+    el("styleVal").textContent = style;
+    el("riskVal").textContent = risk;
+    el("domTopic").textContent = profile.dominant_topic ? `${profile.dominant_topic} (${Number(profile.dominant_topic_share||0).toFixed(2)})` : "unknown";
+    el("profileConf").textContent = profile.profile_confidence_score ? `${profile.profile_confidence_score}` : safe(profile.profile_confidence_level,"unknown");
+
+    el("constraintsPill").textContent = psum.activity_flag ? psum.activity_flag : "portfolio";
+    el("topSector").textContent = psum.top_sector ? `${psum.top_sector} (${Number(psum.top_sector_share||0).toFixed(2)})` : "unknown";
+    el("topTheme").textContent = psum.top_theme ? `${psum.top_theme} (${Number(psum.top_theme_share||0).toFixed(2)})` : "unknown";
+    el("concVal").textContent = psum.concentration_flag
+      ? `${psum.concentration_flag} (${safe(psum.concentration_index,"—")})`
+      : safe(psum.concentration_index,"unknown");
+
+    const avoid = (constraints.avoid_tickers || []);
+    el("avoidTags").innerHTML = avoid.length
+      ? avoid.slice(0,18).map(t => `<span class="tag red">${t}</span>`).join("")
+      : `<span class="tag">none</span>`;
+
+    el("availPill").textContent = avail.availability_confidence ? `${avail.availability_confidence}` : "availability";
+    el("bestDay").textContent = safe(avail.best_day, "unknown");
+    el("bestTime").textContent = safe(avail.best_time_window, "unknown");
+    el("availConf").textContent = avail.availability_score ? `${avail.availability_score}` : safe(avail.availability_confidence,"unknown");
+
+    const calls = signals.recent_calls || [];
+    el("callsHint").textContent = calls.length ? `${calls.length} recent` : "none";
+    renderCalls(calls);
+
+    const reads = signals.recent_reads_daysdiff || [];
+    el("readsHint").textContent = reads.length ? `${reads.length} recent` : "none";
+    renderReads(reads);
+
+    const trades = signals.recent_trades || [];
+    el("tradesHint").textContent = trades.length ? `${trades.length} recent` : "none";
+    renderTrades(trades);
+
+    el("expandAllBtn").disabled = false;
+    el("collapseAllBtn").disabled = false;
+  }
+
+  function renderCalls(calls){
+    if(!calls || !calls.length){
+      el("callsList").innerHTML = `
+        <div class="note">
+          <div class="noteTop"><b>INFO</b><span>—</span></div>
+          <div class="noteText">No recent calls (src_call_logs) for this client.</div>
+        </div>`;
+      return;
+    }
+
+    el("callsList").innerHTML = calls.slice(0,8).map(c => {
+      const when = safe(c.call_timestamp, "");
+      const head = c.stock_ticker ? `${safe(c.stock_ticker)} • ${safe(c.stock_company_name,"")}` : safe(c.discussed_company,"Call");
+      const meta = [
+        c.direction ? `dir=${c.direction}` : null,
+        c.duration_minutes ? `${c.duration_minutes}min` : null,
+        c.discussed_sector ? c.discussed_sector : (c.stock_sector || null)
+      ].filter(Boolean).join(" • ");
+
+      return `
+        <div class="note">
+          <div class="noteTop"><b>CALL</b><span>${when}</span></div>
+          <div class="noteText"><b>${head}</b>${meta ? " — " + meta : ""}\n\n${safe(c.notes_raw,"(no notes_raw)")}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderReads(reads){
+    if(!reads || !reads.length){
+      el("readsList").innerHTML = `
+        <div class="note">
+          <div class="noteTop"><b>INFO</b><span>—</span></div>
+          <div class="noteText">No reads (ana_readership_daysdiff) for this client.</div>
+        </div>`;
+      return;
+    }
+
+    el("readsList").innerHTML = reads.slice(0,8).map(r => {
+      const dd = (r.days_diff===null || r.days_diff===undefined) ? "?" : r.days_diff;
+      const title = safe(r.report_title, "Report");
+      const tick = r.report_ticker ? `${r.report_ticker}` : safe(r.report_company,"");
+      return `
+        <div class="note">
+          <div class="noteTop"><b>READ</b><span>days_diff=${dd}</span></div>
+          <div class="noteText"><b>${tick}</b> — ${title}\nPublished: ${safe(r.publish_timestamp,"")}\nRead: ${safe(r.read_timestamp,"")}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderTrades(trades){
+    if(!trades || !trades.length){
+      el("tradesList").innerHTML = `
+        <div class="note">
+          <div class="noteTop"><b>INFO</b><span>—</span></div>
+          <div class="noteText">No trades (src_trade_executions) for this client.</div>
+        </div>`;
+      return;
+    }
+
+    el("tradesList").innerHTML = trades.slice(0,8).map(t => {
+      const when = safe(t.trade_timestamp,"");
+      const head = `${safe(t.side,"")} ${safe(t.ticker,"")} ${safe(t.instrument_name,"")}`.trim();
+      const meta = [
+        t.sector ? t.sector : null,
+        t.theme_tag ? t.theme_tag : null,
+        t.notional_bucket ? `size=${t.notional_bucket}` : null
+      ].filter(Boolean).join(" • ");
+      return `
+        <div class="note">
+          <div class="noteTop"><b>TRADE</b><span>${when}</span></div>
+          <div class="noteText"><b>${head}</b>${meta ? " — " + meta : ""}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // ===== Render: Right side =====
+  function renderShortlistCards(list){
+    if(!list || !list.length){
+      el("shortlistArea").innerHTML = `<div style="grid-column:1/-1;color:#6b6b72;font-size:13px;">No shortlist returned.</div>`;
+      return;
+    }
+
+    el("shortlistArea").innerHTML = list.map((s, idx) => {
+      const price = (s.last_close===null || s.last_close===undefined) ? "—" : s.last_close;
+      const ccy = s.price_currency ? ` ${s.price_currency}` : "";
+      const v20 = (s.vol_20d===null || s.vol_20d===undefined) ? "—" : s.vol_20d;
+      const v60 = (s.vol_60d===null || s.vol_60d===undefined) ? "—" : s.vol_60d;
+
+      const why = (s.why_bullets || []).slice(0,3).map(w => `<li>${w}</li>`).join("");
+      const evidence = s.evidence ? String(s.evidence) : "";
+      const evidText = evidence ? evidence : "No evidence field returned by backend. (Optional)";
+
+      return `
+        <div class="stockCard" id="stk_${idx}" onclick="pickStock(${idx})">
+          <div class="stockTop">
+            <div>
+              <h4>${safe(s.company_name)} (${safe(s.ticker)})</h4>
+              <div class="stockMeta">${safe(s.sector)} • ${safe(s.theme_tag, "—")} • ${safe(s.market_cap_bucket, "—")}</div>
+            </div>
+            <span class="pill">${safe(s.vol_bucket, "unknown")}</span>
+          </div>
+
+          <div class="miniPills">
+            <span class="miniPill">Close: ${price}${ccy}</span>
+            <span class="miniPill">Vol20: ${v20}</span>
+            <span class="miniPill">Vol60: ${v60}</span>
+          </div>
+
+          <ul class="whyList">${why}</ul>
+
+          <div class="evidenceBar">
+            <button class="evidenceBtn" onclick="toggleEvidence(event, ${idx})">Evidence</button>
+            <div style="font-size:12px;color:var(--muted);font-weight:900;">Click card to select</div>
+          </div>
+
+          <div class="evidenceBody" id="evid_${idx}">${evidText}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function toggleEvidence(ev, idx){
+    ev.stopPropagation();
+    const card = document.getElementById(`stk_${idx}`);
+    if(card) card.classList.toggle("showEvidence");
+  }
+
+  function updateExplainPanels(){
+    el("explainText").textContent = lastExplain || "—";
+
+    if(!selectedStockObj){
+      el("selectedContext").textContent = "No stock selected.";
+      return;
+    }
+
+    const s = selectedStockObj;
+    const why = (s.why_bullets || []).map(x => `- ${x}`).join("\n");
+    const lines = [
+      `Ticker: ${safe(s.ticker)}`,
+      `Company: ${safe(s.company_name)}`,
+      `Sector: ${safe(s.sector)}`,
+      `Theme: ${safe(s.theme_tag,"—")}`,
+      `Market cap bucket: ${safe(s.market_cap_bucket,"—")}`,
+      `Last close: ${(s.last_close===null||s.last_close===undefined) ? "—" : s.last_close}${s.price_currency ? " " + s.price_currency : ""}`,
+      `Vol20: ${(s.vol_20d===null||s.vol_20d===undefined) ? "—" : s.vol_20d}`,
+      `Vol60: ${(s.vol_60d===null||s.vol_60d===undefined) ? "—" : s.vol_60d}`,
+      ``,
+      `Why (from shortlist):`,
+      why || "- —",
+      ``,
+      `Evidence (optional field):`,
+      s.evidence ? String(s.evidence) : "(none)"
+    ];
+    el("selectedContext").textContent = lines.join("\n");
+  }
+
+  function updateDebugPanel(){
+    const signals = currentPayload?.signals || {};
+    const counts = [
+      `API Base: ${getApiBase() || "(same-origin)"}`,
+      `x-api-key set: ${!!getApiKey()}`,
+      `Client loaded: ${!!selectedId}`,
+      `Calls returned: ${(signals.recent_calls||[]).length}`,
+      `Reads returned: ${(signals.recent_reads_daysdiff||[]).length}`,
+      `Trades returned: ${(signals.recent_trades||[]).length}`,
+      `Shortlist returned: ${lastShortlist.length}`,
+      `Selected ticker: ${selectedTicker || "—"}`
+    ].join("\n");
+    el("debugText").textContent = counts;
+  }
+
+  // ===== NEW: Health check =====
+  async function health(){
+    try{
+      setChip("Health check…","warn");
+      const res = await fetch(apiUrl(`/api/health`), { headers: { ...authHeaders() } });
+      const data = await res.json();
+      if(data.ok){
+        setChip(`Backend OK • clients=${data.clients ?? "—"}`,"ok");
+      }else{
+        setChip(`Backend not ok • ${data.error || "unknown"}`,"warn");
+      }
+      updateDebugPanel();
+    }catch(e){
+      setChip("Backend down / CORS / wrong base URL","warn");
+      updateDebugPanel();
+    }
+  }
+
+  // ===== API calls =====
+  async function search(){
+    const q = el("q").value.trim();
+    if(!q) return;
+
+    setChip("Searching…","warn");
+    const res = await fetch(apiUrl(`/api/search?q=${encodeURIComponent(q)}&limit=80`), {
+      headers: { ...authHeaders() }
+    });
+    const data = await res.json();
+    const items = data.results || [];
+
+    if(!items.length){
+      setChip("No results","warn");
+      openDrawer(`<div style="color:#6b6b72;font-size:12px;">No results.</div>`);
+      return;
+    }
+
+    const html = items.map(it => `
+      <div class="resultItem" onclick="selectClient(${it.client_id})">
+        <div class="riTop">
+          <div class="riName">${safe(it.primary_contact_name, it.client_name)}</div>
+          <div class="riBadge">${safe(it.client_type)}</div>
+        </div>
+        <div class="riMeta">
+          <div><b>Firm:</b> ${safe(it.firm_name)}</div>
+          <div><b>Role:</b> ${safe(it.primary_contact_role, "—")} • <b>Region:</b> ${safe(it.region)}</div>
+        </div>
+      </div>
+    `).join("");
+
+    openDrawer(html);
+    setChip("Select a client","warn");
+  }
+
+  async function selectClient(id){
+    selectedId = id;
+    setChip("Loading client…","warn");
+
+    const res = await fetch(apiUrl(`/api/client/${id}`), {
+      headers: { ...authHeaders() }
+    });
+    const data = await res.json();
+
+    if(data.error){
+      setChip("Backend error","warn");
+      alert(data.error);
+      return;
+    }
+
+    currentPayload = data;
+
+    const client = data.client || {};
+    el("mainTitle").textContent = client.firm_name ? `${client.firm_name} — Workspace` : "Workspace";
+    el("mainSub").textContent = `Client: ${safe(client.primary_contact_name, client.client_name)} • Signals + universe come from DB (no guessing).`;
+
+    el("shortlistBtn").disabled = false;
+    el("clearBtn2").disabled = false;
+    el("copyBtn").disabled = true;
+
+    clearWorkspace();
+    renderLeft(currentPayload);
+
+    collapseAll();
+    setAccOpen("basics", true);
+    setAccOpen("constraints", true);
+
+    setStep("step1","active");
+
+    closeDrawer();
+    setChip("Client loaded","ok");
+    updateDebugPanel();
+  }
+
+  async function generateShortlist(){
+    if(!selectedId) return;
+
+    setChip("Generating shortlist…","warn");
+    setStep("step1","active");
+    setStep("step2","");
+    setStep("step3","");
+
+    el("shortlistArea").innerHTML = `<div style="grid-column:1/-1;color:#6b6b72;font-size:13px;">Generating shortlist…</div>`;
+    lastShortlist = [];
+    selectedTicker = null;
+    selectedStockObj = null;
+    el("selStockPill").textContent = "No stock selected";
+    el("storyBtn").disabled = true;
+    el("bulletsBtn").disabled = true;
+
+    const instruction = el("instruction").value.trim();
+
+    const reqBody = {
+      client_id: selectedId,
+      instruction,
+      max_candidates: 120,
+      max_words: 320
+    };
+
+    const res = await fetch(apiUrl(`/api/shortlist`),{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        ...authHeaders()
+      },
+      body: JSON.stringify(reqBody)
+    });
+
+    lastShortlistReq = reqBody;
+
+    const data = await res.json();
+
+    if(data.error){
+      el("shortlistArea").innerHTML = `<div style="grid-column:1/-1;color:#b91c1c;font-size:13px;">Backend error: ${data.error}</div>`;
+      setChip("Shortlist error","warn");
+      switchTab("debug");
+      updateDebugPanel();
+      return;
+    }
+
+    const list = data.shortlist || [];
+    if(!Array.isArray(list) || !list.length){
+      el("shortlistArea").innerHTML = `<div style="grid-column:1/-1;color:#6b6b72;font-size:13px;">No shortlist returned.</div>`;
+      setChip("No shortlist","warn");
+      return;
+    }
+
+    lastShortlist = list;
+    renderShortlistCards(lastShortlist);
+    if(el("pdfBtn")) el("pdfBtn").disabled = false;
+
+    const top = (data.top_picks || []).map(x => `- ${x}`).join("\n");
+    const notes = (data.notes_for_analyst || []).slice(0,10).map(x => `- ${x}`).join("\n");
+
+    lastExplain =
+`TOP PICKS
+${top || "- —"}
+
+NOTES FOR ANALYST
+${notes || "- —"}
+
+(Per-stock WHY bullets + Evidence are shown inside each card.)`;
+
+    updateExplainPanels();
+    updateDebugPanel();
+
+    setStep("step1","done");
+    setStep("step2","active");
+
+    setChip("Shortlist ready","ok");
+    switchTab("shortlist");
+  }
+
+  function pickStock(idx){
+    const s = lastShortlist[idx];
+    if(!s) return;
+
+    selectedTicker = s.ticker;
+    selectedStockObj = s;
+
+    el("selStockPill").textContent = `Selected: ${selectedTicker}`;
+    document.querySelectorAll(".stockCard").forEach(n => n.classList.remove("active"));
+    const node = document.getElementById(`stk_${idx}`);
+    if(node) node.classList.add("active");
+
+    el("storyBtn").disabled = false;
+    el("bulletsBtn").disabled = false;
+
+    setStep("step2","done");
+    setStep("step3","active");
+
+    updateExplainPanels();
+    updateDebugPanel();
+    setChip("Stock selected","ok");
+    switchTab("output");
+  }
+
+  async function generateStory(mode){
+    if(!selectedId || !selectedTicker) return;
+
+    setChip("Generating output…","warn");
+
+    const instruction = el("instruction").value.trim();
+    const payload = {
+      client_id: selectedId,
+      selected_ticker: selectedTicker,
+      mode: (mode === "BULLETS" ? "BULLETS" : "FULL"),
+      instruction,
+      max_words: (mode === "BULLETS" ? 220 : 280)
+    };
+
+    const res = await fetch(apiUrl(`/api/story_for_stock`),{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        ...authHeaders()
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if(data.error){
+      setChip("Output error","warn");
+      showOutput("Backend error", data.error);
+      updateDebugPanel();
+      return;
+    }
+
+    setChip("Ready","ok");
+    showOutput(
+      payload.mode === "BULLETS" ? `Call Bullets — ${selectedTicker}` : `Sales Story — ${selectedTicker}`,
+      data.story || "(No story returned)"
+    );
+    updateDebugPanel();
+  }
+
+  async function downloadPdf(){
+    if(!selectedId) return;
+    if(!lastShortlistReq){
+      alert("Generate a shortlist first.");
+      return;
+    }
+
+    try{
+      setChip("Preparing PDF…","warn");
+
+      const res = await fetch(apiUrl(`/api/shortlist.pdf`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders()
+        },
+        body: JSON.stringify(lastShortlistReq)
+      });
+
+      const ctype = (res.headers.get("content-type") || "").toLowerCase();
+      if(ctype.includes("application/json")){
+        const data = await res.json();
+        const msg = data?.error || "PDF generation failed";
+        setChip("PDF error","warn");
+        alert(msg);
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      const clientName = (currentPayload?.client?.primary_contact_name || currentPayload?.client?.client_name || "client")
+        .toString().replace(/[^a-z0-9_-]+/gi,"_");
+      const firmName = (currentPayload?.client?.firm_name || "")
+        .toString().replace(/[^a-z0-9_-]+/gi,"_");
+      const fname = `shortlist_${firmName ? firmName + "_" : ""}${clientName}_${selectedId}.pdf`;
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+      setChip("PDF downloaded","ok");
+      setTimeout(()=> setChip("Ready","ok"), 900);
+    }catch(e){
+      setChip("PDF error","warn");
+      alert("PDF download failed. Check API base URL / CORS / backend logs.");
+    }
+  }
+
+  async function copyOut(){
+    if(!lastOut) return;
+    await navigator.clipboard.writeText(lastOut);
+    setChip("Copied","ok");
+    setTimeout(()=> setChip("Ready","ok"), 900);
+  }
+
+  // ===== bindings =====
+  el("searchBtn").addEventListener("click", search);
+  el("q").addEventListener("keydown", (e)=>{ if(e.key==="Enter") search(); });
+
+  el("clearBtn").addEventListener("click", ()=>{
+    el("q").value = "";
+    setChip("No client loaded","warn");
+  });
+
+  el("closeDrawerBtn").addEventListener("click", closeDrawer);
+
+  el("shortlistBtn").addEventListener("click", generateShortlist);
+  el("clearBtn2").addEventListener("click", clearWorkspace);
+
+  el("storyBtn").addEventListener("click", ()=>generateStory("FULL"));
+  el("bulletsBtn").addEventListener("click", ()=>generateStory("BULLETS"));
+  if(el("pdfBtn")) el("pdfBtn").addEventListener("click", downloadPdf);
+
+  el("copyBtn").addEventListener("click", copyOut);
+
+  el("expandAllBtn").addEventListener("click", expandAll);
+  el("collapseAllBtn").addEventListener("click", collapseAll);
+
+  // NEW: API modal bindings
+  el("settingsBtn").addEventListener("click", openModal);
+  el("healthBtn").addEventListener("click", health);
+  el("overlay").addEventListener("click", closeModal);
+  el("closeModalBtn").addEventListener("click", closeModal);
+  el("saveSettingsBtn").addEventListener("click", ()=>{ saveModal(); updateDebugPanel(); });
+  el("clearSettingsBtn").addEventListener("click", ()=>{ clearModal(); updateDebugPanel(); });
+
+  // Expose for inline onclick
+  window.selectClient = selectClient;
+  window.pickStock = pickStock;
+  window.toggleEvidence = toggleEvidence;
+  window.applyHelper = applyHelper;
+  window.toggleAcc = toggleAcc;
+  window.switchTab = switchTab;
+
+  // Init
+  setStep("step1","");
+  setStep("step2","");
+  setStep("step3","");
+  updateDebugPanel();
+
+  // Optional: do a silent health check once
+  // health();
+</script>
+</body>
+</html>
