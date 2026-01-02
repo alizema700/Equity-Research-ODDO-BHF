@@ -16,7 +16,7 @@ ENV_PATH = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path=ENV_PATH, override=True)
 
 from fastapi import FastAPI, Query
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -59,6 +59,19 @@ if os.path.isdir(FRONTEND_DIR):
 async def startup_event():
     """Initialize database tables on startup."""
     await ensure_audit_table()
+
+
+# =========================
+# Root endpoint - serve frontend
+# =========================
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Serve the main frontend."""
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    if os.path.isfile(index_path):
+        return FileResponse(index_path)
+    return HTMLResponse("<h1>Frontend not found</h1><p>Place index.html in frontend/</p>")
 
 
 # =========================
