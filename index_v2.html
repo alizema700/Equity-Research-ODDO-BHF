@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Sales Intelligence Platform</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --bg-dark: #0f172a;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --accent: #dc2626;
+      --accent-light: #fef2f2;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --info: #0ea5e9;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* === HEADER === */
+    .header {
+      background: var(--bg-dark);
+      color: white;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 12px;
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 480px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 16px;
+      padding-left: 40px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.3);
+    }
+
+    .search-input::placeholder { color: rgba(255,255,255,0.5); }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.5);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #b91c1c;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg);
+    }
+
+    .status-chip {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.7);
+    }
+
+    .status-chip.active {
+      background: rgba(22, 163, 98, 0.2);
+      color: #4ade80;
+    }
+
+    /* === LAYOUT === */
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* === SIDEBAR === */
+    .sidebar {
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .client-header {
+      margin-bottom: 20px;
+    }
+
+    .client-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .client-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* === METRIC CARDS === */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .metric-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .metric-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge-high { background: #fef2f2; color: #dc2626; }
+    .badge-medium { background: #fffbeb; color: #d97706; }
+    .badge-low { background: #f0fdf4; color: #16a34a; }
+    .badge-info { background: #f0f9ff; color: #0284c7; }
+
+    /* === EXECUTIVE SUMMARY === */
+    .summary-section {
+      margin-bottom: 20px;
+    }
+
+    .summary-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .summary-card h4 {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summary-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .summary-bullets {
+      list-style: none;
+      font-size: 13px;
+    }
+
+    .summary-bullets li {
+      padding: 6px 0;
+      border-bottom: 1px dashed var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .summary-bullets li:last-child { border-bottom: none; }
+
+    .expand-btn {
+      font-size: 12px;
+      color: var(--accent);
+      cursor: pointer;
+      margin-top: 8px;
+      display: inline-block;
+    }
+
+    .expand-btn:hover { text-decoration: underline; }
+
+    /* === ACTION SIGNAL === */
+    .action-signal {
+      background: linear-gradient(135deg, var(--accent) 0%, #991b1b 100%);
+      color: white;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .action-signal h4 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+      margin-bottom: 6px;
+    }
+
+    .action-signal p {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    /* === MAIN CONTENT === */
+    .main {
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .main-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .main-title {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .main-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* === TABS === */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      width: fit-content;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab.active {
+      background: white;
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* === INSTRUCTION BOX === */
+    .instruction-box {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .instruction-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .instruction-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .quick-prompts {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .quick-prompt {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .quick-prompt:hover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* === STOCK GRID === */
+    .stock-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .stock-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .stock-card:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stock-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .stock-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .stock-ticker {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .stock-name {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .stock-sector {
+      font-size: 11px;
+      padding: 4px 8px;
+      background: var(--bg);
+      border-radius: 4px;
+      color: var(--text-muted);
+    }
+
+    .stock-metrics {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+
+    .stock-metric {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stock-metric-label {
+      color: var(--text-muted);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    .stock-metric-value {
+      font-weight: 700;
+    }
+
+    .stock-reasons {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .stock-reasons li {
+      margin-bottom: 4px;
+      padding-left: 12px;
+      position: relative;
+    }
+
+    .stock-reasons li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+
+    /* === OUTPUT PANEL === */
+    .output-panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .output-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .output-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .output-body {
+      padding: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .output-text {
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    /* === SEARCH RESULTS MODAL === */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      z-index: 200;
+    }
+
+    .modal {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 600px;
+      max-height: 70vh;
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      display: none;
+      z-index: 201;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      max-height: calc(70vh - 60px);
+    }
+
+    .search-result {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .search-result:hover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .search-result-name {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .search-result-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* === EMPTY STATE === */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    /* === LOADING === */
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+
+    /* === DETAILS MODAL === */
+    .details-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .details-section.open { display: block; }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .detail-item {
+      font-size: 13px;
+    }
+
+    .detail-label {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-bottom: 2px;
+    }
+
+    .detail-value {
+      font-weight: 600;
+    }
+
+    /* === HISTORY INDICATOR === */
+    .history-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      background: var(--info);
+      color: white;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">O</div>
+      <span>Sales Intelligence</span>
+    </div>
+
+    <div class="search-box">
+      <span class="search-icon">&#128269;</span>
+      <input
+        type="text"
+        class="search-input"
+        id="searchInput"
+        placeholder="Kunde suchen (Name, Firma, Kontakt)..."
+      />
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-ghost" id="settingsBtn">API</button>
+      <button class="btn btn-ghost" id="healthBtn">Health</button>
+      <span class="status-chip" id="statusChip">Kein Client</span>
+    </div>
+  </header>
+
+  <!-- SEARCH MODAL -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+  <div class="modal" id="searchModal">
+    <div class="modal-header">
+      <span class="modal-title">Suchergebnisse</span>
+      <button class="modal-close" id="closeModal">&times;</button>
+    </div>
+    <div class="modal-body" id="searchResults"></div>
+  </div>
+
+  <!-- MAIN LAYOUT -->
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div id="sidebarContent">
+        <div class="empty-state">
+          <h3>Kein Client geladen</h3>
+          <p>Suche nach einem Client, um zu beginnen.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="main-header">
+        <div>
+          <h1 class="main-title" id="mainTitle">Workspace</h1>
+          <p class="main-subtitle" id="mainSubtitle">Wähle einen Client, um Shortlists und Stories zu generieren.</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" id="generateBtn" disabled>Shortlist generieren</button>
+          <button class="btn btn-secondary" id="pdfBtn" disabled>PDF</button>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs">
+        <button class="tab active" data-tab="shortlist">Shortlist</button>
+        <button class="tab" data-tab="story">Story</button>
+        <button class="tab" data-tab="history">History</button>
+      </div>
+
+      <!-- TAB: SHORTLIST -->
+      <div class="tab-panel active" id="panel-shortlist">
+        <div class="instruction-box">
+          <div class="instruction-label">Anweisung (optional)</div>
+          <textarea
+            class="instruction-input"
+            id="instruction"
+            placeholder="z.B. 'Fokus auf defensive Werte' oder 'Adresse Bedenken aus letztem Call'..."
+          ></textarea>
+          <div class="quick-prompts">
+            <span class="quick-prompt" data-prompt="Diversifiziere weg vom Top-Sektor">Diversifizieren</span>
+            <span class="quick-prompt" data-prompt="Nutze Call-Notes intensiv, adressiere Bedenken">Call-Notes nutzen</span>
+            <span class="quick-prompt" data-prompt="Konservativ, niedrige Volatilität bevorzugen">Konservativ</span>
+            <span class="quick-prompt" data-prompt="Fokus auf Aktien mit hoher Conviction">High Conviction</span>
+          </div>
+        </div>
+
+        <div class="stock-grid" id="stockGrid">
+          <div class="empty-state">
+            <h3>Keine Shortlist</h3>
+            <p>Klicke "Shortlist generieren", um Empfehlungen zu erhalten.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: STORY -->
+      <div class="tab-panel" id="panel-story">
+        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+          <button class="btn btn-primary" id="storyFullBtn" disabled>Story (Vollständig)</button>
+          <button class="btn btn-secondary" id="storyBulletsBtn" disabled>Bullets (Kurzform)</button>
+          <span id="selectedStock" style="margin-left: auto; color: var(--text-muted); font-size: 14px;">
+            Kein Stock ausgewählt
+          </span>
+        </div>
+
+        <div class="output-panel" id="outputPanel" style="display: none;">
+          <div class="output-header">
+            <span class="output-title" id="outputTitle">Output</span>
+            <button class="btn btn-secondary" id="copyBtn">Kopieren</button>
+          </div>
+          <div class="output-body">
+            <div class="output-text" id="outputText"></div>
+          </div>
+        </div>
+
+        <div class="empty-state" id="storyEmpty">
+          <h3>Wähle einen Stock</h3>
+          <p>Klicke auf eine Aktie in der Shortlist und generiere dann eine Story.</p>
+        </div>
+      </div>
+
+      <!-- TAB: HISTORY -->
+      <div class="tab-panel" id="panel-history">
+        <div class="empty-state" id="historyEmpty">
+          <h3>Keine History</h3>
+          <p>Generierte Stories werden hier für Compliance gespeichert.</p>
+        </div>
+        <div id="historyList"></div>
+      </div>
+    </main>
+  </div>
+
+<script>
+// ============================================================================
+// STATE
+// ============================================================================
+let clientId = null;
+let clientData = null;
+let shortlist = [];
+let selectedTicker = null;
+let selectedStock = null;
+let history = [];
+
+// ============================================================================
+// API HELPERS
+// ============================================================================
+function getApiBase() {
+  return localStorage.getItem('api_base') || '';
+}
+
+function apiUrl(path) {
+  const base = getApiBase();
+  return base ? base.replace(/\/+$/, '') + path : path;
+}
+
+function authHeaders() {
+  const key = localStorage.getItem('api_key') || '';
+  return key ? { 'x-api-key': key } : {};
+}
+
+// ============================================================================
+// UI HELPERS
+// ============================================================================
+function $(id) { return document.getElementById(id); }
+function $$(sel) { return document.querySelectorAll(sel); }
+
+function setStatus(text, type = 'default') {
+  const chip = $('statusChip');
+  chip.textContent = text;
+  chip.className = 'status-chip' + (type === 'active' ? ' active' : '');
+}
+
+function showModal() {
+  $('modalOverlay').style.display = 'block';
+  $('searchModal').style.display = 'block';
+}
+
+function hideModal() {
+  $('modalOverlay').style.display = 'none';
+  $('searchModal').style.display = 'none';
+}
+
+function switchTab(tabName) {
+  $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+  $$('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tabName));
+}
+
+function getRiskBadgeClass(level) {
+  if (!level) return 'badge-info';
+  const l = level.toLowerCase();
+  if (l.includes('high') || l.includes('aggressive')) return 'badge-high';
+  if (l.includes('medium') || l.includes('moderate')) return 'badge-medium';
+  return 'badge-low';
+}
+
+// ============================================================================
+// SIDEBAR RENDERING
+// ============================================================================
+function renderSidebar(data) {
+  const client = data.client || {};
+  const profile = data.profile || {};
+  const enhanced = data.enhanced || {};
+  const risk = enhanced.risk_assessment || {};
+  const momentum = enhanced.engagement_momentum || {};
+  const conviction = enhanced.conviction || {};
+  const portfolio = enhanced.portfolio_risk || {};
+
+  const actionSignal = risk.action_signal || 'Normal Engagement';
+  const riskLevel = risk.enhanced_risk_level || profile.risk_appetite || 'Unknown';
+  const engagementTrend = momentum.engagement_trend || 'Unknown';
+  const convictionStock = conviction.top_conviction_stock || '-';
+
+  $('sidebarContent').innerHTML = `
+    <div class="client-header">
+      <div class="client-name">${client.primary_contact_name || client.client_name || 'Unknown'}</div>
+      <div class="client-meta">${client.firm_name || ''} &bull; ${client.client_type || ''} &bull; ${client.region || ''}</div>
+    </div>
+
+    ${actionSignal !== 'Normal Engagement' ? `
+    <div class="action-signal">
+      <h4>Action Signal</h4>
+      <p>${actionSignal}</p>
+    </div>
+    ` : ''}
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Risk Level</div>
+        <div class="metric-value">
+          <span class="metric-badge ${getRiskBadgeClass(riskLevel)}">${riskLevel}</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Engagement</div>
+        <div class="metric-value">
+          <span class="metric-badge ${engagementTrend === 'Accelerating' ? 'badge-high' : engagementTrend === 'Cooling Off' ? 'badge-medium' : 'badge-low'}">${engagementTrend}</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Top Conviction</div>
+        <div class="metric-value" style="font-size: 14px;">${convictionStock}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Portfolio Vol</div>
+        <div class="metric-value" style="font-size: 14px;">${portfolio.portfolio_volatility ? (portfolio.portfolio_volatility * 100).toFixed(1) + '%' : '-'}</div>
+      </div>
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-title">Executive Summary</div>
+
+      <div class="summary-card">
+        <h4>Profil</h4>
+        <ul class="summary-bullets">
+          <li><span>Investment Style</span><span>${profile.investment_style || '-'}</span></li>
+          <li><span>Dominant Topic</span><span>${profile.dominant_topic || '-'}</span></li>
+          <li><span>Engagement Level</span><span>${profile.engagement_level || '-'}</span></li>
+        </ul>
+      </div>
+
+      <div class="summary-card">
+        <h4>Aktivität (30 Tage)</h4>
+        <ul class="summary-bullets">
+          <li><span>Calls</span><span>${momentum.calls_last_30d || 0}</span></li>
+          <li><span>Trades</span><span>${momentum.trades_last_30d || 0}</span></li>
+          <li><span>Buy Ratio</span><span>${momentum.recent_buy_ratio ? (momentum.recent_buy_ratio * 100).toFixed(0) + '%' : '-'}</span></li>
+        </ul>
+      </div>
+
+      <div class="summary-card">
+        <h4>Portfolio</h4>
+        <ul class="summary-bullets">
+          <li><span>Top Sektor</span><span>${data.portfolio_summary?.top_sector || '-'}</span></li>
+          <li><span>Konzentration</span><span>${portfolio.concentration_risk_level || '-'}</span></li>
+          <li><span>Large Positions</span><span>${portfolio.large_positions || 0}</span></li>
+        </ul>
+      </div>
+
+      ${conviction.top_conviction_stock ? `
+      <div class="summary-card">
+        <h4>Conviction: ${conviction.top_conviction_stock}</h4>
+        <ul class="summary-bullets">
+          <li><span>Trade Count</span><span>${conviction.trade_count || 0}</span></li>
+          <li><span>Call Mentions</span><span>${conviction.call_mentions || 0}</span></li>
+          <li><span>Sentiment</span><span>${conviction.sentiment_signal || '-'}</span></li>
+        </ul>
+      </div>
+      ` : ''}
+    </div>
+
+    <div class="summary-section">
+      <div class="summary-title">Avoid Tickers</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+        ${(data.constraints?.avoid_tickers || []).slice(0, 10).map(t => `
+          <span style="padding: 4px 8px; background: #fef2f2; color: #dc2626; border-radius: 4px; font-size: 12px; font-weight: 600;">${t}</span>
+        `).join('') || '<span style="color: var(--text-muted); font-size: 13px;">Keine</span>'}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================================
+// SEARCH
+// ============================================================================
+async function search(query) {
+  if (!query || query.length < 2) return;
+
+  setStatus('Suche...', 'default');
+
+  try {
+    const res = await fetch(apiUrl(`/api/search?q=${encodeURIComponent(query)}&limit=50`), {
+      headers: authHeaders()
+    });
+    const data = await res.json();
+    const results = data.results || [];
+
+    if (results.length === 0) {
+      $('searchResults').innerHTML = '<div class="empty-state"><p>Keine Ergebnisse gefunden.</p></div>';
+    } else {
+      $('searchResults').innerHTML = results.map(r => `
+        <div class="search-result" data-id="${r.client_id}">
+          <div class="search-result-name">${r.primary_contact_name || r.client_name}</div>
+          <div class="search-result-meta">
+            ${r.firm_name} &bull; ${r.client_type || ''} &bull; ${r.region || ''}
+          </div>
+        </div>
+      `).join('');
+
+      $$('.search-result').forEach(el => {
+        el.addEventListener('click', () => loadClient(parseInt(el.dataset.id)));
+      });
+    }
+
+    showModal();
+    setStatus('Wähle Client', 'default');
+  } catch (e) {
+    setStatus('Fehler', 'default');
+    console.error(e);
+  }
+}
+
+// ============================================================================
+// LOAD CLIENT
+// ============================================================================
+async function loadClient(id) {
+  hideModal();
+  setStatus('Lade...', 'default');
+
+  try {
+    const res = await fetch(apiUrl(`/api/client/${id}`), { headers: authHeaders() });
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      setStatus('Fehler', 'default');
+      return;
+    }
+
+    clientId = id;
+    clientData = data;
+    shortlist = [];
+    selectedTicker = null;
+    selectedStock = null;
+
+    renderSidebar(data);
+
+    const client = data.client || {};
+    $('mainTitle').textContent = client.firm_name || 'Workspace';
+    $('mainSubtitle').textContent = `Client: ${client.primary_contact_name || client.client_name}`;
+
+    $('generateBtn').disabled = false;
+    $('stockGrid').innerHTML = '<div class="empty-state"><h3>Bereit</h3><p>Klicke "Shortlist generieren".</p></div>';
+
+    setStatus('Client geladen', 'active');
+  } catch (e) {
+    setStatus('Fehler', 'default');
+    console.error(e);
+  }
+}
+
+// ============================================================================
+// GENERATE SHORTLIST
+// ============================================================================
+async function generateShortlist() {
+  if (!clientId) return;
+
+  setStatus('Generiere...', 'default');
+  $('generateBtn').disabled = true;
+  $('stockGrid').innerHTML = '<div class="loading"><div class="spinner"></div>Generiere Shortlist...</div>';
+
+  const instruction = $('instruction').value.trim();
+
+  try {
+    const res = await fetch(apiUrl('/api/shortlist'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({
+        client_id: clientId,
+        instruction: instruction,
+        max_candidates: 120,
+        max_words: 320
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      $('stockGrid').innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${data.error}</p></div>`;
+      setStatus('Fehler', 'default');
+      $('generateBtn').disabled = false;
+      return;
+    }
+
+    shortlist = data.shortlist || [];
+    renderShortlist(shortlist, data.top_picks || []);
+
+    $('pdfBtn').disabled = false;
+    $('generateBtn').disabled = false;
+    setStatus('Shortlist bereit', 'active');
+
+    // Add to history
+    addToHistory('shortlist', { shortlist: shortlist.map(s => s.ticker), top_picks: data.top_picks });
+
+  } catch (e) {
+    $('stockGrid').innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${e.message}</p></div>`;
+    setStatus('Fehler', 'default');
+    $('generateBtn').disabled = false;
+    console.error(e);
+  }
+}
+
+function renderShortlist(list, topPicks) {
+  if (!list.length) {
+    $('stockGrid').innerHTML = '<div class="empty-state"><h3>Keine Empfehlungen</h3></div>';
+    return;
+  }
+
+  $('stockGrid').innerHTML = list.map((s, i) => {
+    const isTop = topPicks.includes(s.ticker);
+    return `
+      <div class="stock-card ${selectedTicker === s.ticker ? 'selected' : ''}" data-idx="${i}">
+        <div class="stock-header">
+          <div>
+            <div class="stock-ticker">${s.ticker} ${isTop ? '<span style="color: var(--accent);">★</span>' : ''}</div>
+            <div class="stock-name">${s.company_name}</div>
+          </div>
+          <span class="stock-sector">${s.sector || '-'}</span>
+        </div>
+        <div class="stock-metrics">
+          <div class="stock-metric">
+            <span class="stock-metric-label">Close</span>
+            <span class="stock-metric-value">${s.last_close ?? '-'}</span>
+          </div>
+          <div class="stock-metric">
+            <span class="stock-metric-label">Vol 60d</span>
+            <span class="stock-metric-value">${s.vol_60d ? (s.vol_60d * 100).toFixed(1) + '%' : '-'}</span>
+          </div>
+          <div class="stock-metric">
+            <span class="stock-metric-label">Risk</span>
+            <span class="stock-metric-value">${s.vol_bucket || '-'}</span>
+          </div>
+        </div>
+        <ul class="stock-reasons">
+          ${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  }).join('');
+
+  $$('.stock-card').forEach(el => {
+    el.addEventListener('click', () => selectStock(parseInt(el.dataset.idx)));
+  });
+}
+
+function selectStock(idx) {
+  const stock = shortlist[idx];
+  if (!stock) return;
+
+  selectedTicker = stock.ticker;
+  selectedStock = stock;
+
+  $$('.stock-card').forEach((el, i) => el.classList.toggle('selected', i === idx));
+
+  $('selectedStock').textContent = `Ausgewählt: ${stock.ticker}`;
+  $('storyFullBtn').disabled = false;
+  $('storyBulletsBtn').disabled = false;
+  $('storyEmpty').style.display = 'none';
+}
+
+// ============================================================================
+// GENERATE STORY
+// ============================================================================
+async function generateStory(mode) {
+  if (!clientId || !selectedTicker) return;
+
+  setStatus('Generiere Story...', 'default');
+  $('outputPanel').style.display = 'block';
+  $('outputText').textContent = 'Generiere...';
+
+  const instruction = $('instruction').value.trim();
+
+  try {
+    const res = await fetch(apiUrl('/api/story_for_stock'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({
+        client_id: clientId,
+        selected_ticker: selectedTicker,
+        mode: mode,
+        instruction: instruction,
+        max_words: mode === 'BULLETS' ? 220 : 280
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      $('outputText').textContent = 'Fehler: ' + data.error;
+      setStatus('Fehler', 'default');
+      return;
+    }
+
+    $('outputTitle').textContent = mode === 'BULLETS' ? `Bullets - ${selectedTicker}` : `Story - ${selectedTicker}`;
+    $('outputText').textContent = data.story || '(Keine Ausgabe)';
+
+    setStatus('Story bereit', 'active');
+    switchTab('story');
+
+    // Add to history
+    addToHistory('story', { ticker: selectedTicker, mode: mode, story: data.story });
+
+  } catch (e) {
+    $('outputText').textContent = 'Fehler: ' + e.message;
+    setStatus('Fehler', 'default');
+    console.error(e);
+  }
+}
+
+// ============================================================================
+// HISTORY (Local for now)
+// ============================================================================
+function addToHistory(type, data) {
+  const entry = {
+    id: Date.now(),
+    type: type,
+    client_id: clientId,
+    client_name: clientData?.client?.firm_name || 'Unknown',
+    timestamp: new Date().toISOString(),
+    data: data
+  };
+  history.unshift(entry);
+  renderHistory();
+}
+
+function renderHistory() {
+  if (history.length === 0) {
+    $('historyEmpty').style.display = 'block';
+    $('historyList').innerHTML = '';
+    return;
+  }
+
+  $('historyEmpty').style.display = 'none';
+  $('historyList').innerHTML = history.slice(0, 20).map(h => `
+    <div class="summary-card" style="margin-bottom: 12px;">
+      <h4>${h.type === 'shortlist' ? 'Shortlist' : 'Story'} - ${h.client_name}
+        <span class="history-badge">${new Date(h.timestamp).toLocaleString('de-DE')}</span>
+      </h4>
+      <div class="summary-text">
+        ${h.type === 'shortlist'
+          ? `Top Picks: ${h.data.top_picks?.join(', ') || '-'}`
+          : `${h.data.ticker} (${h.data.mode})`
+        }
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================================
+// COPY
+// ============================================================================
+function copyOutput() {
+  const text = $('outputText').textContent;
+  navigator.clipboard.writeText(text);
+  setStatus('Kopiert!', 'active');
+  setTimeout(() => setStatus('Story bereit', 'active'), 1000);
+}
+
+// ============================================================================
+// HEALTH CHECK
+// ============================================================================
+async function healthCheck() {
+  setStatus('Prüfe...', 'default');
+  try {
+    const res = await fetch(apiUrl('/api/health'), { headers: authHeaders() });
+    const data = await res.json();
+    if (data.ok) {
+      setStatus(`OK (${data.clients} Clients)`, 'active');
+    } else {
+      setStatus('Backend Error', 'default');
+    }
+  } catch (e) {
+    setStatus('Offline', 'default');
+  }
+}
+
+// ============================================================================
+// EVENT LISTENERS
+// ============================================================================
+$('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') search(e.target.value);
+});
+
+$('closeModal').addEventListener('click', hideModal);
+$('modalOverlay').addEventListener('click', hideModal);
+
+$('generateBtn').addEventListener('click', generateShortlist);
+$('storyFullBtn').addEventListener('click', () => generateStory('FULL'));
+$('storyBulletsBtn').addEventListener('click', () => generateStory('BULLETS'));
+$('copyBtn').addEventListener('click', copyOutput);
+$('healthBtn').addEventListener('click', healthCheck);
+
+$$('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+$$('.quick-prompt').forEach(el => {
+  el.addEventListener('click', () => {
+    const current = $('instruction').value;
+    $('instruction').value = current ? current + '\n' + el.dataset.prompt : el.dataset.prompt;
+  });
+});
+
+// Settings (simple prompt for now)
+$('settingsBtn').addEventListener('click', () => {
+  const base = prompt('API Base URL (leer = same-origin):', getApiBase());
+  if (base !== null) localStorage.setItem('api_base', base);
+});
+
+// Init
+renderHistory();
+</script>
+</body>
+</html>
