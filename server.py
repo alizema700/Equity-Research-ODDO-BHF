@@ -55,6 +55,12 @@ if os.path.isdir(FRONTEND_DIR):
     app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
 
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup."""
+    await ensure_audit_table()
+
+
 # =========================
 # DB helpers (sqlite3 only)
 # =========================
@@ -106,15 +112,168 @@ async def table_exists(table_name: str) -> bool:
     return bool(row)
 
 
+def _execute_write(sql: str, params: Optional[Dict[str, Any]] = None) -> int:
+    """Execute an INSERT/UPDATE/DELETE and return lastrowid."""
+    params = params or {}
+    conn = _sqlite_connect()
+    try:
+        cur = conn.execute(sql, params)
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+async def execute_write(sql: str, params: Optional[Dict[str, Any]] = None) -> int:
+    return await anyio.to_thread.run_sync(_execute_write, sql, params)
+
+
+# =========================
+# Audit Trail: ai_generation_history table
+# =========================
+
+async def ensure_audit_table():
+    """Create ai_generation_history table if it doesn't exist."""
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS ai_generation_history (
+            generation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER NOT NULL,
+            generation_type TEXT NOT NULL CHECK(generation_type IN ('shortlist', 'story')),
+            model_used TEXT,
+            ticker TEXT,
+            mode TEXT,
+            instruction TEXT,
+            prompt_text TEXT,
+            response_text TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            created_by TEXT DEFAULT 'system'
+        )
+    """)
+    # Index for fast client lookups
+    await execute_write("""
+        CREATE INDEX IF NOT EXISTS idx_gen_history_client
+        ON ai_generation_history(client_id, created_at DESC)
+    """)
+
+
+async def log_generation(
+    client_id: int,
+    generation_type: str,
+    model_used: str,
+    response_text: str,
+    ticker: Optional[str] = None,
+    mode: Optional[str] = None,
+    instruction: Optional[str] = None,
+    prompt_text: Optional[str] = None,
+) -> int:
+    """Save a generation to the audit trail. Returns generation_id."""
+    return await execute_write(
+        """
+        INSERT INTO ai_generation_history
+        (client_id, generation_type, model_used, ticker, mode, instruction, prompt_text, response_text)
+        VALUES (:client_id, :generation_type, :model_used, :ticker, :mode, :instruction, :prompt_text, :response_text)
+        """,
+        {
+            "client_id": client_id,
+            "generation_type": generation_type,
+            "model_used": model_used,
+            "ticker": ticker,
+            "mode": mode,
+            "instruction": instruction,
+            "prompt_text": prompt_text,
+            "response_text": response_text,
+        }
+    )
+
+
+async def get_generation_history(client_id: int, limit: int = 50) -> List[Dict[str, Any]]:
+    """Get generation history for a client."""
+    return await fetch_all(
+        """
+        SELECT
+            generation_id,
+            client_id,
+            generation_type,
+            model_used,
+            ticker,
+            mode,
+            instruction,
+            response_text,
+            created_at,
+            created_by
+        FROM ai_generation_history
+        WHERE client_id = :client_id
+        ORDER BY created_at DESC
+        LIMIT :limit
+        """,
+        {"client_id": client_id, "limit": limit}
+    )
+
+
 # =========================
 # Core data access (matches your schema)
 # =========================
 
 async def search_clients(q: str, limit: int = 20) -> List[Dict[str, Any]]:
-    q_like = f"%{q.strip()}%"
-    # SQLite doesn't support ILIKE; use case-insensitive matching via LOWER(...)
-    return await fetch_all(
-        """
+    """
+    Fuzzy search for clients.
+    - Splits query into terms
+    - Matches each term against multiple fields
+    - Scores by number of matching terms and field priority
+    - Returns sorted by relevance
+    """
+    q = q.strip().lower()
+    if not q:
+        return []
+
+    # Split into terms for fuzzy matching
+    terms = [t.strip() for t in q.split() if t.strip()]
+    if not terms:
+        return []
+
+    # Build dynamic WHERE clause for each term
+    # Each term must match at least one field (AND logic for terms)
+    # Within a term, match any field (OR logic for fields)
+    where_parts = []
+    params = {}
+
+    for i, term in enumerate(terms):
+        term_pattern = f"%{term}%"
+        params[f"t{i}"] = term_pattern
+        where_parts.append(f"""
+            (LOWER(COALESCE(primary_contact_name, '')) LIKE :t{i}
+             OR LOWER(COALESCE(client_name, '')) LIKE :t{i}
+             OR LOWER(COALESCE(firm_name, '')) LIKE :t{i}
+             OR LOWER(COALESCE(region, '')) LIKE :t{i}
+             OR LOWER(COALESCE(client_type, '')) LIKE :t{i})
+        """)
+
+    where_clause = " AND ".join(where_parts)
+
+    # Score calculation for relevance ranking:
+    # - Exact match in primary_contact_name: highest priority
+    # - Starts with term in any field: high priority
+    # - Contains term: lower priority
+    score_parts = []
+    for i, term in enumerate(terms):
+        exact_pattern = term
+        starts_pattern = f"{term}%"
+        params[f"exact{i}"] = exact_pattern
+        params[f"starts{i}"] = starts_pattern
+        score_parts.append(f"""
+            CASE WHEN LOWER(primary_contact_name) = :exact{i} THEN 100 ELSE 0 END +
+            CASE WHEN LOWER(firm_name) = :exact{i} THEN 80 ELSE 0 END +
+            CASE WHEN LOWER(primary_contact_name) LIKE :starts{i} THEN 50 ELSE 0 END +
+            CASE WHEN LOWER(firm_name) LIKE :starts{i} THEN 40 ELSE 0 END +
+            CASE WHEN LOWER(primary_contact_name) LIKE :t{i} THEN 10 ELSE 0 END +
+            CASE WHEN LOWER(firm_name) LIKE :t{i} THEN 8 ELSE 0 END +
+            CASE WHEN LOWER(client_name) LIKE :t{i} THEN 5 ELSE 0 END
+        """)
+
+    score_calc = " + ".join(score_parts)
+    params["limit"] = limit
+
+    sql = f"""
         SELECT
             client_id,
             client_name,
@@ -122,16 +281,15 @@ async def search_clients(q: str, limit: int = 20) -> List[Dict[str, Any]]:
             client_type,
             region,
             primary_contact_name,
-            primary_contact_role
+            primary_contact_role,
+            ({score_calc}) AS relevance_score
         FROM src_clients
-        WHERE LOWER(COALESCE(primary_contact_name, '')) LIKE LOWER(:q)
-           OR LOWER(COALESCE(client_name, '')) LIKE LOWER(:q)
-           OR LOWER(COALESCE(firm_name, '')) LIKE LOWER(:q)
-        ORDER BY firm_name, primary_contact_name
+        WHERE {where_clause}
+        ORDER BY relevance_score DESC, firm_name, primary_contact_name
         LIMIT :limit
-        """,
-        {"q": q_like, "limit": limit},
-    )
+    """
+
+    return await fetch_all(sql, params)
 
 async def get_client_header(client_id: int) -> Dict[str, Any]:
     row = await fetch_one(
@@ -1340,6 +1498,8 @@ async def api_client(client_id: int):
             "signals": ctx.get("signals", {}),
             "holdings": ctx.get("holdings", {}),
             "constraints": ctx.get("constraints", {}),
+            # Enhanced analytics (new views)
+            "enhanced": ctx.get("enhanced", {}),
         }
     except Exception as e:
         return JSONResponse(status_code=200, content={"error": str(e)})
@@ -1437,13 +1597,24 @@ async def api_shortlist(req: ShortlistRequest):
         # Keep only 10
         cleaned = cleaned[:10]
 
+        # Log to audit trail
+        shortlist_text = json.dumps(data, ensure_ascii=False, indent=2)
+        generation_id = await log_generation(
+            client_id=req.client_id,
+            generation_type="shortlist",
+            model_used=OPENAI_MODEL,
+            response_text=shortlist_text,
+            instruction=instruction,
+        )
+
         return {
             "client_id": req.client_id,
             "model": OPENAI_MODEL,
             "shortlist": cleaned,
             "top_picks": top_picks,
             "notes_for_analyst": notes if isinstance(notes, list) else [],
-            "shortlist_text": json.dumps(data, ensure_ascii=False, indent=2),
+            "shortlist_text": shortlist_text,
+            "generation_id": generation_id,
         }
 
     except Exception as e:
@@ -1489,16 +1660,42 @@ async def api_story_for_stock(req: StoryForStockRequest):
 
         story = llm_text(prompt)
 
+        # Log to audit trail
+        generation_id = await log_generation(
+            client_id=req.client_id,
+            generation_type="story",
+            model_used=OPENAI_MODEL,
+            response_text=story,
+            ticker=ticker,
+            mode=(req.mode or "FULL").upper(),
+            instruction=instruction,
+        )
+
         return {
             "client_id": req.client_id,
             "model": OPENAI_MODEL,
             "selected_ticker": ticker,
             "mode": (req.mode or "FULL").upper(),
             "story": story,
+            "generation_id": generation_id,
         }
 
     except Exception as e:
         return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+# =========================
+# History endpoint (audit trail)
+# =========================
+
+@app.get("/api/history/{client_id}")
+async def api_history(client_id: int, limit: int = 50):
+    """Get generation history for a client (for compliance/audit)."""
+    try:
+        history = await get_generation_history(client_id, limit=limit)
+        return {"client_id": client_id, "history": history}
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e), "history": []})
 
 
 # PDF endpoint for shortlist report
