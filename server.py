@@ -1778,9 +1778,9 @@ Your story MUST follow this structure:
    - Preference signals: Use their reading patterns, call discussions, and trade history
 
    EXAMPLES TO INCLUDE:
-   - "You've shown interest in {sector} through your recent trades in {similar_stocks}..."
-   - "This aligns with the {theme} focus you mentioned in your {date} call..."
-   - "Given your {buy_rate}% buy rate in {sector}, this fits your conviction style..."
+   - "You've shown interest in [SECTOR] through your recent trades in [SIMILAR_STOCKS]..."
+   - "This aligns with the [THEME] focus you mentioned in your [DATE] call..."
+   - "Given your [BUY_RATE]% buy rate in [SECTOR], this fits your conviction style..."
 
 4. TIMING & CATALYSTS
    - Why NOW is the right time to act
