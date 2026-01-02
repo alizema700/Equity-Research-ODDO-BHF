@@ -3,65 +3,80 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Sales Intelligence Platform</title>
+  <title>ODDO BHF Sales Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f8fafc;
-      --bg-dark: #0f172a;
+      /* ODDO BHF Corporate Color Scheme */
+      --bg: #F7F4F2;
+      --bg-dark: #003D39;
+      --bg-darker: #182630;
       --card: #ffffff;
-      --border: #e2e8f0;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --accent: #dc2626;
-      --accent-light: #fef2f2;
-      --success: #16a34a;
+      --border: #e5e0dc;
+      --text: #182630;
+      --text-muted: #6b7280;
+      --accent: #003D39;
+      --accent-light: #e8f0ef;
+      --accent-dark: #002825;
+      --accent-red: #cf2014;
+      --success: #55a184;
       --warning: #f59e0b;
-      --info: #0ea5e9;
-      --radius: 12px;
-      --shadow: 0 1px 3px rgba(0,0,0,0.1);
-      --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+      --danger: #cf2014;
+      --info: #9db6c7;
+      --hot: #cf2014;
+      --greige: #F7F2EE;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
+      font-feature-settings: 'cv11', 'ss01';
+      -webkit-font-smoothing: antialiased;
     }
 
     /* === HEADER === */
     .header {
-      background: var(--bg-dark);
-      color: white;
-      padding: 12px 24px;
+      background: white;
+      color: var(--text);
+      padding: 14px 24px;
       display: flex;
       align-items: center;
       gap: 24px;
       position: sticky;
       top: 0;
       z-index: 100;
+      border-bottom: 1px solid var(--border);
     }
 
     .logo {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       font-weight: 700;
-      font-size: 14px;
-      letter-spacing: 0.5px;
+      font-size: 15px;
+      letter-spacing: 0.3px;
+      color: var(--text);
     }
 
     .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: var(--accent);
-      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      background: var(--accent-red);
+      border-radius: 4px;
       display: grid;
       place-items: center;
-      font-weight: 900;
-      font-size: 12px;
+      font-weight: 800;
+      font-size: 10px;
+      color: white;
     }
 
     .search-box {
@@ -74,28 +89,31 @@
       width: 100%;
       padding: 10px 16px;
       padding-left: 40px;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.1);
-      color: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--greige);
+      color: var(--text);
       font-size: 14px;
       outline: none;
       transition: all 0.2s;
     }
 
-    .search-input:focus {
-      background: rgba(255,255,255,0.15);
-      border-color: rgba(255,255,255,0.3);
+    .search-input::placeholder {
+      color: var(--text-muted);
     }
 
-    .search-input::placeholder { color: rgba(255,255,255,0.5); }
+    .search-input:focus {
+      background: white;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
 
     .search-icon {
       position: absolute;
       left: 12px;
       top: 50%;
       transform: translateY(-50%);
-      color: rgba(255,255,255,0.5);
+      color: var(--text-muted);
     }
 
     .header-actions {
@@ -115,12 +133,13 @@
 
     .btn-ghost {
       background: transparent;
-      color: rgba(255,255,255,0.7);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
     }
 
     .btn-ghost:hover {
-      background: rgba(255,255,255,0.1);
-      color: white;
+      background: var(--greige);
+      color: var(--text);
     }
 
     .btn-primary {
@@ -147,13 +166,15 @@
       border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
-      background: rgba(255,255,255,0.1);
-      color: rgba(255,255,255,0.7);
+      background: var(--greige);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
     }
 
     .status-chip.active {
-      background: rgba(22, 163, 98, 0.2);
-      color: #4ade80;
+      background: rgba(85, 161, 132, 0.15);
+      color: var(--success);
+      border-color: var(--success);
     }
 
     /* === LAYOUT === */
@@ -294,7 +315,7 @@
 
     /* === ACTION SIGNAL === */
     .action-signal {
-      background: linear-gradient(135deg, var(--accent) 0%, #991b1b 100%);
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
       color: white;
       border-radius: var(--radius);
       padding: 16px;
@@ -313,6 +334,117 @@
     .action-signal p {
       font-size: 15px;
       font-weight: 600;
+    }
+
+    /* === LEAD SCORE BANNER === */
+    .lead-banner {
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .lead-banner.hot {
+      background: linear-gradient(135deg, #cf2014 0%, #a31810 100%);
+      color: white;
+    }
+
+    .lead-banner.warm {
+      background: linear-gradient(135deg, #55a184 0%, #305f50 100%);
+      color: white;
+    }
+
+    .lead-banner.cold {
+      background: var(--greige);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .lead-score {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lead-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+
+    .lead-value {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .lead-reason {
+      font-size: 11px;
+      text-align: right;
+      opacity: 0.9;
+      max-width: 140px;
+    }
+
+    /* === BUY CHIPS === */
+    .buy-chips, .interest-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .buy-chip {
+      padding: 6px 12px;
+      background: linear-gradient(135deg, #55a184 0%, #305f50 100%);
+      color: white;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .interest-chip {
+      padding: 5px 10px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+    }
+
+    /* === ACTIVITY BAR === */
+    .activity-bar {
+      display: flex;
+      gap: 8px;
+    }
+
+    .activity-item {
+      flex: 1;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .activity-num {
+      display: block;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .activity-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* === BADGE VARIANTS === */
+    .badge-hot {
+      background: var(--hot) !important;
+      color: white !important;
     }
 
     /* === MAIN CONTENT === */
@@ -704,14 +836,216 @@
       border-radius: 4px;
       margin-left: 8px;
     }
+
+    /* === DETAILS DRAWER === */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 300;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .drawer-overlay.open { display: block; opacity: 1; }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -600px;
+      width: 600px;
+      max-width: 90vw;
+      height: 100vh;
+      background: var(--card);
+      box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+      z-index: 301;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .drawer.open { right: 0; }
+
+    .drawer-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .drawer-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .drawer-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 4px 8px;
+    }
+    .drawer-close:hover { color: var(--text); }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .drawer-section {
+      margin-bottom: 24px;
+    }
+
+    .drawer-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .drawer-section-title .count {
+      background: var(--bg);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+
+    /* === TABLE DESIGN FOR DETAILS === */
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .detail-table th {
+      text-align: left;
+      padding: 8px 10px;
+      background: var(--bg-dark);
+      color: white;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+    }
+
+    .detail-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .detail-table tr:hover {
+      background: var(--accent-light);
+    }
+
+    .detail-table .ticker {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .detail-table .date {
+      color: var(--text-muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .detail-table .notes {
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .detail-table .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .detail-table .tag.buy { background: #e0f0ea; color: #305f50; }
+    .detail-table .tag.sell { background: #fce8e6; color: #cf2014; }
+    .detail-table .tag.neutral { background: var(--greige); color: var(--text-muted); }
+
+    .drawer-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 0;
+      background: var(--bg);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .drawer-tab {
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.15s;
+    }
+
+    .drawer-tab:hover { color: var(--text); }
+    .drawer-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .drawer-tab .badge {
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      margin-left: 6px;
+    }
+
+    .drawer-panel { display: none; }
+    .drawer-panel.active { display: block; }
+
+    .details-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 10px;
+      background: var(--bg);
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .details-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
   </style>
 </head>
 <body>
   <!-- HEADER -->
   <header class="header">
     <div class="logo">
-      <div class="logo-icon">O</div>
-      <span>Sales Intelligence</span>
+      <div class="logo-icon">OB</div>
+      <span>ODDO BHF Sales Intelligence</span>
     </div>
 
     <div class="search-box">
@@ -739,6 +1073,18 @@
       <button class="modal-close" id="closeModal">&times;</button>
     </div>
     <div class="modal-body" id="searchResults"></div>
+  </div>
+
+  <!-- DETAILS DRAWER -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <div class="drawer" id="detailsDrawer">
+    <div class="drawer-header">
+      <span class="drawer-title">Client Details</span>
+      <button class="drawer-close" id="closeDrawer">&times;</button>
+    </div>
+    <div class="drawer-body" id="drawerBody">
+      <!-- Content will be rendered by JS -->
+    </div>
   </div>
 
   <!-- MAIN LAYOUT -->
@@ -885,6 +1231,175 @@ function hideModal() {
   $('searchModal').style.display = 'none';
 }
 
+// ============================================================================
+// DETAILS DRAWER
+// ============================================================================
+function openDetailsDrawer() {
+  if (!clientData) return;
+  renderDrawerContent(clientData);
+  $('drawerOverlay').classList.add('open');
+  $('detailsDrawer').classList.add('open');
+}
+
+function closeDetailsDrawer() {
+  $('drawerOverlay').classList.remove('open');
+  $('detailsDrawer').classList.remove('open');
+}
+
+function renderDrawerContent(data) {
+  const signals = data.signals || {};
+  const holdings = data.holdings || {};
+
+  const calls = signals.recent_calls || [];
+  const trades = signals.recent_trades || [];
+  const reads = signals.recent_reads_daysdiff || [];
+  const positions = holdings.top_positions || [];
+  const hints = signals.call_position_hints || [];
+
+  // Tabs + Table Layout
+  let html = `
+    <div class="drawer-tabs">
+      <button class="drawer-tab active" data-panel="calls">Calls <span class="badge">${calls.length}</span></button>
+      <button class="drawer-tab" data-panel="trades">Trades <span class="badge">${trades.length}</span></button>
+      <button class="drawer-tab" data-panel="reads">Reads <span class="badge">${reads.length}</span></button>
+      <button class="drawer-tab" data-panel="positions">Positionen <span class="badge">${positions.length}</span></button>
+      <button class="drawer-tab" data-panel="hints">Hints <span class="badge">${hints.length}</span></button>
+    </div>
+  `;
+
+  // CALLS TABLE
+  html += `
+    <div class="drawer-panel active" id="drawer-calls">
+      <table class="detail-table">
+        <thead>
+          <tr><th>Datum</th><th>Ticker</th><th>Richtung</th><th>Dauer</th><th>Sektor</th><th>Notizen</th></tr>
+        </thead>
+        <tbody>
+          ${calls.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Calls</td></tr>' : ''}
+          ${calls.map(c => `
+            <tr>
+              <td class="date">${c.call_timestamp ? new Date(c.call_timestamp).toLocaleDateString('de-DE') : '-'}</td>
+              <td class="ticker">${c.stock_ticker || c.discussed_company || '-'}</td>
+              <td><span class="tag neutral">${c.direction || '-'}</span></td>
+              <td>${c.duration_minutes ? c.duration_minutes + ' min' : '-'}</td>
+              <td>${c.discussed_sector || '-'}</td>
+              <td class="notes">${c.notes_raw ? c.notes_raw.substring(0, 120) + '...' : '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  // TRADES TABLE
+  html += `
+    <div class="drawer-panel" id="drawer-trades">
+      <table class="detail-table">
+        <thead>
+          <tr><th>Datum</th><th>Ticker</th><th>Seite</th><th>Größe</th><th>Sektor</th><th>Theme</th></tr>
+        </thead>
+        <tbody>
+          ${trades.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Trades</td></tr>' : ''}
+          ${trades.map(t => `
+            <tr>
+              <td class="date">${t.trade_timestamp ? new Date(t.trade_timestamp).toLocaleDateString('de-DE') : '-'}</td>
+              <td class="ticker">${t.ticker || '-'}</td>
+              <td><span class="tag ${t.side?.toLowerCase() === 'buy' ? 'buy' : 'sell'}">${t.side || '-'}</span></td>
+              <td>${t.notional_bucket || '-'}</td>
+              <td>${t.sector || '-'}</td>
+              <td>${t.theme_tag || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  // READS TABLE
+  html += `
+    <div class="drawer-panel" id="drawer-reads">
+      <table class="detail-table">
+        <thead>
+          <tr><th>Gelesen</th><th>Ticker</th><th>Typ</th><th>Sektor</th><th>Verzögerung</th><th>Titel</th></tr>
+        </thead>
+        <tbody>
+          ${reads.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Reads</td></tr>' : ''}
+          ${reads.map(r => `
+            <tr>
+              <td class="date">${r.read_timestamp ? new Date(r.read_timestamp).toLocaleDateString('de-DE') : '-'}</td>
+              <td class="ticker">${r.report_ticker || '-'}</td>
+              <td><span class="tag neutral">${r.report_type || '-'}</span></td>
+              <td>${r.report_sector || '-'}</td>
+              <td>${r.days_diff !== null ? r.days_diff + 'd' : '-'}</td>
+              <td class="notes">${r.report_title || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  // POSITIONS TABLE
+  html += `
+    <div class="drawer-panel" id="drawer-positions">
+      <table class="detail-table">
+        <thead>
+          <tr><th>Ticker</th><th>Name</th><th>Sektor</th><th>Gewicht</th><th>Wert</th><th>Theme</th></tr>
+        </thead>
+        <tbody>
+          ${positions.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Positionen</td></tr>' : ''}
+          ${positions.map(p => `
+            <tr>
+              <td class="ticker">${p.ticker || '-'}</td>
+              <td>${p.company_name || '-'}</td>
+              <td>${p.sector || '-'}</td>
+              <td>${p.weight ? (p.weight * 100).toFixed(1) + '%' : '-'}</td>
+              <td>${p.market_value ? Number(p.market_value).toLocaleString('de-DE') + ' ' + (p.currency || '') : '-'}</td>
+              <td>${p.theme_tag || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  // HINTS TABLE
+  html += `
+    <div class="drawer-panel" id="drawer-hints">
+      <table class="detail-table">
+        <thead>
+          <tr><th>Ticker</th><th>Erwähnungen</th><th>Hold</th><th>Add</th><th>Reduce</th><th>Diversify</th></tr>
+        </thead>
+        <tbody>
+          ${hints.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Hints</td></tr>' : ''}
+          ${hints.map(h => `
+            <tr>
+              <td class="ticker">${h.ticker || '-'}</td>
+              <td>${h.mention_count || 0}</td>
+              <td>${h.holding_hints || '-'}</td>
+              <td>${h.add_hints ? `<span class="tag buy">${h.add_hints}</span>` : '-'}</td>
+              <td>${h.reduce_hints ? `<span class="tag sell">${h.reduce_hints}</span>` : '-'}</td>
+              <td>${h.diversification_hints || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  $('drawerBody').innerHTML = html;
+
+  // Add tab switching
+  $$('.drawer-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $$('.drawer-tab').forEach(t => t.classList.remove('active'));
+      $$('.drawer-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      $('drawer-' + tab.dataset.panel).classList.add('active');
+    });
+  });
+}
+
 function switchTab(tabName) {
   $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
   $$('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tabName));
@@ -905,35 +1420,68 @@ function renderSidebar(data) {
   const client = data.client || {};
   const profile = data.profile || {};
   const enhanced = data.enhanced || {};
+  const signals = data.signals || {};
   const risk = enhanced.risk_assessment || {};
   const momentum = enhanced.engagement_momentum || {};
   const conviction = enhanced.conviction || {};
-  const portfolio = enhanced.portfolio_risk || {};
+  const readership = enhanced.readership_intelligence || {};
 
-  const actionSignal = risk.action_signal || 'Normal Engagement';
-  const riskLevel = risk.enhanced_risk_level || profile.risk_appetite || 'Unknown';
+  // Calculate Sales-relevant metrics
+  const calls30d = momentum.calls_last_30d || 0;
+  const trades30d = momentum.trades_last_30d || 0;
+  const buyRatio = momentum.recent_buy_ratio || 0;
   const engagementTrend = momentum.engagement_trend || 'Unknown';
   const convictionStock = conviction.top_conviction_stock || '-';
+
+  // Lead Score: Hot (active buyer), Warm (engaged), Cold (dormant)
+  let leadScore = 'Cold';
+  let leadClass = 'badge-low';
+  if (calls30d >= 3 && buyRatio > 0.6) {
+    leadScore = 'Hot';
+    leadClass = 'badge-hot';
+  } else if (calls30d >= 1 || trades30d >= 2) {
+    leadScore = 'Warm';
+    leadClass = 'badge-medium';
+  }
+
+  // Last Contact (from recent calls)
+  const recentCalls = signals.recent_calls || [];
+  const lastCallDate = recentCalls.length > 0 && recentCalls[0].call_timestamp
+    ? new Date(recentCalls[0].call_timestamp).toLocaleDateString('de-DE')
+    : 'Kein Kontakt';
+
+  // Recent Buys (from trades)
+  const recentTrades = signals.recent_trades || [];
+  const recentBuys = recentTrades.filter(t => t.side?.toLowerCase() === 'buy').slice(0, 3);
+
+  // Top Read Sectors
+  const recentReads = signals.recent_reads_daysdiff || [];
+  const readSectors = [...new Set(recentReads.map(r => r.report_sector).filter(Boolean))].slice(0, 3);
 
   $('sidebarContent').innerHTML = `
     <div class="client-header">
       <div class="client-name">${client.primary_contact_name || client.client_name || 'Unknown'}</div>
-      <div class="client-meta">${client.firm_name || ''} &bull; ${client.client_type || ''} &bull; ${client.region || ''}</div>
+      <div class="client-meta">${client.firm_name || ''} · ${client.client_type || ''} · ${client.region || ''}</div>
     </div>
 
-    ${actionSignal !== 'Normal Engagement' ? `
-    <div class="action-signal">
-      <h4>Action Signal</h4>
-      <p>${actionSignal}</p>
+    <!-- LEAD SCORE BANNER -->
+    <div class="lead-banner ${leadScore.toLowerCase()}">
+      <div class="lead-score">
+        <span class="lead-label">Lead Score</span>
+        <span class="lead-value">${leadScore}</span>
+      </div>
+      <div class="lead-reason">
+        ${leadScore === 'Hot' ? 'Aktiver Käufer, hohes Engagement' :
+          leadScore === 'Warm' ? 'Regelmäßiger Kontakt' :
+          'Wenig Aktivität'}
+      </div>
     </div>
-    ` : ''}
 
+    <!-- KEY SALES METRICS -->
     <div class="metrics-grid">
       <div class="metric-card">
-        <div class="metric-label">Risk Level</div>
-        <div class="metric-value">
-          <span class="metric-badge ${getRiskBadgeClass(riskLevel)}">${riskLevel}</span>
-        </div>
+        <div class="metric-label">Letzter Kontakt</div>
+        <div class="metric-value" style="font-size: 13px;">${lastCallDate}</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Engagement</div>
@@ -942,35 +1490,67 @@ function renderSidebar(data) {
         </div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Top Conviction</div>
-        <div class="metric-value" style="font-size: 14px;">${convictionStock}</div>
+        <div class="metric-label">Buy Signal</div>
+        <div class="metric-value">
+          <span class="metric-badge ${buyRatio > 0.6 ? 'badge-high' : buyRatio > 0.3 ? 'badge-medium' : 'badge-low'}">${buyRatio > 0.6 ? 'Bullish' : buyRatio > 0.3 ? 'Neutral' : 'Bearish'}</span>
+        </div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Portfolio Vol</div>
-        <div class="metric-value" style="font-size: 14px;">${portfolio.portfolio_volatility ? (portfolio.portfolio_volatility * 100).toFixed(1) + '%' : '-'}</div>
+        <div class="metric-label">Top Conviction</div>
+        <div class="metric-value" style="font-size: 13px; color: var(--accent);">${convictionStock}</div>
+      </div>
+    </div>
+
+    <!-- RECENT BUYS -->
+    ${recentBuys.length > 0 ? `
+    <div class="summary-section">
+      <div class="summary-title">Aktuelle Käufe</div>
+      <div class="buy-chips">
+        ${recentBuys.map(b => `
+          <span class="buy-chip">${b.ticker || '-'}</span>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- READ INTERESTS -->
+    ${readSectors.length > 0 ? `
+    <div class="summary-section">
+      <div class="summary-title">Liest über</div>
+      <div class="interest-chips">
+        ${readSectors.map(s => `<span class="interest-chip">${s}</span>`).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <div class="summary-section">
+      <div class="summary-title">Profil</div>
+      <div class="summary-card">
+        <ul class="summary-bullets">
+          <li><span>Investment Style</span><span>${profile.investment_style || '-'}</span></li>
+          <li><span>Risk Appetite</span><span>${profile.risk_appetite || '-'}</span></li>
+          <li><span>Fokus</span><span>${profile.dominant_topic || '-'}</span></li>
+        </ul>
       </div>
     </div>
 
     <div class="summary-section">
-      <div class="summary-title">Executive Summary</div>
-
-      <div class="summary-card">
-        <h4>Profil</h4>
-        <ul class="summary-bullets">
-          <li><span>Investment Style</span><span>${profile.investment_style || '-'}</span></li>
-          <li><span>Dominant Topic</span><span>${profile.dominant_topic || '-'}</span></li>
-          <li><span>Engagement Level</span><span>${profile.engagement_level || '-'}</span></li>
-        </ul>
+      <div class="summary-title">Aktivität (30d)</div>
+      <div class="activity-bar">
+        <div class="activity-item">
+          <span class="activity-num">${calls30d}</span>
+          <span class="activity-label">Calls</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-num">${trades30d}</span>
+          <span class="activity-label">Trades</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-num">${recentReads.length}</span>
+          <span class="activity-label">Reads</span>
+        </div>
       </div>
-
-      <div class="summary-card">
-        <h4>Aktivität (30 Tage)</h4>
-        <ul class="summary-bullets">
-          <li><span>Calls</span><span>${momentum.calls_last_30d || 0}</span></li>
-          <li><span>Trades</span><span>${momentum.trades_last_30d || 0}</span></li>
-          <li><span>Buy Ratio</span><span>${momentum.recent_buy_ratio ? (momentum.recent_buy_ratio * 100).toFixed(0) + '%' : '-'}</span></li>
-        </ul>
-      </div>
+    </div>
 
       <div class="summary-card">
         <h4>Portfolio</h4>
@@ -1001,6 +1581,10 @@ function renderSidebar(data) {
         `).join('') || '<span style="color: var(--text-muted); font-size: 13px;">Keine</span>'}
       </div>
     </div>
+
+    <button class="details-btn" onclick="openDetailsDrawer()">
+      Alle Details anzeigen (Calls, Trades, Reads, Positionen...)
+    </button>
   `;
 }
 
@@ -1348,6 +1932,9 @@ $('searchInput').addEventListener('keydown', e => {
 
 $('closeModal').addEventListener('click', hideModal);
 $('modalOverlay').addEventListener('click', hideModal);
+
+$('closeDrawer').addEventListener('click', closeDetailsDrawer);
+$('drawerOverlay').addEventListener('click', closeDetailsDrawer);
 
 $('generateBtn').addEventListener('click', generateShortlist);
 $('storyFullBtn').addEventListener('click', () => generateStory('FULL'));
