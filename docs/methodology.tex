@@ -1,0 +1,652 @@
+\documentclass[11pt,a4paper]{article}
+
+% ============================================================================
+% PACKAGES
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning}
+
+\geometry{margin=2.5cm}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+
+% ============================================================================
+% DOCUMENT METADATA
+% ============================================================================
+\title{\textbf{ODDO BHF Sales Intelligence Platform} \\
+       \Large Methodology Documentation \\
+       \large Derived Data \& Statistical Calculations}
+\author{Technical Documentation}
+\date{Version 1.0 -- \today}
+
+% ============================================================================
+% HEADER/FOOTER
+% ============================================================================
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{ODDO BHF Sales Intelligence}
+\fancyhead[R]{Methodology Documentation}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ============================================================================
+% SECTION 1: EXECUTIVE SUMMARY
+% ============================================================================
+\section{Executive Summary}
+
+This document provides complete technical documentation for all derived metrics,
+statistical calculations, and classification algorithms used in the ODDO BHF
+Sales Intelligence Platform. Every formula, weight, and threshold is documented
+to ensure transparency, auditability, and regulatory compliance.
+
+\subsection{Data Sources}
+The platform derives intelligence from the following source tables:
+\begin{itemize}
+    \item \texttt{src\_clients} -- Client master data
+    \item \texttt{src\_trade\_executions} -- Historical trade records
+    \item \texttt{src\_call\_logs} -- Sales call records with notes
+    \item \texttt{src\_readership\_events} -- Report reading behavior
+    \item \texttt{src\_positions} -- Portfolio positions
+    \item \texttt{src\_portfolio\_snapshots} -- Point-in-time portfolio states
+    \item \texttt{src\_reports} -- Research report metadata
+    \item \texttt{src\_stocks} -- Stock universe
+\end{itemize}
+
+% ============================================================================
+% SECTION 2: RISK PROFILING
+% ============================================================================
+\section{Multi-Factor Risk Profiling}
+
+\subsection{Overview}
+Risk profiling uses a weighted multi-factor model combining:
+\begin{enumerate}
+    \item Investor Type (structural)
+    \item Trading Behavior (behavioral)
+    \item Position Concentration (portfolio-based)
+\end{enumerate}
+
+\subsection{Factor 1: Investor Type Risk Score}
+
+The investor type provides a base risk score reflecting institutional mandates:
+
+\begin{equation}
+R_{type} = f(\text{client\_type})
+\end{equation}
+
+\begin{table}[h]
+\centering
+\caption{Investor Type Risk Scores}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Client Type} & \textbf{Risk Score} & \textbf{Rationale} \\
+\midrule
+Hedge Fund & 0.85 & Aggressive mandates, alpha-seeking \\
+Family Office & 0.65 & Flexible, often growth-oriented \\
+Asset Manager & 0.55 & Benchmark-relative, moderate \\
+Private Bank & 0.50 & Client-dependent, mixed \\
+Sovereign Wealth & 0.45 & Long-term, diversified \\
+Insurance & 0.35 & Liability-matching, conservative \\
+Pension Fund & 0.30 & Regulatory constraints, conservative \\
+Other/Unknown & 0.50 & Default moderate assumption \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Factor 2: Trading Behavior Risk Score}
+
+Trading activity over the past 180 days indicates risk tolerance:
+
+\begin{equation}
+R_{trading} = \begin{cases}
+0.75 & \text{if } N_{trades} > 50 \\
+0.55 & \text{if } N_{trades} > 20 \\
+0.40 & \text{if } N_{trades} > 5 \\
+0.25 & \text{otherwise}
+\end{cases}
+\end{equation}
+
+where $N_{trades}$ = count of trades in the past 180 days.
+
+\textbf{Rationale:} Higher turnover indicates comfort with market volatility
+and willingness to act on opportunities.
+
+\subsection{Factor 3: Position Concentration Risk Score}
+
+Maximum position weight indicates concentration tolerance:
+
+\begin{equation}
+R_{position} = \begin{cases}
+0.70 & \text{if } w_{max} > 0.15 \\
+0.50 & \text{if } w_{max} > 0.08 \\
+0.35 & \text{otherwise}
+\end{cases}
+\end{equation}
+
+where $w_{max}$ = maximum single position weight in the portfolio.
+
+\textbf{Rationale:} Large concentrated positions indicate high conviction
+and tolerance for idiosyncratic risk.
+
+\subsection{Composite Risk Score}
+
+The final composite risk score combines all factors with the following weights:
+
+\begin{equation}
+R_{composite} = 0.40 \cdot R_{type} + 0.35 \cdot R_{trading} + 0.25 \cdot R_{position}
+\end{equation}
+
+\textbf{Weight Justification:}
+\begin{itemize}
+    \item \textbf{Investor Type (40\%):} Structural factor reflecting institutional mandates
+    \item \textbf{Trading Behavior (35\%):} Revealed preference through actual behavior
+    \item \textbf{Position Concentration (25\%):} Portfolio construction choices
+\end{itemize}
+
+\subsection{Risk Category Classification}
+
+\begin{equation}
+\text{Risk Category} = \begin{cases}
+\text{Aggressive} & \text{if } R_{composite} \geq 0.60 \\
+\text{Moderate} & \text{if } R_{composite} \geq 0.42 \\
+\text{Conservative} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+% ============================================================================
+% SECTION 3: ENGAGEMENT MOMENTUM
+% ============================================================================
+\section{Engagement Momentum Analysis}
+
+\subsection{Overview}
+Engagement momentum compares client activity in the recent 30 days versus
+the prior 30 days to identify accelerating or declining engagement.
+
+\subsection{Call Momentum}
+
+\begin{equation}
+M_{calls} = \frac{N_{calls,30d}}{N_{calls,prior30d}}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $N_{calls,30d}$ = Number of calls in the last 30 days
+    \item $N_{calls,prior30d}$ = Number of calls in days 31-60
+\end{itemize}
+
+\subsection{Trade Momentum}
+
+\begin{equation}
+M_{trades} = \frac{N_{trades,30d}}{N_{trades,prior30d}}
+\end{equation}
+
+\subsection{Recent Buy Ratio}
+
+\begin{equation}
+R_{buy} = \frac{N_{buys,30d}}{N_{trades,30d}}
+\end{equation}
+
+This indicates directional bias (bullish if $R_{buy} > 0.6$, bearish if $R_{buy} < 0.4$).
+
+\subsection{Engagement Score (30 days)}
+
+\begin{equation}
+E_{30d} = 0.1 \cdot T_{call\_duration} + 2.0 \cdot N_{trades,30d} + 5.0 \cdot N_{large\_trades}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $T_{call\_duration}$ = Total call duration in minutes
+    \item $N_{large\_trades}$ = Count of trades with notional\_bucket = 'Large'
+\end{itemize}
+
+\subsection{Engagement Trend Classification}
+
+\begin{equation}
+\text{Trend} = \begin{cases}
+\text{Accelerating} & \text{if } N_{calls,30d} > 1.5 \cdot N_{calls,prior} \text{ OR } N_{trades,30d} > 1.5 \cdot N_{trades,prior} \\
+\text{Cooling Off} & \text{if } N_{calls,30d} < 0.5 \cdot N_{calls,prior} \text{ AND } N_{trades,30d} < 0.5 \cdot N_{trades,prior} \\
+\text{Dormant} & \text{if } N_{calls,30d} = 0 \text{ AND } N_{trades,30d} = 0 \\
+\text{Stable} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+% ============================================================================
+% SECTION 4: PORTFOLIO RISK METRICS
+% ============================================================================
+\section{Portfolio Risk Metrics}
+
+\subsection{Portfolio Volatility (Weighted Average)}
+
+Using the latest portfolio snapshot:
+
+\begin{equation}
+\sigma_{portfolio} = \sum_{i=1}^{n} w_i \cdot \sigma_i
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $w_i$ = Weight of position $i$
+    \item $\sigma_i$ = 60-day volatility of stock $i$ (defaulting to 0.25 if unavailable)
+\end{itemize}
+
+\textbf{Note:} This is a simplified linear approximation. A full variance-covariance
+approach would require correlation data.
+
+\subsection{Concentration Metrics}
+
+\textbf{Maximum Position Weight:}
+\begin{equation}
+w_{max} = \max_{i} (w_i)
+\end{equation}
+
+\textbf{Large Position Count:}
+\begin{equation}
+N_{large} = \sum_{i=1}^{n} \mathbb{1}[w_i > 0.10]
+\end{equation}
+
+\subsection{Risk Level Classification}
+
+\textbf{Volatility Risk:}
+\begin{equation}
+\text{Vol Risk} = \begin{cases}
+\text{High} & \text{if } \sigma_{portfolio} \geq 0.25 \\
+\text{Medium} & \text{if } \sigma_{portfolio} \geq 0.15 \\
+\text{Low} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\textbf{Concentration Risk:}
+\begin{equation}
+\text{Conc Risk} = \begin{cases}
+\text{Concentrated} & \text{if } w_{max} \geq 0.20 \\
+\text{Moderate} & \text{if } w_{max} \geq 0.10 \\
+\text{Diversified} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+% ============================================================================
+% SECTION 5: CONVICTION ANALYSIS
+% ============================================================================
+\section{Conviction Analysis}
+
+\subsection{Trade Focus Share}
+
+For each stock traded by a client:
+
+\begin{equation}
+\text{Focus Share}_i = \frac{N_{trades,i}}{\sum_j N_{trades,j}}
+\end{equation}
+
+\subsection{Net Direction}
+
+\begin{equation}
+D_{net,i} = N_{buys,i} - N_{sells,i}
+\end{equation}
+
+\textbf{Interpretation:}
+\begin{itemize}
+    \item $D_{net} > 0$: Accumulating
+    \item $D_{net} < 0$: Reducing
+    \item $D_{net} = 0$: Neutral/Rotating
+\end{itemize}
+
+\subsection{Conviction Level Classification}
+
+Based on the top conviction stock (highest trade count):
+
+\begin{equation}
+\text{Conviction Level} = \begin{cases}
+\text{Very High} & \text{if Focus Share} \geq 0.25 \\
+\text{High} & \text{if Focus Share} \geq 0.15 \\
+\text{Moderate} & \text{if Focus Share} \geq 0.08 \\
+\text{Diversified} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+% ============================================================================
+% SECTION 6: READERSHIP INTELLIGENCE
+% ============================================================================
+\section{Readership Intelligence}
+
+\subsection{Days Diff (Reading Latency)}
+
+For each report read:
+
+\begin{equation}
+\Delta t_{read} = t_{read} - t_{publish}
+\end{equation}
+
+where times are in days.
+
+\subsection{Read Velocity Score}
+
+\begin{equation}
+V_{read} = \frac{1}{1 + \bar{\Delta t}_{read}}
+\end{equation}
+
+Range: $(0, 1]$ where higher values indicate faster reading.
+
+\subsection{Reader Classification}
+
+\textbf{Speed Type:}
+\begin{equation}
+\text{Speed} = \begin{cases}
+\text{Immediate} & \text{if } \bar{\Delta t} \leq 1 \\
+\text{Fast} & \text{if } \bar{\Delta t} \leq 3 \\
+\text{Normal} & \text{if } \bar{\Delta t} \leq 7 \\
+\text{Slow} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\textbf{Breadth Type:}
+\begin{equation}
+\text{Breadth} = \begin{cases}
+\text{Generalist} & \text{if unique sectors read} \geq 8 \\
+\text{Multi-Sector} & \text{if unique sectors read} \geq 4 \\
+\text{Specialist} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\subsection{Readership Quality Score}
+
+\begin{equation}
+Q_{read} = 0.3 \cdot N_{reads} + 50 \cdot V_{read} + 2 \cdot N_{sectors}
+\end{equation}
+
+% ============================================================================
+% SECTION 7: INVESTMENT STYLE CLASSIFICATION
+% ============================================================================
+\section{Investment Style Classification}
+
+\subsection{Style Determination Algorithm}
+
+The primary investment style is inferred from trading patterns:
+
+\begin{algorithm}[H]
+\caption{Investment Style Classification}
+\begin{algorithmic}[1]
+\If{$\frac{N_{ESG}}{N_{total}} > 0.30$}
+    \State \Return ``ESG-Focus''
+\ElsIf{$\frac{N_{Tech} + N_{AI}}{N_{total}} > 0.40$}
+    \State \Return ``Growth''
+\ElsIf{$\frac{N_{Financials}}{N_{total}} > 0.30$}
+    \State \Return ``Value''
+\Else
+    \State \Return ``Diversified''
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Theme Affinity}
+
+A client has theme affinity if they have more than 5 trades in that theme:
+
+\begin{equation}
+\text{Theme Affinity} = \begin{cases}
+\text{AI} & \text{if } N_{AI} > 5 \\
+\text{EnergyTransition} & \text{if } N_{Energy} > 5 \\
+\text{ESG} & \text{if } N_{ESG} > 5 \\
+\text{None} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+% ============================================================================
+% SECTION 8: LEAD SCORING
+% ============================================================================
+\section{Lead Scoring for Sales Prioritization}
+
+\subsection{Lead Score Classification}
+
+Used in the frontend to prioritize sales outreach:
+
+\begin{equation}
+\text{Lead Score} = \begin{cases}
+\text{Hot} & \text{if } N_{calls,30d} \geq 3 \text{ AND } R_{buy} > 0.6 \\
+\text{Warm} & \text{if } N_{calls,30d} \geq 1 \text{ OR } N_{trades,30d} \geq 2 \\
+\text{Cold} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\textbf{Interpretation:}
+\begin{itemize}
+    \item \textbf{Hot:} Active buyer with high engagement -- prioritize
+    \item \textbf{Warm:} Regular contact, potential opportunity
+    \item \textbf{Cold:} Low activity, may need re-engagement campaign
+\end{itemize}
+
+% ============================================================================
+% SECTION 9: SHORTLIST GENERATION
+% ============================================================================
+\section{AI-Powered Shortlist Generation}
+
+\subsection{Candidate Universe Construction}
+
+The candidate universe is built from:
+\begin{enumerate}
+    \item All stocks in \texttt{src\_stocks}
+    \item Filtered by availability (market cap, liquidity)
+    \item Enriched with market data
+\end{enumerate}
+
+\subsection{Constraint Application}
+
+\textbf{Avoid Tickers:} Stocks to exclude from recommendations:
+\begin{itemize}
+    \item Current holdings (already owned)
+    \item Recent sells (may indicate negative view)
+    \item Compliance restrictions
+\end{itemize}
+
+\subsection{AI Ranking Factors}
+
+The LLM considers:
+\begin{enumerate}
+    \item \textbf{Risk Alignment:} Match stock volatility to client risk profile
+    \item \textbf{Sector Fit:} Diversification vs. concentration preference
+    \item \textbf{Theme Relevance:} Match to reading/trading interests
+    \item \textbf{Recent Signals:} Call notes, position hints
+    \item \textbf{Timing:} Engagement momentum
+\end{enumerate}
+
+% ============================================================================
+% SECTION 10: DATA QUALITY & CONFIDENCE
+% ============================================================================
+\section{Data Quality \& Confidence Scoring}
+
+\subsection{Profile Confidence}
+
+\begin{equation}
+\text{Confidence} = \begin{cases}
+\text{High} & \text{if } N_{trades} > 20 \text{ AND positions available} \\
+\text{Medium} & \text{if } N_{trades} > 5 \text{ OR positions available} \\
+\text{Low} & \text{otherwise}
+\end{cases}
+\end{equation}
+
+\subsection{Data Freshness}
+
+All time-based calculations use:
+\begin{itemize}
+    \item Recent window: 30 days
+    \item Extended window: 60 days (for momentum comparison)
+    \item Historical window: 180 days (for behavioral patterns)
+\end{itemize}
+
+% ============================================================================
+% SECTION 11: APPENDIX - SQL IMPLEMENTATIONS
+% ============================================================================
+\section{Appendix A: View Definitions}
+
+\subsection{Multi-Factor Risk Profile View}
+
+\begin{lstlisting}[language=SQL, basicstyle=\small\ttfamily, breaklines=true]
+CREATE VIEW int_client_risk_multifactor AS
+WITH investor_type_risk AS (
+    SELECT client_id, client_type,
+        CASE client_type
+            WHEN 'Hedge Fund' THEN 0.85
+            WHEN 'Family Office' THEN 0.65
+            WHEN 'Asset Manager' THEN 0.55
+            WHEN 'Insurance' THEN 0.35
+            WHEN 'Pension Fund' THEN 0.30
+            ELSE 0.50
+        END AS type_risk_score
+    FROM src_clients
+),
+trading_behavior AS (
+    SELECT client_id, COUNT(*) AS trade_count,
+        CASE
+            WHEN COUNT(*) > 50 THEN 0.75
+            WHEN COUNT(*) > 20 THEN 0.55
+            WHEN COUNT(*) > 5 THEN 0.40
+            ELSE 0.25
+        END AS turnover_risk_score
+    FROM src_trade_executions
+    WHERE julianday('now') - julianday(trade_timestamp) <= 180
+    GROUP BY client_id
+)
+SELECT c.client_id,
+    ROUND(
+        0.40 * COALESCE(itr.type_risk_score, 0.50) +
+        0.35 * COALESCE(tb.turnover_risk_score, 0.40) +
+        0.25 * COALESCE(pos.position_risk_score, 0.40),
+        3
+    ) AS composite_risk_score
+FROM src_clients c
+LEFT JOIN investor_type_risk itr ON itr.client_id = c.client_id
+LEFT JOIN trading_behavior tb ON tb.client_id = c.client_id;
+\end{lstlisting}
+
+% ============================================================================
+% SECTION 12: APPENDIX - WEIGHT RATIONALE
+% ============================================================================
+\section{Appendix B: Weight Selection Rationale}
+
+\subsection{Risk Factor Weights}
+
+\begin{table}[h]
+\centering
+\caption{Risk Factor Weight Justification}
+\begin{tabular}{lcp{8cm}}
+\toprule
+\textbf{Factor} & \textbf{Weight} & \textbf{Rationale} \\
+\midrule
+Investor Type & 40\% & Structural factor that reflects institutional mandates and regulatory constraints. Hedge funds have fundamentally different risk mandates than pension funds. \\
+Trading Behavior & 35\% & Revealed preference through actual market behavior. High turnover indicates comfort with volatility. \\
+Position Size & 25\% & Portfolio construction choice that shows concentration tolerance. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Engagement Score Weights}
+
+\begin{table}[h]
+\centering
+\caption{Engagement Score Component Weights}
+\begin{tabular}{lcp{8cm}}
+\toprule
+\textbf{Component} & \textbf{Weight} & \textbf{Rationale} \\
+\midrule
+Call Duration & 0.1 per min & Longer calls indicate deeper engagement \\
+Trade Count & 2.0 per trade & Each trade is a significant action \\
+Large Trades & 5.0 per trade & Large trades show high conviction \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================================
+% SECTION 13: APPENDIX - THRESHOLD SUMMARY
+% ============================================================================
+\section{Appendix C: Classification Thresholds}
+
+\begin{longtable}{llp{6cm}}
+\caption{Complete Threshold Reference} \\
+\toprule
+\textbf{Metric} & \textbf{Threshold} & \textbf{Classification} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{c}{\tablename\ \thetable\ -- \textit{Continued from previous page}} \\
+\toprule
+\textbf{Metric} & \textbf{Threshold} & \textbf{Classification} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\textit{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+Composite Risk Score & $\geq 0.60$ & Aggressive \\
+Composite Risk Score & $\geq 0.42$ & Moderate \\
+Composite Risk Score & $< 0.42$ & Conservative \\
+\midrule
+Portfolio Volatility & $\geq 0.25$ & High Risk \\
+Portfolio Volatility & $\geq 0.15$ & Medium Risk \\
+Portfolio Volatility & $< 0.15$ & Low Risk \\
+\midrule
+Max Position Weight & $\geq 0.20$ & Concentrated \\
+Max Position Weight & $\geq 0.10$ & Moderate \\
+Max Position Weight & $< 0.10$ & Diversified \\
+\midrule
+Conviction Focus Share & $\geq 0.25$ & Very High \\
+Conviction Focus Share & $\geq 0.15$ & High \\
+Conviction Focus Share & $\geq 0.08$ & Moderate \\
+Conviction Focus Share & $< 0.08$ & Diversified \\
+\midrule
+Read Delay (days) & $\leq 1$ & Immediate Reader \\
+Read Delay (days) & $\leq 3$ & Fast Reader \\
+Read Delay (days) & $\leq 7$ & Normal Reader \\
+Read Delay (days) & $> 7$ & Slow Reader \\
+\midrule
+Sector Breadth & $\geq 8$ & Generalist \\
+Sector Breadth & $\geq 4$ & Multi-Sector \\
+Sector Breadth & $< 4$ & Specialist \\
+\midrule
+Trade Count (180d) & $> 50$ & Very Active \\
+Trade Count (180d) & $> 20$ & Active \\
+Trade Count (180d) & $> 5$ & Moderate \\
+Trade Count (180d) & $\leq 5$ & Low Activity \\
+\midrule
+Calls (30d) for Hot Lead & $\geq 3$ & (with buy ratio $> 0.6$) \\
+Buy Ratio for Hot Lead & $> 0.6$ & (with calls $\geq 3$) \\
+\end{longtable}
+
+% ============================================================================
+% SECTION 14: VERSION HISTORY
+% ============================================================================
+\section{Version History}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llp{8cm}}
+\toprule
+\textbf{Version} & \textbf{Date} & \textbf{Changes} \\
+\midrule
+1.0 & \today & Initial documentation of all derived metrics \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -1054,14 +1054,14 @@
         type="text"
         class="search-input"
         id="searchInput"
-        placeholder="Kunde suchen (Name, Firma, Kontakt)..."
+        placeholder="Search client (name, firm, contact)..."
       />
     </div>
 
     <div class="header-actions">
       <button class="btn btn-ghost" id="settingsBtn">API</button>
       <button class="btn btn-ghost" id="healthBtn">Health</button>
-      <span class="status-chip" id="statusChip">Kein Client</span>
+      <span class="status-chip" id="statusChip">No Client</span>
     </div>
   </header>
 
@@ -1069,7 +1069,7 @@
   <div class="modal-overlay" id="modalOverlay"></div>
   <div class="modal" id="searchModal">
     <div class="modal-header">
-      <span class="modal-title">Suchergebnisse</span>
+      <span class="modal-title">Search Results</span>
       <button class="modal-close" id="closeModal">&times;</button>
     </div>
     <div class="modal-body" id="searchResults"></div>
@@ -1093,8 +1093,8 @@
     <aside class="sidebar" id="sidebar">
       <div id="sidebarContent">
         <div class="empty-state">
-          <h3>Kein Client geladen</h3>
-          <p>Suche nach einem Client, um zu beginnen.</p>
+          <h3>No Client Loaded</h3>
+          <p>Search for a client to get started.</p>
         </div>
       </div>
     </aside>
@@ -1104,10 +1104,10 @@
       <div class="main-header">
         <div>
           <h1 class="main-title" id="mainTitle">Workspace</h1>
-          <p class="main-subtitle" id="mainSubtitle">Wähle einen Client, um Shortlists und Stories zu generieren.</p>
+          <p class="main-subtitle" id="mainSubtitle">Select a client to generate shortlists and stories.</p>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-primary" id="generateBtn" disabled>Shortlist generieren</button>
+          <button class="btn btn-primary" id="generateBtn" disabled>Generate Shortlist</button>
           <button class="btn btn-secondary" id="pdfBtn" disabled>PDF</button>
         </div>
       </div>
@@ -1122,24 +1122,24 @@
       <!-- TAB: SHORTLIST -->
       <div class="tab-panel active" id="panel-shortlist">
         <div class="instruction-box">
-          <div class="instruction-label">Anweisung (optional)</div>
+          <div class="instruction-label">Instructions (optional)</div>
           <textarea
             class="instruction-input"
             id="instruction"
-            placeholder="z.B. 'Fokus auf defensive Werte' oder 'Adresse Bedenken aus letztem Call'..."
+            placeholder="e.g. 'Focus on defensive stocks' or 'Address concerns from last call'..."
           ></textarea>
           <div class="quick-prompts">
-            <span class="quick-prompt" data-prompt="Diversifiziere weg vom Top-Sektor">Diversifizieren</span>
-            <span class="quick-prompt" data-prompt="Nutze Call-Notes intensiv, adressiere Bedenken">Call-Notes nutzen</span>
-            <span class="quick-prompt" data-prompt="Konservativ, niedrige Volatilität bevorzugen">Konservativ</span>
-            <span class="quick-prompt" data-prompt="Fokus auf Aktien mit hoher Conviction">High Conviction</span>
+            <span class="quick-prompt" data-prompt="Diversify away from top sector">Diversify</span>
+            <span class="quick-prompt" data-prompt="Use call notes intensively, address concerns">Use Call Notes</span>
+            <span class="quick-prompt" data-prompt="Conservative, prefer low volatility">Conservative</span>
+            <span class="quick-prompt" data-prompt="Focus on high conviction stocks">High Conviction</span>
           </div>
         </div>
 
         <div class="stock-grid" id="stockGrid">
           <div class="empty-state">
-            <h3>Keine Shortlist</h3>
-            <p>Klicke "Shortlist generieren", um Empfehlungen zu erhalten.</p>
+            <h3>No Shortlist</h3>
+            <p>Click "Generate Shortlist" to get recommendations.</p>
           </div>
         </div>
       </div>
@@ -1147,10 +1147,10 @@
       <!-- TAB: STORY -->
       <div class="tab-panel" id="panel-story">
         <div style="display: flex; gap: 12px; margin-bottom: 20px;">
-          <button class="btn btn-primary" id="storyFullBtn" disabled>Story (Vollständig)</button>
-          <button class="btn btn-secondary" id="storyBulletsBtn" disabled>Bullets (Kurzform)</button>
+          <button class="btn btn-primary" id="storyFullBtn" disabled>Story (Full)</button>
+          <button class="btn btn-secondary" id="storyBulletsBtn" disabled>Bullets (Summary)</button>
           <span id="selectedStock" style="margin-left: auto; color: var(--text-muted); font-size: 14px;">
-            Kein Stock ausgewählt
+            No Stock Selected
           </span>
         </div>
 
@@ -1165,16 +1165,16 @@
         </div>
 
         <div class="empty-state" id="storyEmpty">
-          <h3>Wähle einen Stock</h3>
-          <p>Klicke auf eine Aktie in der Shortlist und generiere dann eine Story.</p>
+          <h3>Select a Stock</h3>
+          <p>Click on a stock in the shortlist, then generate a story.</p>
         </div>
       </div>
 
       <!-- TAB: HISTORY -->
       <div class="tab-panel" id="panel-history">
         <div class="empty-state" id="historyEmpty">
-          <h3>Keine History</h3>
-          <p>Generierte Stories werden hier für Compliance gespeichert.</p>
+          <h3>No History</h3>
+          <p>Generated stories are stored here for compliance.</p>
         </div>
         <div id="historyList"></div>
       </div>
@@ -1272,13 +1272,13 @@ function renderDrawerContent(data) {
     <div class="drawer-panel active" id="drawer-calls">
       <table class="detail-table">
         <thead>
-          <tr><th>Datum</th><th>Ticker</th><th>Richtung</th><th>Dauer</th><th>Sektor</th><th>Notizen</th></tr>
+          <tr><th>Date</th><th>Ticker</th><th>Direction</th><th>Duration</th><th>Sector</th><th>Notes</th></tr>
         </thead>
         <tbody>
-          ${calls.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Calls</td></tr>' : ''}
+          ${calls.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No Calls</td></tr>' : ''}
           ${calls.map(c => `
             <tr>
-              <td class="date">${c.call_timestamp ? new Date(c.call_timestamp).toLocaleDateString('de-DE') : '-'}</td>
+              <td class="date">${c.call_timestamp ? new Date(c.call_timestamp).toLocaleDateString('en-US') : '-'}</td>
               <td class="ticker">${c.stock_ticker || c.discussed_company || '-'}</td>
               <td><span class="tag neutral">${c.direction || '-'}</span></td>
               <td>${c.duration_minutes ? c.duration_minutes + ' min' : '-'}</td>
@@ -1296,13 +1296,13 @@ function renderDrawerContent(data) {
     <div class="drawer-panel" id="drawer-trades">
       <table class="detail-table">
         <thead>
-          <tr><th>Datum</th><th>Ticker</th><th>Seite</th><th>Größe</th><th>Sektor</th><th>Theme</th></tr>
+          <tr><th>Date</th><th>Ticker</th><th>Side</th><th>Size</th><th>Sector</th><th>Theme</th></tr>
         </thead>
         <tbody>
-          ${trades.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Trades</td></tr>' : ''}
+          ${trades.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No Trades</td></tr>' : ''}
           ${trades.map(t => `
             <tr>
-              <td class="date">${t.trade_timestamp ? new Date(t.trade_timestamp).toLocaleDateString('de-DE') : '-'}</td>
+              <td class="date">${t.trade_timestamp ? new Date(t.trade_timestamp).toLocaleDateString('en-US') : '-'}</td>
               <td class="ticker">${t.ticker || '-'}</td>
               <td><span class="tag ${t.side?.toLowerCase() === 'buy' ? 'buy' : 'sell'}">${t.side || '-'}</span></td>
               <td>${t.notional_bucket || '-'}</td>
@@ -1320,13 +1320,13 @@ function renderDrawerContent(data) {
     <div class="drawer-panel" id="drawer-reads">
       <table class="detail-table">
         <thead>
-          <tr><th>Gelesen</th><th>Ticker</th><th>Typ</th><th>Sektor</th><th>Verzögerung</th><th>Titel</th></tr>
+          <tr><th>Read</th><th>Ticker</th><th>Type</th><th>Sector</th><th>Delay</th><th>Title</th></tr>
         </thead>
         <tbody>
-          ${reads.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Reads</td></tr>' : ''}
+          ${reads.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No Reads</td></tr>' : ''}
           ${reads.map(r => `
             <tr>
-              <td class="date">${r.read_timestamp ? new Date(r.read_timestamp).toLocaleDateString('de-DE') : '-'}</td>
+              <td class="date">${r.read_timestamp ? new Date(r.read_timestamp).toLocaleDateString('en-US') : '-'}</td>
               <td class="ticker">${r.report_ticker || '-'}</td>
               <td><span class="tag neutral">${r.report_type || '-'}</span></td>
               <td>${r.report_sector || '-'}</td>
@@ -1344,10 +1344,10 @@ function renderDrawerContent(data) {
     <div class="drawer-panel" id="drawer-positions">
       <table class="detail-table">
         <thead>
-          <tr><th>Ticker</th><th>Name</th><th>Sektor</th><th>Gewicht</th><th>Wert</th><th>Theme</th></tr>
+          <tr><th>Ticker</th><th>Name</th><th>Sector</th><th>Weight</th><th>Value</th><th>Theme</th></tr>
         </thead>
         <tbody>
-          ${positions.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Positionen</td></tr>' : ''}
+          ${positions.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No Positions</td></tr>' : ''}
           ${positions.map(p => `
             <tr>
               <td class="ticker">${p.ticker || '-'}</td>
@@ -1368,10 +1368,10 @@ function renderDrawerContent(data) {
     <div class="drawer-panel" id="drawer-hints">
       <table class="detail-table">
         <thead>
-          <tr><th>Ticker</th><th>Erwähnungen</th><th>Hold</th><th>Add</th><th>Reduce</th><th>Diversify</th></tr>
+          <tr><th>Ticker</th><th>Mentions</th><th>Hold</th><th>Add</th><th>Reduce</th><th>Diversify</th></tr>
         </thead>
         <tbody>
-          ${hints.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Keine Hints</td></tr>' : ''}
+          ${hints.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No Hints</td></tr>' : ''}
           ${hints.map(h => `
             <tr>
               <td class="ticker">${h.ticker || '-'}</td>
@@ -1425,6 +1425,7 @@ function renderSidebar(data) {
   const momentum = enhanced.engagement_momentum || {};
   const conviction = enhanced.conviction || {};
   const readership = enhanced.readership_intelligence || {};
+  const portfolio = enhanced.portfolio_risk || {};
 
   // Calculate Sales-relevant metrics
   const calls30d = momentum.calls_last_30d || 0;
@@ -1447,8 +1448,8 @@ function renderSidebar(data) {
   // Last Contact (from recent calls)
   const recentCalls = signals.recent_calls || [];
   const lastCallDate = recentCalls.length > 0 && recentCalls[0].call_timestamp
-    ? new Date(recentCalls[0].call_timestamp).toLocaleDateString('de-DE')
-    : 'Kein Kontakt';
+    ? new Date(recentCalls[0].call_timestamp).toLocaleDateString('en-US')
+    : 'No Contact';
 
   // Recent Buys (from trades)
   const recentTrades = signals.recent_trades || [];
@@ -1471,16 +1472,16 @@ function renderSidebar(data) {
         <span class="lead-value">${leadScore}</span>
       </div>
       <div class="lead-reason">
-        ${leadScore === 'Hot' ? 'Aktiver Käufer, hohes Engagement' :
-          leadScore === 'Warm' ? 'Regelmäßiger Kontakt' :
-          'Wenig Aktivität'}
+        ${leadScore === 'Hot' ? 'Active buyer, high engagement' :
+          leadScore === 'Warm' ? 'Regular contact' :
+          'Low activity'}
       </div>
     </div>
 
     <!-- KEY SALES METRICS -->
     <div class="metrics-grid">
       <div class="metric-card">
-        <div class="metric-label">Letzter Kontakt</div>
+        <div class="metric-label">Last Contact</div>
         <div class="metric-value" style="font-size: 13px;">${lastCallDate}</div>
       </div>
       <div class="metric-card">
@@ -1504,7 +1505,7 @@ function renderSidebar(data) {
     <!-- RECENT BUYS -->
     ${recentBuys.length > 0 ? `
     <div class="summary-section">
-      <div class="summary-title">Aktuelle Käufe</div>
+      <div class="summary-title">Recent Buys</div>
       <div class="buy-chips">
         ${recentBuys.map(b => `
           <span class="buy-chip">${b.ticker || '-'}</span>
@@ -1516,7 +1517,7 @@ function renderSidebar(data) {
     <!-- READ INTERESTS -->
     ${readSectors.length > 0 ? `
     <div class="summary-section">
-      <div class="summary-title">Liest über</div>
+      <div class="summary-title">Reading About</div>
       <div class="interest-chips">
         ${readSectors.map(s => `<span class="interest-chip">${s}</span>`).join('')}
       </div>
@@ -1524,18 +1525,18 @@ function renderSidebar(data) {
     ` : ''}
 
     <div class="summary-section">
-      <div class="summary-title">Profil</div>
+      <div class="summary-title">Profile</div>
       <div class="summary-card">
         <ul class="summary-bullets">
           <li><span>Investment Style</span><span>${profile.investment_style || '-'}</span></li>
           <li><span>Risk Appetite</span><span>${profile.risk_appetite || '-'}</span></li>
-          <li><span>Fokus</span><span>${profile.dominant_topic || '-'}</span></li>
+          <li><span>Focus</span><span>${profile.dominant_topic || '-'}</span></li>
         </ul>
       </div>
     </div>
 
     <div class="summary-section">
-      <div class="summary-title">Aktivität (30d)</div>
+      <div class="summary-title">Activity (30d)</div>
       <div class="activity-bar">
         <div class="activity-item">
           <span class="activity-num">${calls30d}</span>
@@ -1555,8 +1556,8 @@ function renderSidebar(data) {
       <div class="summary-card">
         <h4>Portfolio</h4>
         <ul class="summary-bullets">
-          <li><span>Top Sektor</span><span>${data.portfolio_summary?.top_sector || '-'}</span></li>
-          <li><span>Konzentration</span><span>${portfolio.concentration_risk_level || '-'}</span></li>
+          <li><span>Top Sector</span><span>${data.portfolio_summary?.top_sector || '-'}</span></li>
+          <li><span>Concentration</span><span>${portfolio.concentration_risk_level || '-'}</span></li>
           <li><span>Large Positions</span><span>${portfolio.large_positions || 0}</span></li>
         </ul>
       </div>
@@ -1604,7 +1605,7 @@ async function search(query) {
     const results = data.results || [];
 
     if (results.length === 0) {
-      $('searchResults').innerHTML = '<div class="empty-state"><p>Keine Ergebnisse gefunden.</p></div>';
+      $('searchResults').innerHTML = '<div class="empty-state"><p>No results found.</p></div>';
     } else {
       $('searchResults').innerHTML = results.map(r => `
         <div class="search-result" data-id="${r.client_id}">
@@ -1621,9 +1622,9 @@ async function search(query) {
     }
 
     showModal();
-    setStatus('Wähle Client', 'default');
+    setStatus('Select Client', 'default');
   } catch (e) {
-    setStatus('Fehler', 'default');
+    setStatus('Error', 'default');
     console.error(e);
   }
 }
@@ -1641,7 +1642,7 @@ async function loadClient(id) {
 
     if (data.error) {
       alert(data.error);
-      setStatus('Fehler', 'default');
+      setStatus('Error', 'default');
       return;
     }
 
@@ -1658,14 +1659,14 @@ async function loadClient(id) {
     $('mainSubtitle').textContent = `Client: ${client.primary_contact_name || client.client_name}`;
 
     $('generateBtn').disabled = false;
-    $('stockGrid').innerHTML = '<div class="empty-state"><h3>Bereit</h3><p>Klicke "Shortlist generieren".</p></div>';
+    $('stockGrid').innerHTML = '<div class="empty-state"><h3>Ready</h3><p>Click "Generate Shortlist".</p></div>';
 
     // Load generation history for this client
     await loadHistory();
 
-    setStatus('Client geladen', 'active');
+    setStatus('Client Loaded', 'active');
   } catch (e) {
-    setStatus('Fehler', 'default');
+    setStatus('Error', 'default');
     console.error(e);
   }
 }
@@ -1676,9 +1677,9 @@ async function loadClient(id) {
 async function generateShortlist() {
   if (!clientId) return;
 
-  setStatus('Generiere...', 'default');
+  setStatus('Generating...', 'default');
   $('generateBtn').disabled = true;
-  $('stockGrid').innerHTML = '<div class="loading"><div class="spinner"></div>Generiere Shortlist...</div>';
+  $('stockGrid').innerHTML = '<div class="loading"><div class="spinner"></div>Generating Shortlist...</div>';
 
   const instruction = $('instruction').value.trim();
 
@@ -1698,7 +1699,7 @@ async function generateShortlist() {
 
     if (data.error) {
       $('stockGrid').innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${data.error}</p></div>`;
-      setStatus('Fehler', 'default');
+      setStatus('Error', 'default');
       $('generateBtn').disabled = false;
       return;
     }
@@ -1708,14 +1709,14 @@ async function generateShortlist() {
 
     $('pdfBtn').disabled = false;
     $('generateBtn').disabled = false;
-    setStatus('Shortlist bereit', 'active');
+    setStatus('Shortlist Ready', 'active');
 
     // Reload history from server (audit trail)
     await loadHistory();
 
   } catch (e) {
     $('stockGrid').innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${e.message}</p></div>`;
-    setStatus('Fehler', 'default');
+    setStatus('Error', 'default');
     $('generateBtn').disabled = false;
     console.error(e);
   }
@@ -1723,7 +1724,7 @@ async function generateShortlist() {
 
 function renderShortlist(list, topPicks) {
   if (!list.length) {
-    $('stockGrid').innerHTML = '<div class="empty-state"><h3>Keine Empfehlungen</h3></div>';
+    $('stockGrid').innerHTML = '<div class="empty-state"><h3>No Recommendations</h3></div>';
     return;
   }
 
@@ -1808,14 +1809,14 @@ async function generateStory(mode) {
 
     if (data.error) {
       $('outputText').textContent = 'Fehler: ' + data.error;
-      setStatus('Fehler', 'default');
+      setStatus('Error', 'default');
       return;
     }
 
     $('outputTitle').textContent = mode === 'BULLETS' ? `Bullets - ${selectedTicker}` : `Story - ${selectedTicker}`;
-    $('outputText').textContent = data.story || '(Keine Ausgabe)';
+    $('outputText').textContent = data.story || '(No Output)';
 
-    setStatus('Story bereit', 'active');
+    setStatus('Story Ready', 'active');
     switchTab('story');
 
     // Reload history from server (audit trail)
@@ -1823,7 +1824,7 @@ async function generateStory(mode) {
 
   } catch (e) {
     $('outputText').textContent = 'Fehler: ' + e.message;
-    setStatus('Fehler', 'default');
+    setStatus('Error', 'default');
     console.error(e);
   }
 }
@@ -1872,11 +1873,11 @@ function renderHistory() {
   $('historyList').innerHTML = history.slice(0, 20).map(h => `
     <div class="summary-card" style="margin-bottom: 12px; cursor: pointer;" onclick="showHistoryDetail(${h.id})">
       <h4>${h.type === 'shortlist' ? 'Shortlist' : 'Story'} - ${h.client_name}
-        <span class="history-badge">${new Date(h.timestamp).toLocaleString('de-DE')}</span>
+        <span class="history-badge">${new Date(h.timestamp).toLocaleString('en-US')}</span>
       </h4>
       <div class="summary-text">
         ${h.type === 'shortlist'
-          ? 'Shortlist generiert'
+          ? 'Shortlist generated'
           : `${h.data.ticker || '-'} (${h.data.mode || 'FULL'})`
         }
       </div>
@@ -1892,7 +1893,7 @@ function showHistoryDetail(id) {
   switchTab('story');
   $('outputPanel').style.display = 'block';
   $('outputTitle').textContent = `${entry.type === 'shortlist' ? 'Shortlist' : 'Story'} (History #${id})`;
-  $('outputText').textContent = entry.data.response || '(Keine Daten)';
+  $('outputText').textContent = entry.data.response || '(No Data)';
 }
 
 // ============================================================================
