@@ -451,6 +451,149 @@ async def ensure_analytics_views():
         LEFT JOIN ana_client_readership_intelligence ri ON ri.client_id = cp.client_id
     """)
 
+    # 6. Multi-Factor Risk Profile
+    await execute_write("""
+        CREATE VIEW IF NOT EXISTS int_client_risk_multifactor AS
+        WITH
+        investor_type_risk AS (
+            SELECT
+                client_id,
+                client_type,
+                CASE client_type
+                    WHEN 'HedgeFund' THEN 0.85
+                    WHEN 'Hedge Fund' THEN 0.85
+                    WHEN 'FamilyOffice' THEN 0.65
+                    WHEN 'Family Office' THEN 0.65
+                    WHEN 'AssetManager' THEN 0.55
+                    WHEN 'Asset Manager' THEN 0.55
+                    WHEN 'Insurance' THEN 0.35
+                    WHEN 'PensionFund' THEN 0.30
+                    WHEN 'Pension Fund' THEN 0.30
+                    ELSE 0.50
+                END AS type_risk_score
+            FROM src_clients
+        ),
+        trading_behavior AS (
+            SELECT
+                client_id,
+                COUNT(*) AS trade_count,
+                CASE
+                    WHEN COUNT(*) > 50 THEN 0.75
+                    WHEN COUNT(*) > 20 THEN 0.55
+                    WHEN COUNT(*) > 5 THEN 0.40
+                    ELSE 0.25
+                END AS turnover_risk_score
+            FROM src_trade_executions
+            WHERE julianday('now') - julianday(trade_timestamp) <= 180
+            GROUP BY client_id
+        ),
+        position_size AS (
+            SELECT
+                ps.client_id,
+                MAX(p.weight) AS max_weight,
+                CASE
+                    WHEN MAX(p.weight) > 0.15 THEN 0.70
+                    WHEN MAX(p.weight) > 0.08 THEN 0.50
+                    ELSE 0.35
+                END AS position_risk_score
+            FROM src_positions p
+            JOIN src_portfolio_snapshots ps ON ps.snapshot_id = p.snapshot_id
+            GROUP BY ps.client_id
+        )
+        SELECT
+            c.client_id,
+            c.client_type,
+            COALESCE(itr.type_risk_score, 0.50) AS investor_type_factor,
+            COALESCE(tb.turnover_risk_score, 0.40) AS trading_factor,
+            COALESCE(pos.position_risk_score, 0.40) AS position_factor,
+            ROUND(
+                0.40 * COALESCE(itr.type_risk_score, 0.50) +
+                0.35 * COALESCE(tb.turnover_risk_score, 0.40) +
+                0.25 * COALESCE(pos.position_risk_score, 0.40),
+                3
+            ) AS composite_risk_score,
+            CASE
+                WHEN (0.40 * COALESCE(itr.type_risk_score, 0.50) +
+                      0.35 * COALESCE(tb.turnover_risk_score, 0.40) +
+                      0.25 * COALESCE(pos.position_risk_score, 0.40)) >= 0.60 THEN 'Aggressive'
+                WHEN (0.40 * COALESCE(itr.type_risk_score, 0.50) +
+                      0.35 * COALESCE(tb.turnover_risk_score, 0.40) +
+                      0.25 * COALESCE(pos.position_risk_score, 0.40)) >= 0.42 THEN 'Moderate'
+                ELSE 'Conservative'
+            END AS risk_category,
+            COALESCE(tb.trade_count, 0) AS trade_activity
+        FROM src_clients c
+        LEFT JOIN investor_type_risk itr ON itr.client_id = c.client_id
+        LEFT JOIN trading_behavior tb ON tb.client_id = c.client_id
+        LEFT JOIN position_size pos ON pos.client_id = c.client_id
+    """)
+
+    # 7. Investment Style Classification
+    await execute_write("""
+        CREATE VIEW IF NOT EXISTS int_client_investment_style AS
+        WITH trade_analysis AS (
+            SELECT
+                client_id,
+                SUM(CASE WHEN theme_tag = 'AI' THEN 1 ELSE 0 END) AS ai_trades,
+                SUM(CASE WHEN theme_tag = 'EnergyTransition' THEN 1 ELSE 0 END) AS energy_trades,
+                SUM(CASE WHEN theme_tag = 'ESG' THEN 1 ELSE 0 END) AS esg_trades,
+                SUM(CASE WHEN sector = 'Tech' THEN 1 ELSE 0 END) AS tech_trades,
+                SUM(CASE WHEN sector = 'Healthcare' THEN 1 ELSE 0 END) AS healthcare_trades,
+                SUM(CASE WHEN sector = 'Financials' THEN 1 ELSE 0 END) AS financials_trades,
+                COUNT(*) AS total_trades
+            FROM src_trade_executions
+            GROUP BY client_id
+        )
+        SELECT
+            c.client_id,
+            CASE
+                WHEN COALESCE(ta.esg_trades, 0) > COALESCE(ta.total_trades, 1) * 0.3 THEN 'ESG-Focus'
+                WHEN COALESCE(ta.tech_trades, 0) + COALESCE(ta.ai_trades, 0) > COALESCE(ta.total_trades, 1) * 0.4 THEN 'Growth'
+                WHEN COALESCE(ta.financials_trades, 0) > COALESCE(ta.total_trades, 1) * 0.3 THEN 'Value'
+                ELSE 'Diversified'
+            END AS primary_style,
+            CASE
+                WHEN COALESCE(ta.ai_trades, 0) > 5 THEN 'AI'
+                WHEN COALESCE(ta.energy_trades, 0) > 5 THEN 'EnergyTransition'
+                WHEN COALESCE(ta.esg_trades, 0) > 5 THEN 'ESG'
+                ELSE NULL
+            END AS theme_affinity,
+            CASE
+                WHEN COALESCE(ta.tech_trades, 0) >= COALESCE(ta.healthcare_trades, 0)
+                 AND COALESCE(ta.tech_trades, 0) >= COALESCE(ta.financials_trades, 0) THEN 'Tech'
+                WHEN COALESCE(ta.healthcare_trades, 0) >= COALESCE(ta.financials_trades, 0) THEN 'Healthcare'
+                ELSE 'Financials'
+            END AS top_sector,
+            CASE
+                WHEN COALESCE(ta.total_trades, 0) > 50 THEN 'Very Active'
+                WHEN COALESCE(ta.total_trades, 0) > 20 THEN 'Active'
+                ELSE 'Moderate'
+            END AS activity_level
+        FROM src_clients c
+        LEFT JOIN trade_analysis ta ON ta.client_id = c.client_id
+    """)
+
+    # 8. Client Preferences Table (if not exists)
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_client_preferences (
+            preference_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER UNIQUE,
+            dividend_preference TEXT DEFAULT 'Neutral',
+            min_dividend_yield REAL,
+            esg_mandate INTEGER DEFAULT 0,
+            preferred_sectors TEXT,
+            excluded_sectors TEXT,
+            preferred_themes TEXT,
+            max_position_size REAL DEFAULT 0.10,
+            max_sector_weight REAL DEFAULT 0.30,
+            investment_horizon TEXT DEFAULT 'Medium',
+            preference_source TEXT DEFAULT 'inferred',
+            confidence_score REAL DEFAULT 0.5,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+
 
 async def log_generation(
     client_id: int,
