@@ -57,8 +57,9 @@ if os.path.isdir(FRONTEND_DIR):
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database tables on startup."""
+    """Initialize database tables and views on startup."""
     await ensure_audit_table()
+    await ensure_analytics_views()
 
 
 # =========================
@@ -166,6 +167,236 @@ async def ensure_audit_table():
     await execute_write("""
         CREATE INDEX IF NOT EXISTS idx_gen_history_client
         ON ai_generation_history(client_id, created_at DESC)
+    """)
+
+
+async def ensure_analytics_views():
+    """Create enhanced analytics views for SQLite."""
+
+    # 1. Portfolio Risk View
+    await execute_write("""
+        CREATE VIEW IF NOT EXISTS ana_client_portfolio_risk AS
+        WITH latest_snap AS (
+          SELECT client_id, MAX(snapshot_id) as snap_id
+          FROM src_portfolio_snapshots
+          GROUP BY client_id
+        ),
+        pos_data AS (
+          SELECT
+            ls.client_id,
+            p.stock_id,
+            p.weight,
+            p.market_value,
+            COALESCE(p.weight * 0.25, 0) AS weighted_vol
+          FROM src_positions p
+          JOIN latest_snap ls ON ls.snap_id = p.snapshot_id
+        )
+        SELECT
+          client_id,
+          ROUND(SUM(weighted_vol), 4) AS portfolio_volatility,
+          MAX(weight) AS max_position_weight,
+          COUNT(*) AS total_positions,
+          SUM(CASE WHEN weight > 0.10 THEN 1 ELSE 0 END) AS large_positions,
+          0.25 AS avg_stock_volatility,
+          0.0 AS high_vol_exposure,
+          CASE
+            WHEN SUM(weighted_vol) >= 0.25 THEN 'High'
+            WHEN SUM(weighted_vol) >= 0.15 THEN 'Medium'
+            ELSE 'Low'
+          END AS volatility_risk_level,
+          CASE
+            WHEN MAX(weight) >= 0.20 THEN 'Concentrated'
+            WHEN MAX(weight) >= 0.10 THEN 'Moderate'
+            ELSE 'Diversified'
+          END AS concentration_risk_level
+        FROM pos_data
+        GROUP BY client_id
+    """)
+
+    # 2. Engagement Momentum View
+    await execute_write("""
+        CREATE VIEW IF NOT EXISTS ana_client_engagement_momentum AS
+        WITH calls_recent AS (
+          SELECT
+            client_id,
+            COUNT(*) as cnt,
+            SUM(duration_minutes) as total_dur,
+            AVG(duration_minutes) as avg_dur
+          FROM src_call_logs
+          WHERE julianday('now') - julianday(call_timestamp) <= 30
+          GROUP BY client_id
+        ),
+        calls_prior AS (
+          SELECT client_id, COUNT(*) as cnt
+          FROM src_call_logs
+          WHERE julianday('now') - julianday(call_timestamp) BETWEEN 31 AND 60
+          GROUP BY client_id
+        ),
+        trades_recent AS (
+          SELECT
+            client_id,
+            COUNT(*) as cnt,
+            SUM(CASE WHEN side = 'Buy' THEN 1 ELSE 0 END) as buys,
+            SUM(CASE WHEN notional_bucket = 'Large' THEN 1 ELSE 0 END) as large_trades
+          FROM src_trade_executions
+          WHERE julianday('now') - julianday(trade_timestamp) <= 30
+          GROUP BY client_id
+        ),
+        trades_prior AS (
+          SELECT client_id, COUNT(*) as cnt
+          FROM src_trade_executions
+          WHERE julianday('now') - julianday(trade_timestamp) BETWEEN 31 AND 60
+          GROUP BY client_id
+        )
+        SELECT
+          c.client_id,
+          COALESCE(cr.cnt, 0) AS calls_last_30d,
+          COALESCE(cp.cnt, 0) AS calls_prior_30d,
+          ROUND(COALESCE(cr.avg_dur, 0), 1) AS avg_call_duration_30d,
+          ROUND(1.0 * COALESCE(cr.cnt, 0) / NULLIF(COALESCE(cp.cnt, 0), 0), 2) AS call_momentum,
+          COALESCE(tr.cnt, 0) AS trades_last_30d,
+          COALESCE(tp.cnt, 0) AS trades_prior_30d,
+          ROUND(1.0 * COALESCE(tr.cnt, 0) / NULLIF(COALESCE(tp.cnt, 0), 0), 2) AS trade_momentum,
+          CASE WHEN tr.cnt > 0 THEN ROUND(1.0 * tr.buys / tr.cnt, 2) ELSE NULL END AS recent_buy_ratio,
+          COALESCE(tr.large_trades, 0) AS large_trades_30d,
+          ROUND(COALESCE(cr.total_dur, 0) * 0.1 + COALESCE(tr.cnt, 0) * 2.0 + COALESCE(tr.large_trades, 0) * 5.0, 1) AS engagement_score_30d,
+          CASE
+            WHEN COALESCE(cr.cnt, 0) > COALESCE(cp.cnt, 0) * 1.5 OR COALESCE(tr.cnt, 0) > COALESCE(tp.cnt, 0) * 1.5 THEN 'Accelerating'
+            WHEN COALESCE(cr.cnt, 0) < COALESCE(cp.cnt, 0) * 0.5 AND COALESCE(tr.cnt, 0) < COALESCE(tp.cnt, 0) * 0.5 THEN 'Cooling Off'
+            WHEN COALESCE(cr.cnt, 0) = 0 AND COALESCE(tr.cnt, 0) = 0 THEN 'Dormant'
+            ELSE 'Stable'
+          END AS engagement_trend
+        FROM src_clients c
+        LEFT JOIN calls_recent cr ON cr.client_id = c.client_id
+        LEFT JOIN calls_prior cp ON cp.client_id = c.client_id
+        LEFT JOIN trades_recent tr ON tr.client_id = c.client_id
+        LEFT JOIN trades_prior tp ON tp.client_id = c.client_id
+    """)
+
+    # 3. Conviction View (SQLite compatible - no FULL OUTER JOIN)
+    await execute_write("""
+        CREATE VIEW IF NOT EXISTS ana_client_conviction AS
+        WITH trade_focus AS (
+          SELECT
+            client_id,
+            ticker,
+            stock_id,
+            COUNT(*) AS trade_count,
+            SUM(CASE WHEN side = 'Buy' THEN 1 ELSE -1 END) AS net_direction,
+            1.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY client_id) AS focus_share
+          FROM src_trade_executions
+          WHERE ticker IS NOT NULL
+          GROUP BY client_id, ticker, stock_id
+        ),
+        ranked AS (
+          SELECT *,
+            ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY trade_count DESC) AS rn
+          FROM trade_focus
+        )
+        SELECT
+          client_id,
+          ticker AS top_conviction_stock,
+          stock_id AS top_conviction_stock_id,
+          trade_count,
+          0 AS call_mentions,
+          net_direction,
+          ROUND(focus_share, 3) AS trade_concentration,
+          trade_count AS conviction_score,
+          0 AS bullish_mentions,
+          0 AS bearish_mentions,
+          CASE
+            WHEN focus_share >= 0.25 THEN 'Very High'
+            WHEN focus_share >= 0.15 THEN 'High'
+            WHEN focus_share >= 0.08 THEN 'Moderate'
+            ELSE 'Diversified'
+          END AS conviction_level,
+          CASE
+            WHEN net_direction > 0 THEN 'Bullish'
+            WHEN net_direction < 0 THEN 'Bearish'
+            ELSE 'Neutral'
+          END AS sentiment_signal
+        FROM ranked
+        WHERE rn = 1
+    """)
+
+    # 4. Readership Intelligence View
+    await execute_write("""
+        CREATE VIEW IF NOT EXISTS ana_client_readership_intelligence AS
+        WITH read_stats AS (
+          SELECT
+            r.client_id,
+            COUNT(*) AS total_reads,
+            AVG(r.days_diff) AS avg_days_diff,
+            COUNT(DISTINCT rp.sector) AS sector_breadth,
+            SUM(CASE WHEN r.days_diff <= 1 THEN 1 ELSE 0 END) AS same_day_reads,
+            SUM(CASE WHEN r.days_diff >= 7 THEN 1 ELSE 0 END) AS late_reads
+          FROM ana_readership_daysdiff r
+          LEFT JOIN src_reports rp ON rp.report_id = r.report_id
+          GROUP BY r.client_id
+        )
+        SELECT
+          client_id,
+          total_reads,
+          sector_breadth,
+          'Research' AS preferred_report_type,
+          NULL AS preferred_sector,
+          ROUND(avg_days_diff, 1) AS avg_read_delay_days,
+          ROUND(1.0 / (1 + avg_days_diff), 3) AS read_velocity_score,
+          ROUND(1.0 * same_day_reads / total_reads, 2) AS same_day_read_ratio,
+          ROUND(1.0 * late_reads / total_reads, 2) AS late_read_ratio,
+          CASE
+            WHEN avg_days_diff <= 1 THEN 'Immediate'
+            WHEN avg_days_diff <= 3 THEN 'Fast'
+            WHEN avg_days_diff <= 7 THEN 'Normal'
+            ELSE 'Slow'
+          END AS reader_speed_type,
+          CASE
+            WHEN sector_breadth >= 8 THEN 'Generalist'
+            WHEN sector_breadth >= 4 THEN 'Multi-Sector'
+            ELSE 'Specialist'
+          END AS reader_breadth_type,
+          ROUND(total_reads * 0.3 + (1.0 / (1 + avg_days_diff)) * 50 + sector_breadth * 2, 1) AS readership_quality_score
+        FROM read_stats
+    """)
+
+    # 5. Enhanced Risk View
+    await execute_write("""
+        CREATE VIEW IF NOT EXISTS int_client_risk_enhanced AS
+        SELECT
+          cp.client_id,
+          cp.risk_appetite AS original_risk_appetite,
+          cp.risk_score AS original_risk_score,
+          COALESCE(pr.portfolio_volatility, 0.20) AS portfolio_volatility,
+          pr.volatility_risk_level,
+          pr.max_position_weight,
+          pr.concentration_risk_level,
+          em.engagement_trend,
+          em.trade_momentum,
+          em.call_momentum,
+          em.recent_buy_ratio,
+          cv.top_conviction_stock,
+          cv.conviction_level,
+          cv.sentiment_signal,
+          ri.reader_speed_type,
+          ri.reader_breadth_type,
+          ri.preferred_sector AS reading_focus_sector,
+          0.5 AS enhanced_risk_score,
+          CASE
+            WHEN COALESCE(pr.portfolio_volatility, 0.20) >= 0.25 THEN 'High'
+            WHEN COALESCE(pr.portfolio_volatility, 0.20) >= 0.15 THEN 'Medium'
+            ELSE 'Low'
+          END AS enhanced_risk_level,
+          CASE
+            WHEN em.engagement_trend = 'Accelerating' THEN 'Hot Lead - High Activity'
+            WHEN em.engagement_trend = 'Cooling Off' THEN 'Re-engage - Activity Declining'
+            WHEN em.engagement_trend = 'Dormant' THEN 'Wake Up Call Needed'
+            ELSE 'Normal Engagement'
+          END AS action_signal
+        FROM int_client_profile cp
+        LEFT JOIN ana_client_portfolio_risk pr ON pr.client_id = cp.client_id
+        LEFT JOIN ana_client_engagement_momentum em ON em.client_id = cp.client_id
+        LEFT JOIN ana_client_conviction cv ON cv.client_id = cp.client_id
+        LEFT JOIN ana_client_readership_intelligence ri ON ri.client_id = cp.client_id
     """)
 
 
