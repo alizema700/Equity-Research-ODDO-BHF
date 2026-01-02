@@ -422,6 +422,142 @@ async def get_readership_summary(client_id: int) -> Dict[str, Any]:
 
 
 # =========================
+# ENHANCED ANALYTICS (new views)
+# =========================
+
+async def get_portfolio_risk(client_id: int) -> Dict[str, Any]:
+    """Get portfolio-level risk metrics based on position volatility."""
+    row = await fetch_one(
+        """
+        SELECT
+            portfolio_volatility,
+            max_position_weight,
+            total_positions,
+            large_positions,
+            avg_stock_volatility,
+            high_vol_exposure,
+            volatility_risk_level,
+            concentration_risk_level
+        FROM ana_client_portfolio_risk
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+
+async def get_engagement_momentum(client_id: int) -> Dict[str, Any]:
+    """Get 30d vs 60d engagement momentum."""
+    row = await fetch_one(
+        """
+        SELECT
+            calls_last_30d,
+            calls_prior_30d,
+            call_momentum,
+            trades_last_30d,
+            trades_prior_30d,
+            trade_momentum,
+            recent_buy_ratio,
+            large_trades_30d,
+            engagement_score_30d,
+            engagement_trend
+        FROM ana_client_engagement_momentum
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+
+async def get_conviction(client_id: int) -> Dict[str, Any]:
+    """Get client's top conviction stock and sentiment."""
+    row = await fetch_one(
+        """
+        SELECT
+            top_conviction_stock,
+            top_conviction_stock_id,
+            trade_count,
+            call_mentions,
+            net_direction,
+            trade_concentration,
+            conviction_score,
+            conviction_level,
+            sentiment_signal
+        FROM ana_client_conviction
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+
+async def get_readership_intelligence(client_id: int) -> Dict[str, Any]:
+    """Get enhanced readership metrics (velocity, breadth, preferences)."""
+    row = await fetch_one(
+        """
+        SELECT
+            total_reads,
+            sector_breadth,
+            preferred_report_type,
+            preferred_sector,
+            avg_read_delay_days,
+            read_velocity_score,
+            same_day_read_ratio,
+            reader_speed_type,
+            reader_breadth_type,
+            readership_quality_score
+        FROM ana_client_readership_intelligence
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+
+async def get_enhanced_risk(client_id: int) -> Dict[str, Any]:
+    """Get enhanced risk assessment combining all signals."""
+    row = await fetch_one(
+        """
+        SELECT
+            original_risk_appetite,
+            enhanced_risk_level,
+            enhanced_risk_score,
+            portfolio_volatility,
+            volatility_risk_level,
+            concentration_risk_level,
+            engagement_trend,
+            trade_momentum,
+            top_conviction_stock,
+            conviction_level,
+            sentiment_signal,
+            action_signal
+        FROM int_client_risk_enhanced
+        WHERE client_id = :client_id
+        """,
+        {"client_id": client_id},
+    )
+    return row or {}
+
+
+async def get_sector_momentum() -> List[Dict[str, Any]]:
+    """Get market-wide sector flow signals."""
+    return await fetch_all(
+        """
+        SELECT
+            sector,
+            trades_30d,
+            buy_ratio,
+            momentum,
+            flow_signal,
+            unique_clients
+        FROM ana_sector_momentum
+        ORDER BY trades_30d DESC
+        LIMIT 10
+        """
+    )
+
+
+# =========================
 # Stock universe + market fields (based ONLY on your tables)
 # =========================
 
@@ -730,6 +866,13 @@ async def build_client_context(client_id: int) -> Dict[str, Any]:
 
     avoid_tickers = await build_avoid_tickers(client_id)
 
+    # ENHANCED ANALYTICS (new)
+    portfolio_risk = await get_portfolio_risk(client_id)
+    engagement_momentum = await get_engagement_momentum(client_id)
+    conviction = await get_conviction(client_id)
+    readership_intel = await get_readership_intelligence(client_id)
+    enhanced_risk = await get_enhanced_risk(client_id)
+
     return {
         "client": client,
         "profile": profile,
@@ -747,6 +890,14 @@ async def build_client_context(client_id: int) -> Dict[str, Any]:
         },
         "holdings": {"top_positions": top_positions},
         "constraints": {"avoid_tickers": avoid_tickers},
+        # NEW: Enhanced analytics
+        "enhanced": {
+            "portfolio_risk": portfolio_risk,
+            "engagement_momentum": engagement_momentum,
+            "conviction": conviction,
+            "readership_intelligence": readership_intel,
+            "risk_assessment": enhanced_risk,
+        },
     }
 
 
