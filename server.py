@@ -929,7 +929,9 @@ def prompt_for_story(
     selected_stock: Dict[str, Any],
     instruction: str,
     mode: str,
-    max_words: int
+    max_words: int,
+    call_summary: Optional[Dict[str, Any]] = None,
+    objection_section: Optional[str] = None,
 ) -> str:
     mode = (mode or "FULL").upper()
     if mode not in ("FULL", "BULLETS"):
@@ -947,6 +949,20 @@ def prompt_for_story(
         "selected_stock": selected_stock,
     }
 
+    # Add pre-summarized call context if available
+    if call_summary:
+        pack["call_summary"] = call_summary
+
+    # Build objection section
+    objection_block = ""
+    if objection_section:
+        objection_block = f"""
+{objection_section}
+
+IMPORTANT: Address likely objections proactively in your story. Include a dedicated section:
+"POTENTIAL OBJECTIONS & BEST ANSWERS" with 2-3 anticipated client pushbacks and how to handle them.
+"""
+
     return f"""
 You are an AI equity sales assistant supporting a sell-side analyst.
 
@@ -958,12 +974,15 @@ CRITICAL DATA RULES
   - ana_readership_daysdiff.days_diff + publish_timestamp/read_timestamp
   - recent trades and holdings
   - call_position_hints (mention_count, add/reduce/diversification/risk_mgmt hints)
+  - call_summary (if provided): pre-analyzed themes, objections, sentiment from recent calls
 
 OUTPUT
 Mode FULL:
 - A persuasive, client-specific sales narrative (WHAT / WHY), usable as call prep.
+- MUST include a "POTENTIAL OBJECTIONS & BEST ANSWERS" section with 2-3 anticipated objections.
 Mode BULLETS:
 - 6–8 bullets max (call cheat-sheet), no long paragraphs.
+- Include 1-2 objection-handling bullets.
 
 MANDATORY STRUCTURE
 WHAT:
@@ -976,10 +995,15 @@ WHY:
   • evidence from calls/reads/trades (include days_diff when relevant)
   • why now (timing + engagement)
 
+POTENTIAL OBJECTIONS & BEST ANSWERS:
+- Anticipate 2-3 likely client pushbacks based on their profile and history
+- Provide concise, persuasive responses for each
+- Base objections on concrete signals (risk_appetite, recent concerns, sector exposure)
+
 Also include:
 - 2 ready-to-use talking points
 - 1 smart confirmation question to ask the client
-
+{objection_block}
 STYLE
 - Sales-oriented, client-centric, but not hype.
 - Max length about {max_words} words.
