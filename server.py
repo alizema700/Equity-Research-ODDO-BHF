@@ -1778,9 +1778,9 @@ Your story MUST follow this structure:
    - Preference signals: Use their reading patterns, call discussions, and trade history
 
    EXAMPLES TO INCLUDE:
-   - "You've shown interest in {sector} through your recent trades in {similar_stocks}..."
-   - "This aligns with the {theme} focus you mentioned in your {date} call..."
-   - "Given your {buy_rate}% buy rate in {sector}, this fits your conviction style..."
+   - "You've shown interest in [SECTOR] through your recent trades in [SIMILAR_STOCKS]..."
+   - "This aligns with the [THEME] focus you mentioned in your [DATE] call..."
+   - "Given your [BUY_RATE]% buy rate in [SECTOR], this fits your conviction style..."
 
 4. TIMING & CATALYSTS
    - Why NOW is the right time to act
@@ -2061,10 +2061,16 @@ async def api_shortlist(req: ShortlistRequest):
         top_picks = data.get("top_picks")
         notes = data.get("notes_for_analyst")
 
-        if not isinstance(shortlist, list) or len(shortlist) != 10:
-            raise ValueError("LLM JSON invalid: shortlist must be a list of exactly 10 items.")
-        if not isinstance(top_picks, list) or len(top_picks) != 2:
-            raise ValueError("LLM JSON invalid: top_picks must be a list of exactly 2 tickers.")
+        # Validate shortlist - be lenient (allow 5-15 items, take first 10)
+        if not isinstance(shortlist, list) or len(shortlist) < 5:
+            raise ValueError(f"LLM JSON invalid: shortlist must be a list with at least 5 items. Got: {type(shortlist)}")
+        shortlist = shortlist[:10]  # Take first 10 if more
+
+        # Validate top_picks - be lenient
+        if not isinstance(top_picks, list) or len(top_picks) < 1:
+            # Try to extract from shortlist
+            top_picks = [s.get("ticker", "N/A") for s in shortlist[:2] if isinstance(s, dict)]
+        top_picks = top_picks[:2]  # Take first 2
 
         # Post-process: ensure vol_bucket exists and is consistent with vol_60d
         cleaned = []
