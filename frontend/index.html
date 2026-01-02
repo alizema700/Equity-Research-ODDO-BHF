@@ -6,20 +6,24 @@
   <title>Sales Intelligence Platform</title>
   <style>
     :root {
-      --bg: #f8fafc;
-      --bg-dark: #0f172a;
+      /* Fresh Teal/Emerald Color Scheme */
+      --bg: #f0fdf4;
+      --bg-dark: #064e3b;
       --card: #ffffff;
-      --border: #e2e8f0;
-      --text: #1e293b;
-      --text-muted: #64748b;
-      --accent: #dc2626;
-      --accent-light: #fef2f2;
-      --success: #16a34a;
+      --border: #d1fae5;
+      --text: #022c22;
+      --text-muted: #6b7280;
+      --accent: #059669;
+      --accent-light: #ecfdf5;
+      --accent-dark: #047857;
+      --success: #10b981;
       --warning: #f59e0b;
-      --info: #0ea5e9;
-      --radius: 12px;
-      --shadow: 0 1px 3px rgba(0,0,0,0.1);
-      --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+      --danger: #ef4444;
+      --info: #06b6d4;
+      --hot: #f97316;
+      --radius: 10px;
+      --shadow: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -294,7 +298,7 @@
 
     /* === ACTION SIGNAL === */
     .action-signal {
-      background: linear-gradient(135deg, var(--accent) 0%, #991b1b 100%);
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
       color: white;
       border-radius: var(--radius);
       padding: 16px;
@@ -313,6 +317,117 @@
     .action-signal p {
       font-size: 15px;
       font-weight: 600;
+    }
+
+    /* === LEAD SCORE BANNER === */
+    .lead-banner {
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .lead-banner.hot {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: white;
+    }
+
+    .lead-banner.warm {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #78350f;
+    }
+
+    .lead-banner.cold {
+      background: var(--bg);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .lead-score {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lead-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.8;
+    }
+
+    .lead-value {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .lead-reason {
+      font-size: 11px;
+      text-align: right;
+      opacity: 0.9;
+      max-width: 140px;
+    }
+
+    /* === BUY CHIPS === */
+    .buy-chips, .interest-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .buy-chip {
+      padding: 6px 12px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .interest-chip {
+      padding: 5px 10px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+    }
+
+    /* === ACTIVITY BAR === */
+    .activity-bar {
+      display: flex;
+      gap: 8px;
+    }
+
+    .activity-item {
+      flex: 1;
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .activity-num {
+      display: block;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .activity-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* === BADGE VARIANTS === */
+    .badge-hot {
+      background: var(--hot) !important;
+      color: white !important;
     }
 
     /* === MAIN CONTENT === */
@@ -1288,35 +1403,68 @@ function renderSidebar(data) {
   const client = data.client || {};
   const profile = data.profile || {};
   const enhanced = data.enhanced || {};
+  const signals = data.signals || {};
   const risk = enhanced.risk_assessment || {};
   const momentum = enhanced.engagement_momentum || {};
   const conviction = enhanced.conviction || {};
-  const portfolio = enhanced.portfolio_risk || {};
+  const readership = enhanced.readership_intelligence || {};
 
-  const actionSignal = risk.action_signal || 'Normal Engagement';
-  const riskLevel = risk.enhanced_risk_level || profile.risk_appetite || 'Unknown';
+  // Calculate Sales-relevant metrics
+  const calls30d = momentum.calls_last_30d || 0;
+  const trades30d = momentum.trades_last_30d || 0;
+  const buyRatio = momentum.recent_buy_ratio || 0;
   const engagementTrend = momentum.engagement_trend || 'Unknown';
   const convictionStock = conviction.top_conviction_stock || '-';
+
+  // Lead Score: Hot (active buyer), Warm (engaged), Cold (dormant)
+  let leadScore = 'Cold';
+  let leadClass = 'badge-low';
+  if (calls30d >= 3 && buyRatio > 0.6) {
+    leadScore = 'Hot';
+    leadClass = 'badge-hot';
+  } else if (calls30d >= 1 || trades30d >= 2) {
+    leadScore = 'Warm';
+    leadClass = 'badge-medium';
+  }
+
+  // Last Contact (from recent calls)
+  const recentCalls = signals.recent_calls || [];
+  const lastCallDate = recentCalls.length > 0 && recentCalls[0].call_timestamp
+    ? new Date(recentCalls[0].call_timestamp).toLocaleDateString('de-DE')
+    : 'Kein Kontakt';
+
+  // Recent Buys (from trades)
+  const recentTrades = signals.recent_trades || [];
+  const recentBuys = recentTrades.filter(t => t.side?.toLowerCase() === 'buy').slice(0, 3);
+
+  // Top Read Sectors
+  const recentReads = signals.recent_reads_daysdiff || [];
+  const readSectors = [...new Set(recentReads.map(r => r.report_sector).filter(Boolean))].slice(0, 3);
 
   $('sidebarContent').innerHTML = `
     <div class="client-header">
       <div class="client-name">${client.primary_contact_name || client.client_name || 'Unknown'}</div>
-      <div class="client-meta">${client.firm_name || ''} &bull; ${client.client_type || ''} &bull; ${client.region || ''}</div>
+      <div class="client-meta">${client.firm_name || ''} · ${client.client_type || ''} · ${client.region || ''}</div>
     </div>
 
-    ${actionSignal !== 'Normal Engagement' ? `
-    <div class="action-signal">
-      <h4>Action Signal</h4>
-      <p>${actionSignal}</p>
+    <!-- LEAD SCORE BANNER -->
+    <div class="lead-banner ${leadScore.toLowerCase()}">
+      <div class="lead-score">
+        <span class="lead-label">Lead Score</span>
+        <span class="lead-value">${leadScore}</span>
+      </div>
+      <div class="lead-reason">
+        ${leadScore === 'Hot' ? 'Aktiver Käufer, hohes Engagement' :
+          leadScore === 'Warm' ? 'Regelmäßiger Kontakt' :
+          'Wenig Aktivität'}
+      </div>
     </div>
-    ` : ''}
 
+    <!-- KEY SALES METRICS -->
     <div class="metrics-grid">
       <div class="metric-card">
-        <div class="metric-label">Risk Level</div>
-        <div class="metric-value">
-          <span class="metric-badge ${getRiskBadgeClass(riskLevel)}">${riskLevel}</span>
-        </div>
+        <div class="metric-label">Letzter Kontakt</div>
+        <div class="metric-value" style="font-size: 13px;">${lastCallDate}</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Engagement</div>
@@ -1325,35 +1473,67 @@ function renderSidebar(data) {
         </div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Top Conviction</div>
-        <div class="metric-value" style="font-size: 14px;">${convictionStock}</div>
+        <div class="metric-label">Buy Signal</div>
+        <div class="metric-value">
+          <span class="metric-badge ${buyRatio > 0.6 ? 'badge-high' : buyRatio > 0.3 ? 'badge-medium' : 'badge-low'}">${buyRatio > 0.6 ? 'Bullish' : buyRatio > 0.3 ? 'Neutral' : 'Bearish'}</span>
+        </div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">Portfolio Vol</div>
-        <div class="metric-value" style="font-size: 14px;">${portfolio.portfolio_volatility ? (portfolio.portfolio_volatility * 100).toFixed(1) + '%' : '-'}</div>
+        <div class="metric-label">Top Conviction</div>
+        <div class="metric-value" style="font-size: 13px; color: var(--accent);">${convictionStock}</div>
+      </div>
+    </div>
+
+    <!-- RECENT BUYS -->
+    ${recentBuys.length > 0 ? `
+    <div class="summary-section">
+      <div class="summary-title">Aktuelle Käufe</div>
+      <div class="buy-chips">
+        ${recentBuys.map(b => `
+          <span class="buy-chip">${b.ticker || '-'}</span>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- READ INTERESTS -->
+    ${readSectors.length > 0 ? `
+    <div class="summary-section">
+      <div class="summary-title">Liest über</div>
+      <div class="interest-chips">
+        ${readSectors.map(s => `<span class="interest-chip">${s}</span>`).join('')}
+      </div>
+    </div>
+    ` : ''}
+
+    <div class="summary-section">
+      <div class="summary-title">Profil</div>
+      <div class="summary-card">
+        <ul class="summary-bullets">
+          <li><span>Investment Style</span><span>${profile.investment_style || '-'}</span></li>
+          <li><span>Risk Appetite</span><span>${profile.risk_appetite || '-'}</span></li>
+          <li><span>Fokus</span><span>${profile.dominant_topic || '-'}</span></li>
+        </ul>
       </div>
     </div>
 
     <div class="summary-section">
-      <div class="summary-title">Executive Summary</div>
-
-      <div class="summary-card">
-        <h4>Profil</h4>
-        <ul class="summary-bullets">
-          <li><span>Investment Style</span><span>${profile.investment_style || '-'}</span></li>
-          <li><span>Dominant Topic</span><span>${profile.dominant_topic || '-'}</span></li>
-          <li><span>Engagement Level</span><span>${profile.engagement_level || '-'}</span></li>
-        </ul>
+      <div class="summary-title">Aktivität (30d)</div>
+      <div class="activity-bar">
+        <div class="activity-item">
+          <span class="activity-num">${calls30d}</span>
+          <span class="activity-label">Calls</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-num">${trades30d}</span>
+          <span class="activity-label">Trades</span>
+        </div>
+        <div class="activity-item">
+          <span class="activity-num">${recentReads.length}</span>
+          <span class="activity-label">Reads</span>
+        </div>
       </div>
-
-      <div class="summary-card">
-        <h4>Aktivität (30 Tage)</h4>
-        <ul class="summary-bullets">
-          <li><span>Calls</span><span>${momentum.calls_last_30d || 0}</span></li>
-          <li><span>Trades</span><span>${momentum.trades_last_30d || 0}</span></li>
-          <li><span>Buy Ratio</span><span>${momentum.recent_buy_ratio ? (momentum.recent_buy_ratio * 100).toFixed(0) + '%' : '-'}</span></li>
-        </ul>
-      </div>
+    </div>
 
       <div class="summary-card">
         <h4>Portfolio</h4>
