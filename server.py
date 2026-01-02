@@ -173,6 +173,58 @@ async def ensure_audit_table():
 async def ensure_analytics_views():
     """Create enhanced analytics views for SQLite."""
 
+    # 0a. Base view: Readership with days_diff
+    await execute_write("""
+        CREATE VIEW IF NOT EXISTS ana_readership_daysdiff AS
+        SELECT
+            e.event_id,
+            e.client_id,
+            e.report_id,
+            r.report_code,
+            r.report_type,
+            r.sector AS report_sector,
+            r.company_name AS report_company,
+            r.ticker AS report_ticker,
+            r.title AS report_title,
+            r.publish_timestamp,
+            e.read_timestamp,
+            CAST(julianday(e.read_timestamp) - julianday(r.publish_timestamp) AS INTEGER) AS days_diff
+        FROM src_readership_events e
+        JOIN src_reports r ON r.report_id = e.report_id
+    """)
+
+    # 0b. Base view: Client Profile
+    await execute_write("""
+        CREATE VIEW IF NOT EXISTS int_client_profile AS
+        SELECT
+            c.client_id,
+            c.client_name,
+            c.firm_name,
+            c.client_type,
+            c.region,
+            COALESCE(
+                CASE
+                    WHEN c.client_type LIKE '%Hedge%' THEN 'Aggressive'
+                    WHEN c.client_type LIKE '%Pension%' THEN 'Conservative'
+                    WHEN c.client_type LIKE '%Insurance%' THEN 'Conservative'
+                    ELSE 'Moderate'
+                END,
+                'Moderate'
+            ) AS risk_appetite,
+            0.5 AS risk_score,
+            COALESCE(
+                CASE
+                    WHEN c.client_type LIKE '%Hedge%' THEN 'Active Trading'
+                    WHEN c.client_type LIKE '%Quant%' THEN 'Quantitative'
+                    ELSE 'Fundamental'
+                END,
+                'Fundamental'
+            ) AS investment_style,
+            NULL AS dominant_topic,
+            0.5 AS activity_score
+        FROM src_clients c
+    """)
+
     # 1. Portfolio Risk View
     await execute_write("""
         CREATE VIEW IF NOT EXISTS ana_client_portfolio_risk AS
