@@ -3,27 +3,30 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Sales Intelligence Platform</title>
+  <title>ODDO BHF Sales Intelligence</title>
   <style>
     :root {
-      /* Fresh Teal/Emerald Color Scheme */
-      --bg: #f0fdf4;
-      --bg-dark: #064e3b;
+      /* ODDO BHF Corporate Color Scheme */
+      --bg: #F7F4F2;
+      --bg-dark: #003D39;
+      --bg-darker: #182630;
       --card: #ffffff;
-      --border: #d1fae5;
-      --text: #022c22;
+      --border: #e5e0dc;
+      --text: #182630;
       --text-muted: #6b7280;
-      --accent: #059669;
-      --accent-light: #ecfdf5;
-      --accent-dark: #047857;
-      --success: #10b981;
+      --accent: #003D39;
+      --accent-light: #e8f0ef;
+      --accent-dark: #002825;
+      --accent-red: #cf2014;
+      --success: #55a184;
       --warning: #f59e0b;
-      --danger: #ef4444;
-      --info: #06b6d4;
-      --hot: #f97316;
-      --radius: 10px;
-      --shadow: 0 1px 2px rgba(0,0,0,0.05);
-      --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+      --danger: #cf2014;
+      --info: #9db6c7;
+      --hot: #cf2014;
+      --greige: #F7F2EE;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -330,17 +333,17 @@
     }
 
     .lead-banner.hot {
-      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      background: linear-gradient(135deg, #cf2014 0%, #a31810 100%);
       color: white;
     }
 
     .lead-banner.warm {
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-      color: #78350f;
+      background: linear-gradient(135deg, #55a184 0%, #305f50 100%);
+      color: white;
     }
 
     .lead-banner.cold {
-      background: var(--bg);
+      background: var(--greige);
       color: var(--text-muted);
       border: 1px solid var(--border);
     }
@@ -378,7 +381,7 @@
 
     .buy-chip {
       padding: 6px 12px;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: linear-gradient(135deg, #55a184 0%, #305f50 100%);
       color: white;
       border-radius: 20px;
       font-size: 12px;
@@ -960,9 +963,9 @@
       margin-right: 4px;
     }
 
-    .detail-table .tag.buy { background: #dcfce7; color: #166534; }
-    .detail-table .tag.sell { background: #fef2f2; color: #dc2626; }
-    .detail-table .tag.neutral { background: var(--bg); color: var(--text-muted); }
+    .detail-table .tag.buy { background: #e0f0ea; color: #305f50; }
+    .detail-table .tag.sell { background: #fce8e6; color: #cf2014; }
+    .detail-table .tag.neutral { background: var(--greige); color: var(--text-muted); }
 
     .drawer-tabs {
       display: flex;
@@ -1027,8 +1030,8 @@
   <!-- HEADER -->
   <header class="header">
     <div class="logo">
-      <div class="logo-icon">O</div>
-      <span>Sales Intelligence</span>
+      <div class="logo-icon">OB</div>
+      <span>ODDO BHF Sales Intelligence</span>
     </div>
 
     <div class="search-box">
