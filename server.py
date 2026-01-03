@@ -43,7 +43,7 @@ DB_PATH = os.environ.get("CLIENT_DB_PATH", os.path.join(BASE_DIR, "data.db"))
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 OPENAI_API_KEY = (os.environ.get("OPENAI_API_KEY") or "").strip()
-OPENAI_MODEL = (os.environ.get("OPENAI_MODEL") or "gpt-5-mini").strip()
+OPENAI_MODEL = (os.environ.get("OPENAI_MODEL") or "o3").strip()
 
 oa = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
