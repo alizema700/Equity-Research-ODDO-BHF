@@ -170,8 +170,213 @@ async def ensure_audit_table():
     """)
 
 
+async def _insert_sample_enhanced_data():
+    """Insert sample data for enhanced tables if empty."""
+
+    # Check if client preferences already has data
+    existing = await fetch_one("SELECT COUNT(*) as cnt FROM src_client_preferences")
+    if existing and existing.get("cnt", 0) > 0:
+        return  # Already has data
+
+    # Sample Client Preferences
+    await execute_write("""
+        INSERT OR IGNORE INTO src_client_preferences
+        (client_id, prefers_dividends, prefers_growth, prefers_esg, preferred_sectors, preferred_themes, min_dividend_yield, max_volatility, preference_notes)
+        VALUES
+        (1, 1, 0, 1, 'Utilities,Healthcare,Consumer Staples', 'ESG,Dividends', 0.03, 0.20, 'Conservative pension fund, focus on stable income and ESG compliance'),
+        (2, 0, 1, 0, 'Technology,Industrials', 'AI,Digital,Automation', NULL, 0.40, 'Aggressive hedge fund, seeking alpha through growth stories'),
+        (3, 1, 1, 0, 'Financials,Energy,Materials', 'Value,Cyclicals', 0.02, 0.30, 'Balanced approach, likes quality cyclicals with dividends'),
+        (4, 0, 1, 1, 'Technology,Healthcare', 'AI,Biotech,ESG', NULL, 0.35, 'Growth-focused family office with ESG considerations'),
+        (5, 1, 0, 0, 'Real Estate,Utilities,Telecoms', 'Dividends,Infrastructure', 0.04, 0.18, 'Income-focused insurance company')
+    """)
+
+    # Sample Stock Fundamentals
+    await execute_write("""
+        INSERT OR IGNORE INTO src_stock_fundamentals
+        (stock_id, as_of_date, pe_ratio, pe_forward, dividend_yield, roe, profit_margin, revenue_growth_yoy, beta, market_cap, market_cap_bucket, quality_score)
+        VALUES
+        (1, '2026-01-03', 18.5, 16.2, 0.032, 0.15, 0.12, 0.08, 0.95, 45000000000, 'Large', 78),
+        (2, '2026-01-03', 25.3, 22.1, 0.018, 0.22, 0.18, 0.15, 1.15, 120000000000, 'Mega', 85),
+        (3, '2026-01-03', 12.8, 11.5, 0.045, 0.12, 0.08, 0.03, 0.75, 8000000000, 'Mid', 65),
+        (4, '2026-01-03', 32.1, 28.5, 0.008, 0.28, 0.22, 0.25, 1.35, 200000000000, 'Mega', 82),
+        (5, '2026-01-03', 15.2, 14.0, 0.038, 0.14, 0.10, 0.05, 0.88, 22000000000, 'Large', 72)
+    """)
+
+    # Sample Analyst Ratings
+    await execute_write("""
+        INSERT OR IGNORE INTO src_analyst_ratings
+        (stock_id, analyst_name, rating, rating_date, price_target, current_price, upside_percent, conviction_level, thesis_summary, key_catalysts)
+        VALUES
+        (1, 'Dr. Schmidt', 'Outperform', '2026-01-02', 85.00, 72.50, 0.172, 'High', 'Strong market position, improving margins, ESG leader', 'Q4 earnings, new product launch'),
+        (2, 'Marie Dupont', 'Outperform', '2025-12-15', 145.00, 128.30, 0.130, 'High', 'AI transformation driving growth', 'AI revenue acceleration'),
+        (3, 'Hans Weber', 'Neutral', '2025-12-20', 42.00, 41.20, 0.019, 'Medium', 'Stable but limited upside', 'Dividend increase expected'),
+        (4, 'Sophie Martin', 'Outperform', '2026-01-01', 420.00, 385.00, 0.091, 'High', 'Cloud growth reaccelerating', 'Q4 cloud numbers'),
+        (5, 'Thomas Mueller', 'Neutral', '2025-12-18', 58.00, 55.80, 0.039, 'Low', 'Defensive quality, fair valuation', 'Stable performer')
+    """)
+
+    # Sample Catalysts
+    await execute_write("""
+        INSERT OR IGNORE INTO src_stock_catalysts
+        (stock_id, event_type, event_date, event_time, event_title, expected_impact, sentiment, eps_estimate)
+        VALUES
+        (1, 'Earnings', '2026-01-28', 'Pre-Market', 'Q4 2025 Results', 'High', 'Positive', 1.85),
+        (2, 'Earnings', '2026-01-30', 'After-Hours', 'Q4 2025 Results', 'High', 'Positive', 2.45),
+        (4, 'Earnings', '2026-02-04', 'After-Hours', 'Q4 2025 Results', 'High', 'Positive', 5.20),
+        (1, 'Dividend', '2026-02-15', NULL, 'Q4 Dividend Payment', 'Low', 'Positive', NULL),
+        (3, 'Dividend', '2026-02-10', NULL, 'Annual Dividend', 'Medium', 'Positive', NULL)
+    """)
+
+    # Sample Sector Overview
+    await execute_write("""
+        INSERT OR IGNORE INTO src_sector_overview
+        (sector_name, sector_rating, sector_analyst, rating_date, key_themes, key_risks, avg_pe, avg_dividend_yield, top_picks)
+        VALUES
+        ('Technology', 'Overweight', 'Marie Dupont', '2026-01-01', 'AI adoption, cloud growth', 'Valuation, regulation', 28.5, 0.012, 'MSFT,SAP,ASML'),
+        ('Healthcare', 'Overweight', 'Anna Lindberg', '2026-01-01', 'Aging demographics, GLP-1', 'Pricing pressure', 22.3, 0.018, 'NVO,ROG,AZN'),
+        ('Financials', 'Neutral', 'Hans Weber', '2026-01-01', 'Higher rates benefit', 'Credit cycle', 10.5, 0.045, 'BNP,ING'),
+        ('Industrials', 'Overweight', 'Jean-Pierre Blanc', '2026-01-01', 'Automation, reshoring', 'China slowdown', 18.2, 0.025, 'SIE,ABB'),
+        ('Energy', 'Neutral', 'Thomas Mueller', '2026-01-01', 'Energy transition', 'Oil volatility', 8.5, 0.055, 'SHEL,TTE'),
+        ('Utilities', 'Neutral', 'Erik Svensson', '2026-01-01', 'Renewables growth', 'Rate sensitivity', 15.5, 0.048, 'ENEL,IBE')
+    """)
+
+
 async def ensure_analytics_views():
-    """Create enhanced analytics views for SQLite."""
+    """Create enhanced analytics views and tables for SQLite."""
+
+    # ===========================================
+    # NEW TABLES FOR COMPREHENSIVE DATA
+    # ===========================================
+
+    # Client Preferences (real preferences, not inferred)
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_client_preferences (
+            preference_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id           INTEGER NOT NULL,
+            prefers_dividends   BOOLEAN DEFAULT 0,
+            prefers_growth      BOOLEAN DEFAULT 0,
+            prefers_value       BOOLEAN DEFAULT 0,
+            prefers_esg         BOOLEAN DEFAULT 0,
+            prefers_momentum    BOOLEAN DEFAULT 0,
+            max_volatility      REAL,
+            min_market_cap      TEXT,
+            preferred_sectors   TEXT,
+            excluded_sectors    TEXT,
+            preferred_themes    TEXT,
+            preferred_regions   TEXT,
+            min_dividend_yield  REAL,
+            preference_notes    TEXT,
+            last_updated        TEXT DEFAULT (datetime('now')),
+            UNIQUE(client_id)
+        )
+    """)
+
+    # Stock Fundamentals
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_stock_fundamentals (
+            fundamental_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            stock_id            INTEGER NOT NULL,
+            as_of_date          TEXT NOT NULL,
+            pe_ratio            REAL,
+            pe_forward          REAL,
+            pb_ratio            REAL,
+            ps_ratio            REAL,
+            ev_ebitda           REAL,
+            roe                 REAL,
+            profit_margin       REAL,
+            revenue_growth_yoy  REAL,
+            dividend_yield      REAL,
+            payout_ratio        REAL,
+            debt_to_equity      REAL,
+            market_cap          REAL,
+            market_cap_bucket   TEXT,
+            beta                REAL,
+            avg_volume_20d      INTEGER,
+            quality_score       REAL,
+            UNIQUE(stock_id, as_of_date)
+        )
+    """)
+
+    # Analyst Ratings
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_analyst_ratings (
+            rating_id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            stock_id            INTEGER NOT NULL,
+            analyst_name        TEXT NOT NULL,
+            rating              TEXT NOT NULL,
+            previous_rating     TEXT,
+            rating_date         TEXT NOT NULL,
+            price_target        REAL,
+            previous_target     REAL,
+            target_currency     TEXT DEFAULT 'EUR',
+            current_price       REAL,
+            upside_percent      REAL,
+            conviction_level    TEXT,
+            thesis_summary      TEXT,
+            key_catalysts       TEXT,
+            key_risks           TEXT
+        )
+    """)
+
+    # Upcoming Catalysts
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_stock_catalysts (
+            catalyst_id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            stock_id            INTEGER NOT NULL,
+            event_type          TEXT NOT NULL,
+            event_date          TEXT NOT NULL,
+            event_time          TEXT,
+            event_title         TEXT,
+            event_description   TEXT,
+            expected_impact     TEXT,
+            sentiment           TEXT,
+            eps_estimate        REAL,
+            revenue_estimate    REAL,
+            dividend_amount     REAL,
+            is_confirmed        BOOLEAN DEFAULT 1
+        )
+    """)
+
+    # Sector Overview
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_sector_overview (
+            sector_id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            sector_name         TEXT NOT NULL UNIQUE,
+            sector_rating       TEXT,
+            sector_analyst      TEXT,
+            rating_date         TEXT,
+            key_themes          TEXT,
+            key_risks           TEXT,
+            avg_pe              REAL,
+            avg_dividend_yield  REAL,
+            ytd_performance     REAL,
+            top_picks           TEXT
+        )
+    """)
+
+    # Client-Stock History
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_client_stock_history (
+            history_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id           INTEGER NOT NULL,
+            stock_id            INTEGER NOT NULL,
+            total_trades        INTEGER DEFAULT 0,
+            total_buys          INTEGER DEFAULT 0,
+            total_sells         INTEGER DEFAULT 0,
+            net_direction       INTEGER DEFAULT 0,
+            first_interaction   TEXT,
+            last_interaction    TEXT,
+            likely_holding      BOOLEAN DEFAULT 0,
+            interest_level      TEXT,
+            UNIQUE(client_id, stock_id)
+        )
+    """)
+
+    # Insert sample data if tables are empty
+    await _insert_sample_enhanced_data()
+
+    # ===========================================
+    # ANALYTICS VIEWS
+    # ===========================================
 
     # 0a. Base view: Readership with days_diff
     await execute_write("""
@@ -2413,63 +2618,91 @@ async def api_available_stocks(search: str = "", limit: int = 100):
 async def api_client_preferences(client_id: int):
     """
     Get client investment preferences and goals.
-    Inferred from trading patterns, call discussions, and portfolio composition.
+    Uses real preferences from database if available, otherwise infers from behavior.
     """
     try:
-        # Get portfolio summary for sector/theme preferences
-        psum = await get_client_portfolio_summary(client_id)
-        profile = await get_client_profile(client_id)
-        conviction = await get_conviction(client_id)
-        engagement = await get_engagement_momentum(client_id)
+        goals = []
 
-        # Analyze trading patterns for preferences
-        trade_analysis = await fetch_one(
+        # First, try to get REAL preferences from database
+        real_prefs = await fetch_one(
             """
-            SELECT
-                COUNT(*) as total_trades,
-                SUM(CASE WHEN side = 'Buy' THEN 1 ELSE 0 END) as buy_count,
-                SUM(CASE WHEN side = 'Sell' THEN 1 ELSE 0 END) as sell_count,
-                COUNT(DISTINCT ticker) as unique_tickers
-            FROM src_trade_executions
-            WHERE client_id = :client_id
-              AND julianday('now') - julianday(trade_timestamp) <= 180
+            SELECT * FROM src_client_preferences WHERE client_id = :client_id
             """,
             {"client_id": client_id},
         )
 
-        # Infer investment goals based on available data
-        goals = []
+        # Get supporting data
+        psum = await get_client_portfolio_summary(client_id)
+        profile = await get_client_profile(client_id)
+        conviction = await get_conviction(client_id)
 
-        # Risk-based goals
+        # If we have real preferences, use them
+        if real_prefs:
+            if real_prefs.get("prefers_dividends"):
+                goals.append({"goal": "Dividend Income", "icon": "💰", "description": "Focus on dividend-paying stocks", "source": "stated"})
+            if real_prefs.get("prefers_growth"):
+                goals.append({"goal": "Growth Stocks", "icon": "📈", "description": "Focus on capital appreciation", "source": "stated"})
+            if real_prefs.get("prefers_esg"):
+                goals.append({"goal": "ESG Focus", "icon": "🌱", "description": "Environmental, Social, Governance criteria", "source": "stated"})
+            if real_prefs.get("prefers_value"):
+                goals.append({"goal": "Value Investing", "icon": "💎", "description": "Undervalued stocks with margin of safety", "source": "stated"})
+            if real_prefs.get("prefers_momentum"):
+                goals.append({"goal": "Momentum Strategy", "icon": "🚀", "description": "Following market trends", "source": "stated"})
+
+            # Sector preferences
+            if real_prefs.get("preferred_sectors"):
+                sectors = real_prefs["preferred_sectors"].split(",")[:3]
+                goals.append({"goal": f"Sectors: {', '.join(sectors)}", "icon": "🏢", "description": "Preferred sector exposure", "source": "stated"})
+
+            # Theme preferences
+            if real_prefs.get("preferred_themes"):
+                themes = real_prefs["preferred_themes"].split(",")[:2]
+                theme_icons = {"ESG": "🌱", "AI": "🤖", "Tech": "💻", "Dividends": "💰", "Automation": "🤖"}
+                for theme in themes:
+                    icon = theme_icons.get(theme.strip(), "📊")
+                    goals.append({"goal": f"{theme.strip()} Theme", "icon": icon, "description": "Thematic focus", "source": "stated"})
+
+            # Risk constraints
+            if real_prefs.get("max_volatility"):
+                vol_pct = int(real_prefs["max_volatility"] * 100)
+                goals.append({"goal": f"Max Vol: {vol_pct}%", "icon": "🛡️", "description": f"Volatility limit: {vol_pct}%", "source": "stated"})
+
+            if real_prefs.get("min_dividend_yield"):
+                yield_pct = real_prefs["min_dividend_yield"] * 100
+                goals.append({"goal": f"Min Yield: {yield_pct:.1f}%", "icon": "💵", "description": f"Minimum dividend yield requirement", "source": "stated"})
+
+            return {
+                "client_id": client_id,
+                "goals": goals,
+                "risk_profile": profile.get("risk_appetite", "Moderate"),
+                "investment_style": profile.get("investment_style", "Fundamental"),
+                "top_sector": psum.get("top_sector", ""),
+                "top_theme": psum.get("top_theme", ""),
+                "conviction_level": conviction.get("conviction_level", "Unknown"),
+                "preference_notes": real_prefs.get("preference_notes", ""),
+                "has_real_preferences": True,
+            }
+
+        # Fall back to INFERRED preferences if no real data
         risk_appetite = profile.get("risk_appetite", "Moderate")
         if risk_appetite == "Aggressive":
-            goals.append({"goal": "Alpha Generation", "icon": "🎯", "description": "Seeking high returns through active management"})
-            goals.append({"goal": "Growth Stocks", "icon": "📈", "description": "Focused on capital appreciation"})
+            goals.append({"goal": "Alpha Generation", "icon": "🎯", "description": "Seeking high returns (inferred)", "source": "inferred"})
+            goals.append({"goal": "Growth Stocks", "icon": "📈", "description": "Focus on capital appreciation (inferred)", "source": "inferred"})
         elif risk_appetite == "Conservative":
-            goals.append({"goal": "Capital Preservation", "icon": "🛡️", "description": "Prioritizing stability over returns"})
-            goals.append({"goal": "Dividend Income", "icon": "💰", "description": "Seeking regular income streams"})
+            goals.append({"goal": "Capital Preservation", "icon": "🛡️", "description": "Prioritizing stability (inferred)", "source": "inferred"})
+            goals.append({"goal": "Dividend Income", "icon": "💰", "description": "Seeking income streams (inferred)", "source": "inferred"})
         else:
-            goals.append({"goal": "Balanced Growth", "icon": "⚖️", "description": "Mix of growth and income"})
+            goals.append({"goal": "Balanced Growth", "icon": "⚖️", "description": "Mix of growth and income (inferred)", "source": "inferred"})
 
-        # Sector-based goals
         top_sector = psum.get("top_sector", "")
         if top_sector:
-            goals.append({"goal": f"{top_sector} Focus", "icon": "🏢", "description": f"Primary sector exposure: {top_sector}"})
+            goals.append({"goal": f"{top_sector} Focus", "icon": "🏢", "description": f"Primary sector exposure (inferred)", "source": "inferred"})
 
-        # Theme-based goals
         top_theme = psum.get("top_theme", "")
         if top_theme and top_theme.lower() not in ["none", "null", ""]:
             theme_icons = {"ESG": "🌱", "AI": "🤖", "Tech": "💻", "Healthcare": "🏥", "Energy": "⚡"}
             icon = theme_icons.get(top_theme, "📊")
-            goals.append({"goal": f"{top_theme} Theme", "icon": icon, "description": f"Thematic investment focus"})
-
-        # Activity-based goals
-        if trade_analysis:
-            buy_ratio = trade_analysis.get("buy_count", 0) / max(trade_analysis.get("total_trades", 1), 1)
-            if buy_ratio > 0.7:
-                goals.append({"goal": "Accumulation Phase", "icon": "📥", "description": "Actively building positions"})
-            elif buy_ratio < 0.3:
-                goals.append({"goal": "Rebalancing", "icon": "🔄", "description": "Portfolio restructuring in progress"})
+            goals.append({"goal": f"{top_theme} Theme", "icon": icon, "description": "Thematic focus (inferred)", "source": "inferred"})
 
         return {
             "client_id": client_id,
@@ -2479,6 +2712,7 @@ async def api_client_preferences(client_id: int):
             "top_sector": top_sector,
             "top_theme": top_theme,
             "conviction_level": conviction.get("conviction_level", "Unknown"),
+            "has_real_preferences": False,
         }
     except Exception as e:
         return JSONResponse(status_code=200, content={"error": str(e), "goals": []})
