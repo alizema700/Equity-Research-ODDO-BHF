@@ -1041,6 +1041,158 @@
       color: var(--accent);
       background: var(--accent-light);
     }
+
+    /* === CLIENT GOALS === */
+    .goals-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .goal-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px;
+      background: var(--greige);
+      border-radius: 8px;
+    }
+    .goal-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+    .goal-text {
+      flex: 1;
+    }
+    .goal-name {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .goal-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* === BEST CONTACT TIME === */
+    .contact-time-box {
+      padding: 12px;
+      background: linear-gradient(135deg, var(--accent-light), #e0f2f1);
+      border-radius: 8px;
+      border: 1px solid var(--accent);
+    }
+    .contact-time-main {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .contact-day {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .contact-hours {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .contact-confidence {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .confidence-high { background: #dcfce7; color: #16a34a; }
+    .confidence-medium { background: #fef9c3; color: #ca8a04; }
+    .confidence-low { background: #f3f4f6; color: #6b7280; }
+
+    /* === ANALYST OVERRIDE === */
+    .analyst-override-box {
+      background: linear-gradient(135deg, #fefce8, #fef3c7);
+      border: 1px solid #fbbf24;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .override-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .override-icon {
+      font-size: 20px;
+    }
+    .override-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #92400e;
+    }
+    .override-subtitle {
+      font-size: 12px;
+      color: #a16207;
+    }
+    .override-search {
+      position: relative;
+    }
+    .stock-search-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #fbbf24;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      outline: none;
+    }
+    .stock-search-input:focus {
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+    }
+    .stock-search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: var(--shadow-lg);
+      margin-top: 4px;
+    }
+    .stock-search-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .stock-search-item:last-child { border-bottom: none; }
+    .stock-search-item:hover {
+      background: var(--accent-light);
+    }
+    .stock-search-ticker {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--accent);
+    }
+    .stock-search-name {
+      font-size: 13px;
+      color: var(--text);
+    }
+    .stock-search-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .empty-search {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
@@ -1148,7 +1300,7 @@
 
       <!-- TAB: STORY -->
       <div class="tab-panel" id="panel-story">
-        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
           <button class="btn btn-primary" id="storyFullBtn" disabled>Story (Full)</button>
           <button class="btn btn-secondary" id="storyBulletsBtn" disabled>Bullets (Summary)</button>
           <span id="selectedStock" style="margin-left: auto; color: var(--text-muted); font-size: 14px;">
@@ -1156,10 +1308,28 @@
           </span>
         </div>
 
+        <!-- ANALYST STOCK OVERRIDE -->
+        <div class="analyst-override-box">
+          <div class="override-header">
+            <span class="override-icon">🎯</span>
+            <span class="override-title">Analyst Override</span>
+            <span class="override-subtitle">Select your own stock instead of AI recommendations</span>
+          </div>
+          <div class="override-search">
+            <input
+              type="text"
+              id="stockSearchInput"
+              class="stock-search-input"
+              placeholder="Search stock by ticker, name, or sector..."
+            />
+            <div id="stockSearchResults" class="stock-search-results" style="display: none;"></div>
+          </div>
+        </div>
+
         <div class="output-panel" id="outputPanel" style="display: none;">
           <div class="output-header">
             <span class="output-title" id="outputTitle">Output</span>
-            <button class="btn btn-secondary" id="copyBtn">Kopieren</button>
+            <button class="btn btn-secondary" id="copyBtn">Copy</button>
           </div>
           <div class="output-body">
             <div class="output-text" id="outputText"></div>
@@ -1168,7 +1338,7 @@
 
         <div class="empty-state" id="storyEmpty">
           <h3>Select a Stock</h3>
-          <p>Click on a stock in the shortlist, then generate a story.</p>
+          <p>Click on a stock in the shortlist or use Analyst Override above to select your own.</p>
         </div>
       </div>
 
@@ -1581,14 +1751,141 @@ function renderSidebar(data) {
       <div style="display: flex; flex-wrap: wrap; gap: 6px;">
         ${(data.constraints?.avoid_tickers || []).slice(0, 10).map(t => `
           <span style="padding: 4px 8px; background: #fef2f2; color: #dc2626; border-radius: 4px; font-size: 12px; font-weight: 600;">${t}</span>
-        `).join('') || '<span style="color: var(--text-muted); font-size: 13px;">Keine</span>'}
+        `).join('') || '<span style="color: var(--text-muted); font-size: 13px;">None</span>'}
       </div>
     </div>
 
+    <!-- CLIENT GOALS (loaded async) -->
+    <div class="summary-section" id="clientGoalsSection" style="display: none;">
+      <div class="summary-title">Investment Goals</div>
+      <div id="clientGoals" class="goals-container"></div>
+    </div>
+
+    <!-- BEST CONTACT TIME (loaded async) -->
+    <div class="summary-section" id="contactTimeSection" style="display: none;">
+      <div class="summary-title">Best Contact Time</div>
+      <div id="contactTimeInfo" class="contact-time-box"></div>
+    </div>
+
     <button class="details-btn" onclick="openDetailsDrawer()">
-      Alle Details anzeigen (Calls, Trades, Reads, Positionen...)
+      Show All Details (Calls, Trades, Reads, Positions...)
     </button>
   `;
+
+  // Load async data for client goals and best contact time
+  loadClientGoals(data.client?.client_id || clientId);
+  loadBestContactTime(data.client?.client_id || clientId);
+}
+
+// ============================================================================
+// CLIENT GOALS & BEST CONTACT TIME
+// ============================================================================
+async function loadClientGoals(cid) {
+  if (!cid) return;
+  try {
+    const res = await fetch(apiUrl(`/api/client/${cid}/preferences`), { headers: authHeaders() });
+    const data = await res.json();
+    if (data.error || !data.goals || data.goals.length === 0) return;
+
+    const goalsHtml = data.goals.map(g => `
+      <div class="goal-item">
+        <span class="goal-icon">${g.icon || '📊'}</span>
+        <div class="goal-text">
+          <div class="goal-name">${g.goal}</div>
+          <div class="goal-desc">${g.description || ''}</div>
+        </div>
+      </div>
+    `).join('');
+
+    $('clientGoals').innerHTML = goalsHtml;
+    $('clientGoalsSection').style.display = 'block';
+  } catch (e) {
+    console.error('Error loading client goals:', e);
+  }
+}
+
+async function loadBestContactTime(cid) {
+  if (!cid) return;
+  try {
+    const res = await fetch(apiUrl(`/api/client/${cid}/best_contact_time`), { headers: authHeaders() });
+    const data = await res.json();
+    if (data.error) return;
+
+    const confidenceClass = data.confidence === 'High' ? 'confidence-high' :
+                           data.confidence === 'Medium' ? 'confidence-medium' : 'confidence-low';
+
+    $('contactTimeInfo').innerHTML = `
+      <div class="contact-time-main">
+        <div class="contact-day">${data.best_day || 'Tuesday'}</div>
+        <div class="contact-hours">${data.best_time_range || '09:00 - 11:00'}</div>
+      </div>
+      <div class="contact-confidence ${confidenceClass}">
+        Confidence: ${data.confidence || 'Low'}
+      </div>
+    `;
+    $('contactTimeSection').style.display = 'block';
+  } catch (e) {
+    console.error('Error loading contact time:', e);
+  }
+}
+
+// ============================================================================
+// ANALYST STOCK OVERRIDE - Manual Selection
+// ============================================================================
+let manualStockSelected = null;
+
+async function searchAvailableStocks(query) {
+  try {
+    const res = await fetch(apiUrl(`/api/stocks/available?search=${encodeURIComponent(query)}&limit=50`), {
+      headers: authHeaders()
+    });
+    const data = await res.json();
+    return data.stocks || [];
+  } catch (e) {
+    console.error('Error searching stocks:', e);
+    return [];
+  }
+}
+
+function renderStockSearchResults(stocks) {
+  if (stocks.length === 0) {
+    $('stockSearchResults').innerHTML = '<div class="empty-search">No stocks found</div>';
+    return;
+  }
+
+  $('stockSearchResults').innerHTML = stocks.map(s => `
+    <div class="stock-search-item" data-stock='${JSON.stringify(s)}'>
+      <div class="stock-search-ticker">${s.ticker}</div>
+      <div class="stock-search-name">${s.company_name}</div>
+      <div class="stock-search-meta">${s.sector || ''} · ${s.region || ''}</div>
+    </div>
+  `).join('');
+
+  $$('.stock-search-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const stock = JSON.parse(el.dataset.stock);
+      selectManualStock(stock);
+    });
+  });
+}
+
+function selectManualStock(stock) {
+  manualStockSelected = stock;
+  selectedStock = stock;
+  selectedTicker = stock.ticker;
+
+  // Update UI
+  $('selectedStock').innerHTML = `<strong>${stock.ticker}</strong> - ${stock.company_name}`;
+  $('storyFullBtn').disabled = false;
+  $('storyBulletsBtn').disabled = false;
+
+  // Clear search
+  $('stockSearchInput').value = '';
+  $('stockSearchResults').innerHTML = '';
+  $('stockSearchResults').style.display = 'none';
+
+  // Show notification
+  setStatus(`Selected: ${stock.ticker}`, 'active');
 }
 
 // ============================================================================
@@ -1956,8 +2253,34 @@ $$('.quick-prompt').forEach(el => {
 
 // Settings (simple prompt for now)
 $('settingsBtn').addEventListener('click', () => {
-  const base = prompt('API Base URL (leer = same-origin):', getApiBase());
+  const base = prompt('API Base URL (empty = same-origin):', getApiBase());
   if (base !== null) localStorage.setItem('api_base', base);
+});
+
+// Stock search for analyst override
+let stockSearchDebounce = null;
+$('stockSearchInput').addEventListener('input', (e) => {
+  const query = e.target.value.trim();
+  if (stockSearchDebounce) clearTimeout(stockSearchDebounce);
+
+  if (query.length < 2) {
+    $('stockSearchResults').style.display = 'none';
+    return;
+  }
+
+  stockSearchDebounce = setTimeout(async () => {
+    const stocks = await searchAvailableStocks(query);
+    $('stockSearchResults').style.display = 'block';
+    renderStockSearchResults(stocks);
+  }, 300);
+});
+
+// Hide stock search results when clicking outside
+document.addEventListener('click', (e) => {
+  const searchBox = document.querySelector('.override-search');
+  if (searchBox && !searchBox.contains(e.target)) {
+    $('stockSearchResults').style.display = 'none';
+  }
 });
 
 // Init

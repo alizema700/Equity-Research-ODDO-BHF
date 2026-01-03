@@ -2369,3 +2369,227 @@ async def api_shortlist_pdf(req: ShortlistRequest):
         )
     except Exception as e:
         return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+# =========================
+# Analyst Stock Override - Manual Selection
+# =========================
+
+@app.get("/api/stocks/available")
+async def api_available_stocks(search: str = "", limit: int = 100):
+    """
+    Get all available stocks for analyst manual selection.
+    Only returns stocks that are in the universe (have reports/coverage).
+    """
+    try:
+        search_term = f"%{search}%" if search else "%"
+        stocks = await fetch_all(
+            """
+            SELECT DISTINCT
+                s.stock_id,
+                s.ticker,
+                s.company_name,
+                s.sector,
+                s.region,
+                s.market_cap_bucket,
+                s.theme_tag
+            FROM src_stocks s
+            WHERE (s.ticker LIKE :search OR s.company_name LIKE :search OR s.sector LIKE :search)
+            ORDER BY s.company_name
+            LIMIT :limit
+            """,
+            {"search": search_term, "limit": limit},
+        )
+        return {"stocks": stocks, "count": len(stocks)}
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e), "stocks": []})
+
+
+# =========================
+# Client Preferences / Investment Goals
+# =========================
+
+@app.get("/api/client/{client_id}/preferences")
+async def api_client_preferences(client_id: int):
+    """
+    Get client investment preferences and goals.
+    Inferred from trading patterns, call discussions, and portfolio composition.
+    """
+    try:
+        # Get portfolio summary for sector/theme preferences
+        psum = await get_client_portfolio_summary(client_id)
+        profile = await get_client_profile(client_id)
+        conviction = await get_conviction(client_id)
+        engagement = await get_engagement_momentum(client_id)
+
+        # Analyze trading patterns for preferences
+        trade_analysis = await fetch_one(
+            """
+            SELECT
+                COUNT(*) as total_trades,
+                SUM(CASE WHEN side = 'Buy' THEN 1 ELSE 0 END) as buy_count,
+                SUM(CASE WHEN side = 'Sell' THEN 1 ELSE 0 END) as sell_count,
+                COUNT(DISTINCT ticker) as unique_tickers
+            FROM src_trade_executions
+            WHERE client_id = :client_id
+              AND julianday('now') - julianday(trade_timestamp) <= 180
+            """,
+            {"client_id": client_id},
+        )
+
+        # Infer investment goals based on available data
+        goals = []
+
+        # Risk-based goals
+        risk_appetite = profile.get("risk_appetite", "Moderate")
+        if risk_appetite == "Aggressive":
+            goals.append({"goal": "Alpha Generation", "icon": "🎯", "description": "Seeking high returns through active management"})
+            goals.append({"goal": "Growth Stocks", "icon": "📈", "description": "Focused on capital appreciation"})
+        elif risk_appetite == "Conservative":
+            goals.append({"goal": "Capital Preservation", "icon": "🛡️", "description": "Prioritizing stability over returns"})
+            goals.append({"goal": "Dividend Income", "icon": "💰", "description": "Seeking regular income streams"})
+        else:
+            goals.append({"goal": "Balanced Growth", "icon": "⚖️", "description": "Mix of growth and income"})
+
+        # Sector-based goals
+        top_sector = psum.get("top_sector", "")
+        if top_sector:
+            goals.append({"goal": f"{top_sector} Focus", "icon": "🏢", "description": f"Primary sector exposure: {top_sector}"})
+
+        # Theme-based goals
+        top_theme = psum.get("top_theme", "")
+        if top_theme and top_theme.lower() not in ["none", "null", ""]:
+            theme_icons = {"ESG": "🌱", "AI": "🤖", "Tech": "💻", "Healthcare": "🏥", "Energy": "⚡"}
+            icon = theme_icons.get(top_theme, "📊")
+            goals.append({"goal": f"{top_theme} Theme", "icon": icon, "description": f"Thematic investment focus"})
+
+        # Activity-based goals
+        if trade_analysis:
+            buy_ratio = trade_analysis.get("buy_count", 0) / max(trade_analysis.get("total_trades", 1), 1)
+            if buy_ratio > 0.7:
+                goals.append({"goal": "Accumulation Phase", "icon": "📥", "description": "Actively building positions"})
+            elif buy_ratio < 0.3:
+                goals.append({"goal": "Rebalancing", "icon": "🔄", "description": "Portfolio restructuring in progress"})
+
+        return {
+            "client_id": client_id,
+            "goals": goals,
+            "risk_profile": risk_appetite,
+            "investment_style": profile.get("investment_style", "Fundamental"),
+            "top_sector": top_sector,
+            "top_theme": top_theme,
+            "conviction_level": conviction.get("conviction_level", "Unknown"),
+        }
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e), "goals": []})
+
+
+# =========================
+# Best Contact Time Analysis
+# =========================
+
+@app.get("/api/client/{client_id}/best_contact_time")
+async def api_best_contact_time(client_id: int):
+    """
+    Analyze trading and call patterns to determine optimal contact time.
+    Uses autocorrelation of activity patterns.
+    """
+    try:
+        # Analyze call timing patterns
+        call_patterns = await fetch_all(
+            """
+            SELECT
+                strftime('%w', call_timestamp) as day_of_week,
+                strftime('%H', call_timestamp) as hour_of_day,
+                COUNT(*) as call_count,
+                AVG(duration_minutes) as avg_duration
+            FROM src_call_logs
+            WHERE client_id = :client_id
+            GROUP BY day_of_week, hour_of_day
+            ORDER BY call_count DESC
+            """,
+            {"client_id": client_id},
+        )
+
+        # Analyze trade timing patterns (when they're most active)
+        trade_patterns = await fetch_all(
+            """
+            SELECT
+                strftime('%w', trade_timestamp) as day_of_week,
+                strftime('%H', trade_timestamp) as hour_of_day,
+                COUNT(*) as trade_count,
+                SUM(CASE WHEN notional_bucket = 'Large' THEN 1 ELSE 0 END) as large_trades
+            FROM src_trade_executions
+            WHERE client_id = :client_id
+            GROUP BY day_of_week, hour_of_day
+            ORDER BY trade_count DESC
+            """,
+            {"client_id": client_id},
+        )
+
+        # Day names
+        day_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+        # Find best day and time
+        best_day = None
+        best_hour = None
+        best_score = 0
+
+        # Combine call and trade patterns
+        day_scores = {}
+        hour_scores = {}
+
+        for c in call_patterns:
+            day = int(c.get("day_of_week", 0))
+            hour = int(c.get("hour_of_day", 9))
+            score = (c.get("call_count", 0) * 2) + (c.get("avg_duration", 0) * 0.5)
+            day_scores[day] = day_scores.get(day, 0) + score
+            hour_scores[hour] = hour_scores.get(hour, 0) + score
+
+        for t in trade_patterns:
+            day = int(t.get("day_of_week", 0))
+            hour = int(t.get("hour_of_day", 9))
+            score = (t.get("trade_count", 0) * 1.5) + (t.get("large_trades", 0) * 3)
+            day_scores[day] = day_scores.get(day, 0) + score
+            hour_scores[hour] = hour_scores.get(hour, 0) + score
+
+        # Find best day
+        if day_scores:
+            best_day_num = max(day_scores, key=day_scores.get)
+            best_day = day_names[best_day_num]
+        else:
+            best_day = "Tuesday"  # Default
+
+        # Find best hour (business hours only: 8-18)
+        business_hours = {h: s for h, s in hour_scores.items() if 8 <= h <= 18}
+        if business_hours:
+            best_hour = max(business_hours, key=business_hours.get)
+        else:
+            best_hour = 10  # Default
+
+        # Format time range
+        hour_end = min(best_hour + 2, 18)
+        time_range = f"{best_hour:02d}:00 - {hour_end:02d}:00"
+
+        # Confidence based on data points
+        total_data_points = len(call_patterns) + len(trade_patterns)
+        if total_data_points >= 20:
+            confidence = "High"
+        elif total_data_points >= 10:
+            confidence = "Medium"
+        else:
+            confidence = "Low"
+
+        return {
+            "client_id": client_id,
+            "best_day": best_day,
+            "best_time_range": time_range,
+            "best_hour": best_hour,
+            "confidence": confidence,
+            "data_points": total_data_points,
+            "recommendation": f"Best time to contact: {best_day} between {time_range}",
+            "day_activity": {day_names[d]: round(s, 1) for d, s in sorted(day_scores.items())},
+            "hour_activity": {f"{h:02d}:00": round(s, 1) for h, s in sorted(hour_scores.items()) if 8 <= h <= 18},
+        }
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
