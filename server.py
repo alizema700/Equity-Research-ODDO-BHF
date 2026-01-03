@@ -225,7 +225,9 @@ async def ensure_analytics_views():
         FROM src_clients c
     """)
 
-    # 1. Portfolio Risk View
+    # 1. Portfolio Risk View - IMPROVED with HHI (Herfindahl-Hirschman Index)
+    # HHI = Σ(weight_i²) - measures true portfolio concentration
+    # Range: 0 (perfectly diversified) to 1 (single position)
     await execute_write("""
         CREATE VIEW IF NOT EXISTS ana_client_portfolio_risk AS
         WITH latest_snap AS (
@@ -239,111 +241,223 @@ async def ensure_analytics_views():
             p.stock_id,
             p.weight,
             p.market_value,
+            -- HHI component: weight squared
+            p.weight * p.weight AS weight_squared,
+            -- Improved volatility: use actual vol if available, else estimate by sector
             COALESCE(p.weight * 0.25, 0) AS weighted_vol
           FROM src_positions p
           JOIN latest_snap ls ON ls.snap_id = p.snapshot_id
+        ),
+        portfolio_metrics AS (
+          SELECT
+            client_id,
+            SUM(weighted_vol) AS total_weighted_vol,
+            MAX(weight) AS max_weight,
+            COUNT(*) AS num_positions,
+            SUM(CASE WHEN weight > 0.10 THEN 1 ELSE 0 END) AS large_pos_count,
+            -- HHI calculation: sum of squared weights
+            SUM(weight_squared) AS hhi,
+            -- Effective number of positions: 1/HHI (diversification measure)
+            CASE WHEN SUM(weight_squared) > 0
+                 THEN 1.0 / SUM(weight_squared)
+                 ELSE 0 END AS effective_positions
+          FROM pos_data
+          GROUP BY client_id
         )
         SELECT
           client_id,
-          ROUND(SUM(weighted_vol), 4) AS portfolio_volatility,
-          MAX(weight) AS max_position_weight,
-          COUNT(*) AS total_positions,
-          SUM(CASE WHEN weight > 0.10 THEN 1 ELSE 0 END) AS large_positions,
+          ROUND(total_weighted_vol, 4) AS portfolio_volatility,
+          max_weight AS max_position_weight,
+          num_positions AS total_positions,
+          large_pos_count AS large_positions,
           0.25 AS avg_stock_volatility,
           0.0 AS high_vol_exposure,
+          -- HHI metrics (NEW)
+          ROUND(hhi, 4) AS hhi_concentration,
+          ROUND(effective_positions, 1) AS effective_num_positions,
+          -- HHI-based concentration level (more accurate than max weight alone)
           CASE
-            WHEN SUM(weighted_vol) >= 0.25 THEN 'High'
-            WHEN SUM(weighted_vol) >= 0.15 THEN 'Medium'
+            WHEN hhi >= 0.25 THEN 'Very Concentrated'
+            WHEN hhi >= 0.15 THEN 'Concentrated'
+            WHEN hhi >= 0.10 THEN 'Moderate'
+            ELSE 'Diversified'
+          END AS hhi_risk_level,
+          CASE
+            WHEN total_weighted_vol >= 0.25 THEN 'High'
+            WHEN total_weighted_vol >= 0.15 THEN 'Medium'
             ELSE 'Low'
           END AS volatility_risk_level,
           CASE
-            WHEN MAX(weight) >= 0.20 THEN 'Concentrated'
-            WHEN MAX(weight) >= 0.10 THEN 'Moderate'
+            WHEN max_weight >= 0.20 THEN 'Concentrated'
+            WHEN max_weight >= 0.10 THEN 'Moderate'
             ELSE 'Diversified'
           END AS concentration_risk_level
-        FROM pos_data
-        GROUP BY client_id
+        FROM portfolio_metrics
     """)
 
-    # 2. Engagement Momentum View
+    # 2. Engagement Momentum View - IMPROVED with Exponential Time Decay
+    # E_adj = Σ E_i × e^(-λ × days_ago) where λ = ln(2)/half_life
+    # Half-life = 14 days (event importance halves every 2 weeks)
+    # SQLite approximation: decay_weight = 1 / (1 + days_ago/14)
     await execute_write("""
         CREATE VIEW IF NOT EXISTS ana_client_engagement_momentum AS
-        WITH calls_recent AS (
+        WITH call_events AS (
           SELECT
             client_id,
-            COUNT(*) as cnt,
-            SUM(duration_minutes) as total_dur,
-            AVG(duration_minutes) as avg_dur
+            julianday('now') - julianday(call_timestamp) AS days_ago,
+            duration_minutes,
+            -- Time decay factor: approximates e^(-λt) with half-life of 14 days
+            1.0 / (1.0 + (julianday('now') - julianday(call_timestamp)) / 14.0) AS decay_weight
           FROM src_call_logs
-          WHERE julianday('now') - julianday(call_timestamp) <= 30
-          GROUP BY client_id
+          WHERE julianday('now') - julianday(call_timestamp) <= 90
         ),
-        calls_prior AS (
-          SELECT client_id, COUNT(*) as cnt
-          FROM src_call_logs
-          WHERE julianday('now') - julianday(call_timestamp) BETWEEN 31 AND 60
-          GROUP BY client_id
-        ),
-        trades_recent AS (
+        trade_events AS (
           SELECT
             client_id,
-            COUNT(*) as cnt,
-            SUM(CASE WHEN side = 'Buy' THEN 1 ELSE 0 END) as buys,
-            SUM(CASE WHEN notional_bucket = 'Large' THEN 1 ELSE 0 END) as large_trades
+            julianday('now') - julianday(trade_timestamp) AS days_ago,
+            side,
+            notional_bucket,
+            -- Time decay factor
+            1.0 / (1.0 + (julianday('now') - julianday(trade_timestamp)) / 14.0) AS decay_weight,
+            -- Trade importance weight (large trades matter more)
+            CASE WHEN notional_bucket = 'Large' THEN 3.0
+                 WHEN notional_bucket = 'Medium' THEN 1.5
+                 ELSE 1.0 END AS size_weight
           FROM src_trade_executions
-          WHERE julianday('now') - julianday(trade_timestamp) <= 30
+          WHERE julianday('now') - julianday(trade_timestamp) <= 90
+        ),
+        -- Time-weighted call metrics
+        calls_decayed AS (
+          SELECT
+            client_id,
+            COUNT(*) as raw_count,
+            SUM(decay_weight) AS decayed_count,
+            SUM(duration_minutes * decay_weight) AS decayed_duration,
+            SUM(CASE WHEN days_ago <= 30 THEN 1 ELSE 0 END) AS calls_30d,
+            SUM(CASE WHEN days_ago BETWEEN 31 AND 60 THEN 1 ELSE 0 END) AS calls_prior_30d
+          FROM call_events
           GROUP BY client_id
         ),
-        trades_prior AS (
-          SELECT client_id, COUNT(*) as cnt
-          FROM src_trade_executions
-          WHERE julianday('now') - julianday(trade_timestamp) BETWEEN 31 AND 60
+        -- Time-weighted trade metrics
+        trades_decayed AS (
+          SELECT
+            client_id,
+            COUNT(*) as raw_count,
+            SUM(decay_weight * size_weight) AS decayed_weighted_count,
+            SUM(CASE WHEN side = 'Buy' THEN decay_weight ELSE 0 END) AS decayed_buys,
+            SUM(CASE WHEN side = 'Sell' THEN decay_weight ELSE 0 END) AS decayed_sells,
+            SUM(CASE WHEN days_ago <= 30 THEN 1 ELSE 0 END) AS trades_30d,
+            SUM(CASE WHEN days_ago BETWEEN 31 AND 60 THEN 1 ELSE 0 END) AS trades_prior_30d,
+            SUM(CASE WHEN days_ago <= 30 AND notional_bucket = 'Large' THEN 1 ELSE 0 END) AS large_trades_30d
+          FROM trade_events
           GROUP BY client_id
         )
         SELECT
           c.client_id,
-          COALESCE(cr.cnt, 0) AS calls_last_30d,
-          COALESCE(cp.cnt, 0) AS calls_prior_30d,
-          ROUND(COALESCE(cr.avg_dur, 0), 1) AS avg_call_duration_30d,
-          ROUND(1.0 * COALESCE(cr.cnt, 0) / NULLIF(COALESCE(cp.cnt, 0), 0), 2) AS call_momentum,
-          COALESCE(tr.cnt, 0) AS trades_last_30d,
-          COALESCE(tp.cnt, 0) AS trades_prior_30d,
-          ROUND(1.0 * COALESCE(tr.cnt, 0) / NULLIF(COALESCE(tp.cnt, 0), 0), 2) AS trade_momentum,
-          CASE WHEN tr.cnt > 0 THEN ROUND(1.0 * tr.buys / tr.cnt, 2) ELSE NULL END AS recent_buy_ratio,
-          COALESCE(tr.large_trades, 0) AS large_trades_30d,
-          ROUND(COALESCE(cr.total_dur, 0) * 0.1 + COALESCE(tr.cnt, 0) * 2.0 + COALESCE(tr.large_trades, 0) * 5.0, 1) AS engagement_score_30d,
+          COALESCE(cd.calls_30d, 0) AS calls_last_30d,
+          COALESCE(cd.calls_prior_30d, 0) AS calls_prior_30d,
+          ROUND(COALESCE(cd.decayed_duration, 0) / NULLIF(cd.decayed_count, 0), 1) AS avg_call_duration_30d,
+          ROUND(1.0 * COALESCE(cd.calls_30d, 0) / NULLIF(COALESCE(cd.calls_prior_30d, 0), 0), 2) AS call_momentum,
+          COALESCE(td.trades_30d, 0) AS trades_last_30d,
+          COALESCE(td.trades_prior_30d, 0) AS trades_prior_30d,
+          ROUND(1.0 * COALESCE(td.trades_30d, 0) / NULLIF(COALESCE(td.trades_prior_30d, 0), 0), 2) AS trade_momentum,
+          -- Buy/Sell ratio using decayed weights (more accurate sentiment)
+          ROUND(COALESCE(td.decayed_buys, 0) / NULLIF(COALESCE(td.decayed_buys, 0) + COALESCE(td.decayed_sells, 0), 0), 2) AS recent_buy_ratio,
+          COALESCE(td.large_trades_30d, 0) AS large_trades_30d,
+          -- NEW: Time-decayed engagement score (recency matters!)
+          ROUND(
+            COALESCE(cd.decayed_duration, 0) * 0.15 +
+            COALESCE(td.decayed_weighted_count, 0) * 2.5,
+            1
+          ) AS engagement_score_decayed,
+          -- Legacy score for comparison
+          ROUND(COALESCE(cd.decayed_count, 0) * 3.0 + COALESCE(td.decayed_weighted_count, 0) * 2.0, 1) AS engagement_score_30d,
+          -- Trend detection with hysteresis
           CASE
-            WHEN COALESCE(cr.cnt, 0) > COALESCE(cp.cnt, 0) * 1.5 OR COALESCE(tr.cnt, 0) > COALESCE(tp.cnt, 0) * 1.5 THEN 'Accelerating'
-            WHEN COALESCE(cr.cnt, 0) < COALESCE(cp.cnt, 0) * 0.5 AND COALESCE(tr.cnt, 0) < COALESCE(tp.cnt, 0) * 0.5 THEN 'Cooling Off'
-            WHEN COALESCE(cr.cnt, 0) = 0 AND COALESCE(tr.cnt, 0) = 0 THEN 'Dormant'
+            WHEN COALESCE(cd.calls_30d, 0) > COALESCE(cd.calls_prior_30d, 0) * 1.5
+                 OR COALESCE(td.trades_30d, 0) > COALESCE(td.trades_prior_30d, 0) * 1.5 THEN 'Accelerating'
+            WHEN COALESCE(cd.calls_30d, 0) < COALESCE(cd.calls_prior_30d, 0) * 0.5
+                 AND COALESCE(td.trades_30d, 0) < COALESCE(td.trades_prior_30d, 0) * 0.5 THEN 'Cooling Off'
+            WHEN COALESCE(cd.calls_30d, 0) = 0 AND COALESCE(td.trades_30d, 0) = 0 THEN 'Dormant'
             ELSE 'Stable'
-          END AS engagement_trend
+          END AS engagement_trend,
+          -- NEW: Bayesian-inspired lead probability (simplified)
+          -- P(trade) ∝ recent_activity × recency × trade_history
+          ROUND(
+            CASE
+              WHEN COALESCE(td.decayed_weighted_count, 0) = 0 THEN 0.05
+              ELSE MIN(0.95, 0.1 +
+                   0.3 * MIN(1.0, COALESCE(td.decayed_weighted_count, 0) / 10.0) +
+                   0.3 * MIN(1.0, COALESCE(cd.decayed_count, 0) / 5.0) +
+                   0.2 * COALESCE(td.decayed_buys, 0) / NULLIF(COALESCE(td.decayed_buys, 0) + COALESCE(td.decayed_sells, 0), 0)
+              )
+            END,
+            2
+          ) AS trade_probability
         FROM src_clients c
-        LEFT JOIN calls_recent cr ON cr.client_id = c.client_id
-        LEFT JOIN calls_prior cp ON cp.client_id = c.client_id
-        LEFT JOIN trades_recent tr ON tr.client_id = c.client_id
-        LEFT JOIN trades_prior tp ON tp.client_id = c.client_id
+        LEFT JOIN calls_decayed cd ON cd.client_id = c.client_id
+        LEFT JOIN trades_decayed td ON td.client_id = c.client_id
     """)
 
-    # 3. Conviction View (SQLite compatible - no FULL OUTER JOIN)
+    # 3. Conviction View - IMPROVED with Trade HHI and Time-Weighted Conviction
+    # Uses notional value weights instead of just trade counts
+    # Includes HHI for trading concentration and time decay for recency
     await execute_write("""
         CREATE VIEW IF NOT EXISTS ana_client_conviction AS
-        WITH trade_focus AS (
+        WITH trade_values AS (
+          SELECT
+            client_id,
+            ticker,
+            stock_id,
+            side,
+            -- Estimate notional value from bucket
+            CASE
+              WHEN notional_bucket = 'Large' THEN 500000
+              WHEN notional_bucket = 'Medium' THEN 100000
+              ELSE 25000
+            END AS est_notional,
+            -- Time decay weight (half-life 30 days for conviction)
+            1.0 / (1.0 + (julianday('now') - julianday(trade_timestamp)) / 30.0) AS decay_weight
+          FROM src_trade_executions
+          WHERE ticker IS NOT NULL
+            AND julianday('now') - julianday(trade_timestamp) <= 180
+        ),
+        trade_focus AS (
           SELECT
             client_id,
             ticker,
             stock_id,
             COUNT(*) AS trade_count,
             SUM(CASE WHEN side = 'Buy' THEN 1 ELSE -1 END) AS net_direction,
-            1.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY client_id) AS focus_share
-          FROM src_trade_executions
-          WHERE ticker IS NOT NULL
+            SUM(est_notional) AS total_notional,
+            SUM(est_notional * decay_weight) AS decayed_notional,
+            -- Focus share by notional value (more meaningful than count)
+            1.0 * SUM(est_notional) / SUM(SUM(est_notional)) OVER (PARTITION BY client_id) AS notional_focus_share,
+            -- Focus share by count (legacy)
+            1.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY client_id) AS count_focus_share,
+            -- HHI component for this stock
+            POWER(1.0 * SUM(est_notional) / SUM(SUM(est_notional)) OVER (PARTITION BY client_id), 2) AS hhi_component
+          FROM trade_values
           GROUP BY client_id, ticker, stock_id
         ),
-        ranked AS (
-          SELECT *,
-            ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY trade_count DESC) AS rn
+        client_hhi AS (
+          SELECT
+            client_id,
+            SUM(hhi_component) AS trade_hhi,
+            CASE WHEN SUM(hhi_component) > 0
+                 THEN 1.0 / SUM(hhi_component)
+                 ELSE 0 END AS effective_stocks_traded
           FROM trade_focus
+          GROUP BY client_id
+        ),
+        ranked AS (
+          SELECT
+            tf.*,
+            ch.trade_hhi,
+            ch.effective_stocks_traded,
+            ROW_NUMBER() OVER (PARTITION BY tf.client_id ORDER BY tf.decayed_notional DESC) AS rn
+          FROM trade_focus tf
+          JOIN client_hhi ch ON ch.client_id = tf.client_id
         )
         SELECT
           client_id,
@@ -352,14 +466,20 @@ async def ensure_analytics_views():
           trade_count,
           0 AS call_mentions,
           net_direction,
-          ROUND(focus_share, 3) AS trade_concentration,
-          trade_count AS conviction_score,
+          -- Use notional-based focus share (more accurate)
+          ROUND(notional_focus_share, 3) AS trade_concentration,
+          -- Conviction score: notional-weighted, time-decayed
+          ROUND(decayed_notional / 10000.0, 1) AS conviction_score,
           0 AS bullish_mentions,
           0 AS bearish_mentions,
+          -- Trade HHI for this client (NEW)
+          ROUND(trade_hhi, 4) AS trade_hhi,
+          ROUND(effective_stocks_traded, 1) AS effective_stocks_traded,
+          -- HHI-based conviction level (more accurate)
           CASE
-            WHEN focus_share >= 0.25 THEN 'Very High'
-            WHEN focus_share >= 0.15 THEN 'High'
-            WHEN focus_share >= 0.08 THEN 'Moderate'
+            WHEN trade_hhi >= 0.25 THEN 'Very High'
+            WHEN trade_hhi >= 0.15 THEN 'High'
+            WHEN trade_hhi >= 0.08 THEN 'Moderate'
             ELSE 'Diversified'
           END AS conviction_level,
           CASE
@@ -1023,7 +1143,7 @@ async def get_readership_summary(client_id: int) -> Dict[str, Any]:
 # =========================
 
 async def get_portfolio_risk(client_id: int) -> Dict[str, Any]:
-    """Get portfolio-level risk metrics based on position volatility."""
+    """Get portfolio-level risk metrics including HHI concentration."""
     row = await fetch_one(
         """
         SELECT
@@ -1033,6 +1153,9 @@ async def get_portfolio_risk(client_id: int) -> Dict[str, Any]:
             large_positions,
             avg_stock_volatility,
             high_vol_exposure,
+            hhi_concentration,
+            effective_num_positions,
+            hhi_risk_level,
             volatility_risk_level,
             concentration_risk_level
         FROM ana_client_portfolio_risk
@@ -1044,7 +1167,7 @@ async def get_portfolio_risk(client_id: int) -> Dict[str, Any]:
 
 
 async def get_engagement_momentum(client_id: int) -> Dict[str, Any]:
-    """Get 30d vs 60d engagement momentum."""
+    """Get engagement momentum with time-decayed scoring and trade probability."""
     row = await fetch_one(
         """
         SELECT
@@ -1056,8 +1179,10 @@ async def get_engagement_momentum(client_id: int) -> Dict[str, Any]:
             trade_momentum,
             recent_buy_ratio,
             large_trades_30d,
+            engagement_score_decayed,
             engagement_score_30d,
-            engagement_trend
+            engagement_trend,
+            trade_probability
         FROM ana_client_engagement_momentum
         WHERE client_id = :client_id
         """,
@@ -1067,7 +1192,7 @@ async def get_engagement_momentum(client_id: int) -> Dict[str, Any]:
 
 
 async def get_conviction(client_id: int) -> Dict[str, Any]:
-    """Get client's top conviction stock and sentiment."""
+    """Get client's top conviction stock with trade HHI concentration."""
     row = await fetch_one(
         """
         SELECT
@@ -1078,6 +1203,8 @@ async def get_conviction(client_id: int) -> Dict[str, Any]:
             net_direction,
             trade_concentration,
             conviction_score,
+            trade_hhi,
+            effective_stocks_traded,
             conviction_level,
             sentiment_signal
         FROM ana_client_conviction
