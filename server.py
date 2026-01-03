@@ -247,18 +247,14 @@ async def ensure_analytics_views():
     # NEW TABLES FOR COMPREHENSIVE DATA
     # ===========================================
 
-    # Drop old tables if they exist with wrong schema (one-time migration)
-    # Check if src_client_preferences has the new columns
-    try:
-        check = await fetch_one("SELECT prefers_dividends FROM src_client_preferences LIMIT 1")
-    except Exception:
-        # Column doesn't exist, drop and recreate
-        await execute_write("DROP TABLE IF EXISTS src_client_preferences")
-        await execute_write("DROP TABLE IF EXISTS src_stock_fundamentals")
-        await execute_write("DROP TABLE IF EXISTS src_analyst_ratings")
-        await execute_write("DROP TABLE IF EXISTS src_stock_catalysts")
-        await execute_write("DROP TABLE IF EXISTS src_sector_overview")
-        await execute_write("DROP TABLE IF EXISTS src_client_stock_history")
+    # Drop and recreate enhanced tables to ensure correct schema
+    # These contain sample data only, safe to recreate
+    await execute_write("DROP TABLE IF EXISTS src_client_preferences")
+    await execute_write("DROP TABLE IF EXISTS src_stock_fundamentals")
+    await execute_write("DROP TABLE IF EXISTS src_analyst_ratings")
+    await execute_write("DROP TABLE IF EXISTS src_stock_catalysts")
+    await execute_write("DROP TABLE IF EXISTS src_sector_overview")
+    await execute_write("DROP TABLE IF EXISTS src_client_stock_history")
 
     # Client Preferences (real preferences, not inferred)
     await execute_write("""
