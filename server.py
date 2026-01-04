@@ -387,6 +387,15 @@ async def ensure_analytics_views():
     # ANALYTICS VIEWS
     # ===========================================
 
+    # Drop all analytics views to ensure schema updates are applied
+    await execute_write("DROP VIEW IF EXISTS ana_readership_daysdiff")
+    await execute_write("DROP VIEW IF EXISTS int_client_profile")
+    await execute_write("DROP VIEW IF EXISTS ana_client_portfolio_risk")
+    await execute_write("DROP VIEW IF EXISTS ana_client_engagement_momentum")
+    await execute_write("DROP VIEW IF EXISTS ana_client_conviction")
+    await execute_write("DROP VIEW IF EXISTS ana_client_readership_intelligence")
+    await execute_write("DROP VIEW IF EXISTS ana_bayesian_lead_score")
+
     # 0a. Base view: Readership with days_diff
     await execute_write("""
         CREATE VIEW IF NOT EXISTS ana_readership_daysdiff AS
