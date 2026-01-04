@@ -395,6 +395,9 @@ async def ensure_analytics_views():
     await execute_write("DROP VIEW IF EXISTS ana_client_conviction")
     await execute_write("DROP VIEW IF EXISTS ana_client_readership_intelligence")
     await execute_write("DROP VIEW IF EXISTS ana_bayesian_lead_score")
+    await execute_write("DROP VIEW IF EXISTS int_client_risk_enhanced")
+    await execute_write("DROP VIEW IF EXISTS int_client_risk_multifactor")
+    await execute_write("DROP VIEW IF EXISTS int_client_investment_style")
 
     # 0a. Base view: Readership with days_diff
     await execute_write("""
