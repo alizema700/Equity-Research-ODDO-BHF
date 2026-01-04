@@ -6,55 +6,97 @@
   <title>ODDO BHF Sales Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* ODDO BHF Corporate Color Scheme */
-      --bg: #F7F4F2;
-      --bg-dark: #003D39;
+      /* ODDO BHF Official Color Scheme */
+      --primary: #003D39;
+      --secondary-red: #cf2014;
+      --secondary-grey: #F7F4F2;
+      --secondary-green: #55a184;
+      --add-green-gray: #b9d3b9;
+      --add-green-pine: #305f50;
+      --add-mint: #2a7d5e;
+      --add-yellow: #F0E689;
+      --add-smoked-blue: #9db6c7;
+      --add-cinnamon: #ae4e41;
+      --soft-greige: #F7F2EE;
+      --dark: #272529;
+      --light: #ffffff;
+
+      /* Mapped to existing variables */
+      --bg: var(--secondary-grey);
+      --bg-dark: var(--primary);
       --bg-darker: #182630;
-      --card: #ffffff;
-      --border: #e5e0dc;
-      --text: #182630;
-      --text-muted: #6b7280;
-      --accent: #003D39;
-      --accent-light: #e8f0ef;
+      --card: var(--light);
+      --border: #dee2e6;
+      --text: var(--dark);
+      --text-muted: #8e8e93;
+      --accent: var(--primary);
+      --accent-light: rgba(0, 61, 57, 0.08);
       --accent-dark: #002825;
-      --accent-red: #cf2014;
-      --success: #55a184;
+      --accent-red: var(--secondary-red);
+      --success: var(--secondary-green);
       --warning: #f59e0b;
-      --danger: #cf2014;
-      --info: #9db6c7;
-      --hot: #cf2014;
-      --greige: #F7F2EE;
+      --danger: var(--secondary-red);
+      --info: var(--add-smoked-blue);
+      --hot: var(--secondary-red);
+      --greige: var(--soft-greige);
       --radius: 8px;
+      --radius-pill: 99rem;
       --shadow: 0 1px 3px rgba(0,0,0,0.08);
       --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
+
+      /* Typography */
+      --font-primary: 'Lato', Arial, Verdana, sans-serif;
+      --font-serif: 'Libre Baskerville', Georgia, serif;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: var(--font-primary);
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
-      font-feature-settings: 'cv11', 'ss01';
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    h1, h2, h3 {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    h4, h5, h6 {
+      font-family: var(--font-primary);
+      font-weight: 700;
+    }
+
+    .serif {
+      font-family: var(--font-serif);
+      font-weight: 400;
+    }
+
+    .lato-light {
+      font-family: var(--font-primary);
+      font-weight: 300;
     }
 
     /* === HEADER === */
     .header {
       background: white;
       color: var(--text);
-      padding: 14px 24px;
+      padding: 16px 32px;
       display: flex;
       align-items: center;
       gap: 24px;
       position: sticky;
       top: 0;
       z-index: 100;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 61, 57, 0.08);
     }
 
     .logo {
@@ -66,10 +108,11 @@
       letter-spacing: 0.3px;
       color: var(--text);
       flex-shrink: 0;
+      margin-right: 32px;
     }
 
     .logo-img {
-      height: 32px;
+      height: 44px;
       width: auto;
     }
 
@@ -89,15 +132,16 @@
 
     .search-input {
       width: 100%;
-      padding: 10px 16px;
-      padding-left: 40px;
+      padding: 12px 18px;
+      padding-left: 44px;
       border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--greige);
+      border-radius: var(--radius-pill);
+      background: var(--soft-greige);
       color: var(--text);
       font-size: 14px;
+      font-family: var(--font-primary);
       outline: none;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
 
     .search-input::placeholder {
@@ -106,8 +150,8 @@
 
     .search-input:focus {
       background: white;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-light);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 61, 57, 0.1);
     }
 
     .search-icon {
@@ -124,13 +168,14 @@
     }
 
     .btn {
-      padding: 8px 16px;
-      border-radius: 6px;
+      padding: 10px 24px;
+      border-radius: var(--radius-pill);
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       border: none;
-      transition: all 0.15s;
+      transition: all 0.2s ease;
+      letter-spacing: 0.3px;
     }
 
     .btn-ghost {
@@ -142,25 +187,29 @@
     .btn-ghost:hover {
       background: var(--greige);
       color: var(--text);
+      border-color: var(--primary);
     }
 
     .btn-primary {
-      background: var(--accent);
+      background: var(--secondary-red);
       color: white;
     }
 
     .btn-primary:hover {
-      background: #b91c1c;
+      background: #a31810;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(207, 32, 20, 0.3);
     }
 
     .btn-secondary {
-      background: white;
-      color: var(--text);
-      border: 1px solid var(--border);
+      background: var(--primary);
+      color: white;
+      border: 1px solid var(--primary);
     }
 
     .btn-secondary:hover {
-      background: var(--bg);
+      background: var(--accent-dark);
+      transform: translateY(-1px);
     }
 
     .status-chip {
@@ -195,13 +244,17 @@
     }
 
     .client-header {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
     }
 
     .client-name {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
-      margin-bottom: 4px;
+      font-family: var(--font-serif);
+      color: var(--primary);
+      margin-bottom: 6px;
     }
 
     .client-meta {
@@ -236,6 +289,8 @@
     .metric-value {
       font-size: 18px;
       font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--primary);
     }
 
     .metric-badge {
@@ -257,11 +312,12 @@
     }
 
     .summary-title {
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
+      font-family: var(--font-serif);
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--primary);
       margin-bottom: 12px;
       display: flex;
       align-items: center;
@@ -277,9 +333,11 @@
     }
 
     .summary-card h4 {
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 700;
-      margin-bottom: 8px;
+      font-family: var(--font-serif);
+      color: var(--primary);
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -377,8 +435,9 @@
     }
 
     .lead-value {
-      font-size: 20px;
-      font-weight: 800;
+      font-size: 26px;
+      font-weight: 700;
+      font-family: var(--font-serif);
     }
 
     .lead-reason {
@@ -431,9 +490,10 @@
 
     .activity-num {
       display: block;
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--accent);
+      font-size: 24px;
+      font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--primary);
     }
 
     .activity-label {
@@ -463,44 +523,49 @@
     }
 
     .main-title {
-      font-size: 24px;
+      font-size: 28px;
       font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--primary);
     }
 
     .main-subtitle {
       font-size: 14px;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 6px;
+      font-family: var(--font-primary);
     }
 
     /* === TABS === */
     .tabs {
       display: flex;
-      gap: 4px;
-      background: var(--bg);
-      padding: 4px;
-      border-radius: 10px;
-      margin-bottom: 20px;
+      gap: 0;
+      background: transparent;
+      padding: 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 24px;
       width: fit-content;
     }
 
     .tab {
-      padding: 10px 20px;
-      border-radius: 8px;
+      padding: 12px 24px;
+      border-radius: 0;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       border: none;
       background: transparent;
       color: var(--text-muted);
-      transition: all 0.15s;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
     }
 
-    .tab:hover { color: var(--text); }
+    .tab:hover { color: var(--primary); }
     .tab.active {
-      background: white;
-      color: var(--text);
-      box-shadow: var(--shadow);
+      background: transparent;
+      color: var(--primary);
+      border-bottom-color: var(--secondary-red);
     }
 
     .tab-panel { display: none; }
@@ -524,12 +589,20 @@
 
     .instruction-input {
       width: 100%;
-      padding: 12px;
+      padding: 14px 16px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 12px;
       font-size: 14px;
+      font-family: var(--font-primary);
       resize: vertical;
       min-height: 80px;
+      transition: all 0.2s ease;
+    }
+
+    .instruction-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 61, 57, 0.1);
     }
 
     .quick-prompts {
@@ -540,18 +613,20 @@
     }
 
     .quick-prompt {
-      padding: 6px 12px;
-      border-radius: 20px;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
       font-size: 12px;
-      background: var(--bg);
+      font-weight: 500;
+      background: var(--soft-greige);
       border: 1px solid var(--border);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s ease;
     }
 
     .quick-prompt:hover {
-      border-color: var(--accent);
-      background: var(--accent-light);
+      border-color: var(--primary);
+      background: rgba(0, 61, 57, 0.08);
+      color: var(--primary);
     }
 
     /* === STOCK GRID === */
@@ -564,20 +639,22 @@
     .stock-card {
       background: white;
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
+      border-radius: 12px;
+      padding: 20px;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s ease;
     }
 
     .stock-card:hover {
-      border-color: var(--accent);
-      box-shadow: var(--shadow-lg);
+      border-color: var(--primary);
+      box-shadow: 0 8px 24px rgba(0, 61, 57, 0.12);
+      transform: translateY(-2px);
     }
 
     .stock-card.selected {
-      border-color: var(--accent);
-      background: var(--accent-light);
+      border-color: var(--secondary-red);
+      border-width: 2px;
+      background: rgba(207, 32, 20, 0.04);
     }
 
     .stock-header {
@@ -588,8 +665,10 @@
     }
 
     .stock-ticker {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--primary);
     }
 
     .stock-name {
@@ -662,8 +741,10 @@
     }
 
     .output-title {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--primary);
     }
 
     .output-body {
@@ -713,6 +794,8 @@
 
     .modal-title {
       font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--primary);
     }
 
     .modal-close {
@@ -877,8 +960,10 @@
     }
 
     .drawer-title {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--primary);
     }
 
     .drawer-close {
@@ -902,11 +987,12 @@
     }
 
     .drawer-section-title {
-      font-size: 12px;
+      font-size: 15px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
+      font-family: var(--font-serif);
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--primary);
       margin-bottom: 12px;
       display: flex;
       align-items: center;
@@ -929,8 +1015,8 @@
 
     .detail-table th {
       text-align: left;
-      padding: 8px 10px;
-      background: var(--bg-dark);
+      padding: 10px 12px;
+      background: var(--primary);
       color: white;
       font-weight: 600;
       font-size: 11px;
@@ -1003,13 +1089,13 @@
       color: var(--text-muted);
       border-bottom: 2px solid transparent;
       margin-bottom: -2px;
-      transition: all 0.15s;
+      transition: all 0.2s ease;
     }
 
-    .drawer-tab:hover { color: var(--text); }
+    .drawer-tab:hover { color: var(--primary); }
     .drawer-tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
+      color: var(--primary);
+      border-bottom-color: var(--secondary-red);
     }
 
     .drawer-tab .badge {
@@ -1025,20 +1111,176 @@
 
     .details-btn {
       width: 100%;
-      margin-top: 16px;
-      padding: 10px;
-      background: var(--bg);
-      border: 1px dashed var(--border);
-      border-radius: 8px;
+      margin-top: 20px;
+      padding: 12px 16px;
+      background: var(--soft-greige);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
       cursor: pointer;
       font-size: 13px;
-      color: var(--text-muted);
-      transition: all 0.15s;
+      font-weight: 500;
+      color: var(--primary);
+      transition: all 0.2s ease;
     }
     .details-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
+      border-color: var(--primary);
+      color: white;
+      background: var(--primary);
+    }
+
+    /* === CLIENT GOALS === */
+    .goals-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .goal-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px;
+      background: var(--greige);
+      border-radius: 8px;
+    }
+    .goal-icon {
+      font-size: 20px;
+      line-height: 1;
+    }
+    .goal-text {
+      flex: 1;
+    }
+    .goal-name {
+      font-weight: 700;
+      font-size: 14px;
+      font-family: var(--font-serif);
+      color: var(--primary);
+    }
+    .goal-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* === BEST CONTACT TIME === */
+    .contact-time-box {
+      padding: 12px;
+      background: linear-gradient(135deg, var(--accent-light), #e0f2f1);
+      border-radius: 8px;
+      border: 1px solid var(--accent);
+    }
+    .contact-time-main {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .contact-day {
+      font-size: 22px;
+      font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--primary);
+    }
+    .contact-hours {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .contact-confidence {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .confidence-high { background: #dcfce7; color: #16a34a; }
+    .confidence-medium { background: #fef9c3; color: #ca8a04; }
+    .confidence-low { background: #f3f4f6; color: #6b7280; }
+
+    /* === ANALYST OVERRIDE === */
+    .analyst-override-box {
+      background: linear-gradient(135deg, #fefce8, #fef3c7);
+      border: 1px solid #fbbf24;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .override-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .override-icon {
+      font-size: 20px;
+    }
+    .override-title {
+      font-weight: 700;
+      font-size: 16px;
+      font-family: var(--font-serif);
+      color: #92400e;
+    }
+    .override-subtitle {
+      font-size: 12px;
+      color: #a16207;
+    }
+    .override-search {
+      position: relative;
+    }
+    .stock-search-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #fbbf24;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      outline: none;
+    }
+    .stock-search-input:focus {
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+    }
+    .stock-search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 100;
+      box-shadow: var(--shadow-lg);
+      margin-top: 4px;
+    }
+    .stock-search-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .stock-search-item:last-child { border-bottom: none; }
+    .stock-search-item:hover {
       background: var(--accent-light);
+    }
+    .stock-search-ticker {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--accent);
+    }
+    .stock-search-name {
+      font-size: 13px;
+      color: var(--text);
+    }
+    .stock-search-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .empty-search {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
     }
   </style>
 </head>
@@ -1046,12 +1288,11 @@
   <!-- HEADER -->
   <header class="header">
     <div class="logo">
-      <img src="Oddo_BHF_logo.svg.png" alt="ODDO BHF" class="logo-img">
-      <span class="logo-text">Sales Intelligence</span>
+      <img src="/static/Oddo_BHF_logo.svg.png" alt="ODDO BHF" class="logo-img">
     </div>
 
     <div class="search-box">
-      <span class="search-icon">&#128269;</span>
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input
         type="text"
         class="search-input"
@@ -1148,7 +1389,7 @@
 
       <!-- TAB: STORY -->
       <div class="tab-panel" id="panel-story">
-        <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
           <button class="btn btn-primary" id="storyFullBtn" disabled>Story (Full)</button>
           <button class="btn btn-secondary" id="storyBulletsBtn" disabled>Bullets (Summary)</button>
           <span id="selectedStock" style="margin-left: auto; color: var(--text-muted); font-size: 14px;">
@@ -1156,10 +1397,28 @@
           </span>
         </div>
 
+        <!-- ANALYST STOCK OVERRIDE -->
+        <div class="analyst-override-box">
+          <div class="override-header">
+            <span class="override-icon"></span>
+            <span class="override-title">Analyst Override</span>
+            <span class="override-subtitle">Select your own stock instead of AI recommendations</span>
+          </div>
+          <div class="override-search">
+            <input
+              type="text"
+              id="stockSearchInput"
+              class="stock-search-input"
+              placeholder="Search stock by ticker, name, or sector..."
+            />
+            <div id="stockSearchResults" class="stock-search-results" style="display: none;"></div>
+          </div>
+        </div>
+
         <div class="output-panel" id="outputPanel" style="display: none;">
           <div class="output-header">
             <span class="output-title" id="outputTitle">Output</span>
-            <button class="btn btn-secondary" id="copyBtn">Kopieren</button>
+            <button class="btn btn-secondary" id="copyBtn">Copy</button>
           </div>
           <div class="output-body">
             <div class="output-text" id="outputText"></div>
@@ -1168,7 +1427,7 @@
 
         <div class="empty-state" id="storyEmpty">
           <h3>Select a Stock</h3>
-          <p>Click on a stock in the shortlist, then generate a story.</p>
+          <p>Click on a stock in the shortlist or use Analyst Override above to select your own.</p>
         </div>
       </div>
 
@@ -1581,14 +1840,141 @@ function renderSidebar(data) {
       <div style="display: flex; flex-wrap: wrap; gap: 6px;">
         ${(data.constraints?.avoid_tickers || []).slice(0, 10).map(t => `
           <span style="padding: 4px 8px; background: #fef2f2; color: #dc2626; border-radius: 4px; font-size: 12px; font-weight: 600;">${t}</span>
-        `).join('') || '<span style="color: var(--text-muted); font-size: 13px;">Keine</span>'}
+        `).join('') || '<span style="color: var(--text-muted); font-size: 13px;">None</span>'}
       </div>
     </div>
 
+    <!-- CLIENT GOALS (loaded async) -->
+    <div class="summary-section" id="clientGoalsSection" style="display: none;">
+      <div class="summary-title">Investment Goals</div>
+      <div id="clientGoals" class="goals-container"></div>
+    </div>
+
+    <!-- BEST CONTACT TIME (loaded async) -->
+    <div class="summary-section" id="contactTimeSection" style="display: none;">
+      <div class="summary-title">Best Contact Time</div>
+      <div id="contactTimeInfo" class="contact-time-box"></div>
+    </div>
+
     <button class="details-btn" onclick="openDetailsDrawer()">
-      Alle Details anzeigen (Calls, Trades, Reads, Positionen...)
+      Show All Details (Calls, Trades, Reads, Positions...)
     </button>
   `;
+
+  // Load async data for client goals and best contact time
+  loadClientGoals(data.client?.client_id || clientId);
+  loadBestContactTime(data.client?.client_id || clientId);
+}
+
+// ============================================================================
+// CLIENT GOALS & BEST CONTACT TIME
+// ============================================================================
+async function loadClientGoals(cid) {
+  if (!cid) return;
+  try {
+    const res = await fetch(apiUrl(`/api/client/${cid}/preferences`), { headers: authHeaders() });
+    const data = await res.json();
+    if (data.error || !data.goals || data.goals.length === 0) return;
+
+    const goalsHtml = data.goals.map(g => `
+      <div class="goal-item">
+        <span class="goal-icon">${g.icon || ''}</span>
+        <div class="goal-text">
+          <div class="goal-name">${g.goal}</div>
+          <div class="goal-desc">${g.description || ''}</div>
+        </div>
+      </div>
+    `).join('');
+
+    $('clientGoals').innerHTML = goalsHtml;
+    $('clientGoalsSection').style.display = 'block';
+  } catch (e) {
+    console.error('Error loading client goals:', e);
+  }
+}
+
+async function loadBestContactTime(cid) {
+  if (!cid) return;
+  try {
+    const res = await fetch(apiUrl(`/api/client/${cid}/best_contact_time`), { headers: authHeaders() });
+    const data = await res.json();
+    if (data.error) return;
+
+    const confidenceClass = data.confidence === 'High' ? 'confidence-high' :
+                           data.confidence === 'Medium' ? 'confidence-medium' : 'confidence-low';
+
+    $('contactTimeInfo').innerHTML = `
+      <div class="contact-time-main">
+        <div class="contact-day">${data.best_day || 'Tuesday'}</div>
+        <div class="contact-hours">${data.best_time_range || '09:00 - 11:00'}</div>
+      </div>
+      <div class="contact-confidence ${confidenceClass}">
+        Confidence: ${data.confidence || 'Low'}
+      </div>
+    `;
+    $('contactTimeSection').style.display = 'block';
+  } catch (e) {
+    console.error('Error loading contact time:', e);
+  }
+}
+
+// ============================================================================
+// ANALYST STOCK OVERRIDE - Manual Selection
+// ============================================================================
+let manualStockSelected = null;
+
+async function searchAvailableStocks(query) {
+  try {
+    const res = await fetch(apiUrl(`/api/stocks/available?search=${encodeURIComponent(query)}&limit=50`), {
+      headers: authHeaders()
+    });
+    const data = await res.json();
+    return data.stocks || [];
+  } catch (e) {
+    console.error('Error searching stocks:', e);
+    return [];
+  }
+}
+
+function renderStockSearchResults(stocks) {
+  if (stocks.length === 0) {
+    $('stockSearchResults').innerHTML = '<div class="empty-search">No stocks found</div>';
+    return;
+  }
+
+  $('stockSearchResults').innerHTML = stocks.map(s => `
+    <div class="stock-search-item" data-stock='${JSON.stringify(s)}'>
+      <div class="stock-search-ticker">${s.ticker}</div>
+      <div class="stock-search-name">${s.company_name}</div>
+      <div class="stock-search-meta">${s.sector || ''} · ${s.region || ''}</div>
+    </div>
+  `).join('');
+
+  $$('.stock-search-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const stock = JSON.parse(el.dataset.stock);
+      selectManualStock(stock);
+    });
+  });
+}
+
+function selectManualStock(stock) {
+  manualStockSelected = stock;
+  selectedStock = stock;
+  selectedTicker = stock.ticker;
+
+  // Update UI
+  $('selectedStock').innerHTML = `<strong>${stock.ticker}</strong> - ${stock.company_name}`;
+  $('storyFullBtn').disabled = false;
+  $('storyBulletsBtn').disabled = false;
+
+  // Clear search
+  $('stockSearchInput').value = '';
+  $('stockSearchResults').innerHTML = '';
+  $('stockSearchResults').style.display = 'none';
+
+  // Show notification
+  setStatus(`Selected: ${stock.ticker}`, 'active');
 }
 
 // ============================================================================
@@ -1736,7 +2122,7 @@ function renderShortlist(list, topPicks) {
       <div class="stock-card ${selectedTicker === s.ticker ? 'selected' : ''}" data-idx="${i}">
         <div class="stock-header">
           <div>
-            <div class="stock-ticker">${s.ticker} ${isTop ? '<span style="color: var(--accent);">★</span>' : ''}</div>
+            <div class="stock-ticker">${s.ticker}${isTop ? ' <span style="color: var(--secondary-red); font-size: 11px; font-family: var(--font-primary);">TOP</span>' : ''}</div>
             <div class="stock-name">${s.company_name}</div>
           </div>
           <span class="stock-sector">${s.sector || '-'}</span>
@@ -1956,8 +2342,34 @@ $$('.quick-prompt').forEach(el => {
 
 // Settings (simple prompt for now)
 $('settingsBtn').addEventListener('click', () => {
-  const base = prompt('API Base URL (leer = same-origin):', getApiBase());
+  const base = prompt('API Base URL (empty = same-origin):', getApiBase());
   if (base !== null) localStorage.setItem('api_base', base);
+});
+
+// Stock search for analyst override
+let stockSearchDebounce = null;
+$('stockSearchInput').addEventListener('input', (e) => {
+  const query = e.target.value.trim();
+  if (stockSearchDebounce) clearTimeout(stockSearchDebounce);
+
+  if (query.length < 2) {
+    $('stockSearchResults').style.display = 'none';
+    return;
+  }
+
+  stockSearchDebounce = setTimeout(async () => {
+    const stocks = await searchAvailableStocks(query);
+    $('stockSearchResults').style.display = 'block';
+    renderStockSearchResults(stocks);
+  }, 300);
+});
+
+// Hide stock search results when clicking outside
+document.addEventListener('click', (e) => {
+  const searchBox = document.querySelector('.override-search');
+  if (searchBox && !searchBox.contains(e.target)) {
+    $('stockSearchResults').style.display = 'none';
+  }
 });
 
 // Init

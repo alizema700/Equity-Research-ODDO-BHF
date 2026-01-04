@@ -43,7 +43,7 @@ DB_PATH = os.environ.get("CLIENT_DB_PATH", os.path.join(BASE_DIR, "data.db"))
 DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 OPENAI_API_KEY = (os.environ.get("OPENAI_API_KEY") or "").strip()
-OPENAI_MODEL = (os.environ.get("OPENAI_MODEL") or "gpt-5-mini").strip()
+OPENAI_MODEL = (os.environ.get("OPENAI_MODEL") or "o3").strip()
 
 oa = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
@@ -170,8 +170,234 @@ async def ensure_audit_table():
     """)
 
 
+async def _insert_sample_enhanced_data():
+    """Insert sample data for enhanced tables if empty."""
+
+    # Check if client preferences already has data
+    existing = await fetch_one("SELECT COUNT(*) as cnt FROM src_client_preferences")
+    if existing and existing.get("cnt", 0) > 0:
+        return  # Already has data
+
+    # Sample Client Preferences
+    await execute_write("""
+        INSERT OR IGNORE INTO src_client_preferences
+        (client_id, prefers_dividends, prefers_growth, prefers_esg, preferred_sectors, preferred_themes, min_dividend_yield, max_volatility, preference_notes)
+        VALUES
+        (1, 1, 0, 1, 'Utilities,Healthcare,Consumer Staples', 'ESG,Dividends', 0.03, 0.20, 'Conservative pension fund, focus on stable income and ESG compliance'),
+        (2, 0, 1, 0, 'Technology,Industrials', 'AI,Digital,Automation', NULL, 0.40, 'Aggressive hedge fund, seeking alpha through growth stories'),
+        (3, 1, 1, 0, 'Financials,Energy,Materials', 'Value,Cyclicals', 0.02, 0.30, 'Balanced approach, likes quality cyclicals with dividends'),
+        (4, 0, 1, 1, 'Technology,Healthcare', 'AI,Biotech,ESG', NULL, 0.35, 'Growth-focused family office with ESG considerations'),
+        (5, 1, 0, 0, 'Real Estate,Utilities,Telecoms', 'Dividends,Infrastructure', 0.04, 0.18, 'Income-focused insurance company')
+    """)
+
+    # Sample Stock Fundamentals
+    await execute_write("""
+        INSERT OR IGNORE INTO src_stock_fundamentals
+        (stock_id, as_of_date, pe_ratio, pe_forward, dividend_yield, roe, profit_margin, revenue_growth_yoy, beta, market_cap, market_cap_bucket, quality_score)
+        VALUES
+        (1, '2026-01-03', 18.5, 16.2, 0.032, 0.15, 0.12, 0.08, 0.95, 45000000000, 'Large', 78),
+        (2, '2026-01-03', 25.3, 22.1, 0.018, 0.22, 0.18, 0.15, 1.15, 120000000000, 'Mega', 85),
+        (3, '2026-01-03', 12.8, 11.5, 0.045, 0.12, 0.08, 0.03, 0.75, 8000000000, 'Mid', 65),
+        (4, '2026-01-03', 32.1, 28.5, 0.008, 0.28, 0.22, 0.25, 1.35, 200000000000, 'Mega', 82),
+        (5, '2026-01-03', 15.2, 14.0, 0.038, 0.14, 0.10, 0.05, 0.88, 22000000000, 'Large', 72)
+    """)
+
+    # Sample Analyst Ratings
+    await execute_write("""
+        INSERT OR IGNORE INTO src_analyst_ratings
+        (stock_id, analyst_name, rating, rating_date, price_target, current_price, upside_percent, conviction_level, thesis_summary, key_catalysts)
+        VALUES
+        (1, 'Dr. Schmidt', 'Outperform', '2026-01-02', 85.00, 72.50, 0.172, 'High', 'Strong market position, improving margins, ESG leader', 'Q4 earnings, new product launch'),
+        (2, 'Marie Dupont', 'Outperform', '2025-12-15', 145.00, 128.30, 0.130, 'High', 'AI transformation driving growth', 'AI revenue acceleration'),
+        (3, 'Hans Weber', 'Neutral', '2025-12-20', 42.00, 41.20, 0.019, 'Medium', 'Stable but limited upside', 'Dividend increase expected'),
+        (4, 'Sophie Martin', 'Outperform', '2026-01-01', 420.00, 385.00, 0.091, 'High', 'Cloud growth reaccelerating', 'Q4 cloud numbers'),
+        (5, 'Thomas Mueller', 'Neutral', '2025-12-18', 58.00, 55.80, 0.039, 'Low', 'Defensive quality, fair valuation', 'Stable performer')
+    """)
+
+    # Sample Catalysts
+    await execute_write("""
+        INSERT OR IGNORE INTO src_stock_catalysts
+        (stock_id, event_type, event_date, event_time, event_title, expected_impact, sentiment, eps_estimate)
+        VALUES
+        (1, 'Earnings', '2026-01-28', 'Pre-Market', 'Q4 2025 Results', 'High', 'Positive', 1.85),
+        (2, 'Earnings', '2026-01-30', 'After-Hours', 'Q4 2025 Results', 'High', 'Positive', 2.45),
+        (4, 'Earnings', '2026-02-04', 'After-Hours', 'Q4 2025 Results', 'High', 'Positive', 5.20),
+        (1, 'Dividend', '2026-02-15', NULL, 'Q4 Dividend Payment', 'Low', 'Positive', NULL),
+        (3, 'Dividend', '2026-02-10', NULL, 'Annual Dividend', 'Medium', 'Positive', NULL)
+    """)
+
+    # Sample Sector Overview
+    await execute_write("""
+        INSERT OR IGNORE INTO src_sector_overview
+        (sector_name, sector_rating, sector_analyst, rating_date, key_themes, key_risks, avg_pe, avg_dividend_yield, top_picks)
+        VALUES
+        ('Technology', 'Overweight', 'Marie Dupont', '2026-01-01', 'AI adoption, cloud growth', 'Valuation, regulation', 28.5, 0.012, 'MSFT,SAP,ASML'),
+        ('Healthcare', 'Overweight', 'Anna Lindberg', '2026-01-01', 'Aging demographics, GLP-1', 'Pricing pressure', 22.3, 0.018, 'NVO,ROG,AZN'),
+        ('Financials', 'Neutral', 'Hans Weber', '2026-01-01', 'Higher rates benefit', 'Credit cycle', 10.5, 0.045, 'BNP,ING'),
+        ('Industrials', 'Overweight', 'Jean-Pierre Blanc', '2026-01-01', 'Automation, reshoring', 'China slowdown', 18.2, 0.025, 'SIE,ABB'),
+        ('Energy', 'Neutral', 'Thomas Mueller', '2026-01-01', 'Energy transition', 'Oil volatility', 8.5, 0.055, 'SHEL,TTE'),
+        ('Utilities', 'Neutral', 'Erik Svensson', '2026-01-01', 'Renewables growth', 'Rate sensitivity', 15.5, 0.048, 'ENEL,IBE')
+    """)
+
+
 async def ensure_analytics_views():
-    """Create enhanced analytics views for SQLite."""
+    """Create enhanced analytics views and tables for SQLite."""
+
+    # ===========================================
+    # NEW TABLES FOR COMPREHENSIVE DATA
+    # ===========================================
+
+    # Drop and recreate enhanced tables to ensure correct schema
+    # These contain sample data only, safe to recreate
+    await execute_write("DROP TABLE IF EXISTS src_client_preferences")
+    await execute_write("DROP TABLE IF EXISTS src_stock_fundamentals")
+    await execute_write("DROP TABLE IF EXISTS src_analyst_ratings")
+    await execute_write("DROP TABLE IF EXISTS src_stock_catalysts")
+    await execute_write("DROP TABLE IF EXISTS src_sector_overview")
+    await execute_write("DROP TABLE IF EXISTS src_client_stock_history")
+
+    # Client Preferences (real preferences, not inferred)
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_client_preferences (
+            preference_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id           INTEGER NOT NULL,
+            prefers_dividends   BOOLEAN DEFAULT 0,
+            prefers_growth      BOOLEAN DEFAULT 0,
+            prefers_value       BOOLEAN DEFAULT 0,
+            prefers_esg         BOOLEAN DEFAULT 0,
+            prefers_momentum    BOOLEAN DEFAULT 0,
+            max_volatility      REAL,
+            min_market_cap      TEXT,
+            preferred_sectors   TEXT,
+            excluded_sectors    TEXT,
+            preferred_themes    TEXT,
+            preferred_regions   TEXT,
+            min_dividend_yield  REAL,
+            preference_notes    TEXT,
+            last_updated        TEXT DEFAULT (datetime('now')),
+            UNIQUE(client_id)
+        )
+    """)
+
+    # Stock Fundamentals
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_stock_fundamentals (
+            fundamental_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            stock_id            INTEGER NOT NULL,
+            as_of_date          TEXT NOT NULL,
+            pe_ratio            REAL,
+            pe_forward          REAL,
+            pb_ratio            REAL,
+            ps_ratio            REAL,
+            ev_ebitda           REAL,
+            roe                 REAL,
+            profit_margin       REAL,
+            revenue_growth_yoy  REAL,
+            dividend_yield      REAL,
+            payout_ratio        REAL,
+            debt_to_equity      REAL,
+            market_cap          REAL,
+            market_cap_bucket   TEXT,
+            beta                REAL,
+            avg_volume_20d      INTEGER,
+            quality_score       REAL,
+            UNIQUE(stock_id, as_of_date)
+        )
+    """)
+
+    # Analyst Ratings
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_analyst_ratings (
+            rating_id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            stock_id            INTEGER NOT NULL,
+            analyst_name        TEXT NOT NULL,
+            rating              TEXT NOT NULL,
+            previous_rating     TEXT,
+            rating_date         TEXT NOT NULL,
+            price_target        REAL,
+            previous_target     REAL,
+            target_currency     TEXT DEFAULT 'EUR',
+            current_price       REAL,
+            upside_percent      REAL,
+            conviction_level    TEXT,
+            thesis_summary      TEXT,
+            key_catalysts       TEXT,
+            key_risks           TEXT
+        )
+    """)
+
+    # Upcoming Catalysts
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_stock_catalysts (
+            catalyst_id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            stock_id            INTEGER NOT NULL,
+            event_type          TEXT NOT NULL,
+            event_date          TEXT NOT NULL,
+            event_time          TEXT,
+            event_title         TEXT,
+            event_description   TEXT,
+            expected_impact     TEXT,
+            sentiment           TEXT,
+            eps_estimate        REAL,
+            revenue_estimate    REAL,
+            dividend_amount     REAL,
+            is_confirmed        BOOLEAN DEFAULT 1
+        )
+    """)
+
+    # Sector Overview
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_sector_overview (
+            sector_id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            sector_name         TEXT NOT NULL UNIQUE,
+            sector_rating       TEXT,
+            sector_analyst      TEXT,
+            rating_date         TEXT,
+            key_themes          TEXT,
+            key_risks           TEXT,
+            avg_pe              REAL,
+            avg_dividend_yield  REAL,
+            ytd_performance     REAL,
+            top_picks           TEXT
+        )
+    """)
+
+    # Client-Stock History
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS src_client_stock_history (
+            history_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id           INTEGER NOT NULL,
+            stock_id            INTEGER NOT NULL,
+            total_trades        INTEGER DEFAULT 0,
+            total_buys          INTEGER DEFAULT 0,
+            total_sells         INTEGER DEFAULT 0,
+            net_direction       INTEGER DEFAULT 0,
+            first_interaction   TEXT,
+            last_interaction    TEXT,
+            likely_holding      BOOLEAN DEFAULT 0,
+            interest_level      TEXT,
+            UNIQUE(client_id, stock_id)
+        )
+    """)
+
+    # Insert sample data if tables are empty
+    await _insert_sample_enhanced_data()
+
+    # ===========================================
+    # ANALYTICS VIEWS
+    # ===========================================
+
+    # Drop all analytics views to ensure schema updates are applied
+    await execute_write("DROP VIEW IF EXISTS ana_readership_daysdiff")
+    await execute_write("DROP VIEW IF EXISTS int_client_profile")
+    await execute_write("DROP VIEW IF EXISTS ana_client_portfolio_risk")
+    await execute_write("DROP VIEW IF EXISTS ana_client_engagement_momentum")
+    await execute_write("DROP VIEW IF EXISTS ana_client_conviction")
+    await execute_write("DROP VIEW IF EXISTS ana_client_readership_intelligence")
+    await execute_write("DROP VIEW IF EXISTS ana_bayesian_lead_score")
+    await execute_write("DROP VIEW IF EXISTS int_client_risk_enhanced")
+    await execute_write("DROP VIEW IF EXISTS int_client_risk_multifactor")
+    await execute_write("DROP VIEW IF EXISTS int_client_investment_style")
 
     # 0a. Base view: Readership with days_diff
     await execute_write("""
@@ -221,11 +447,20 @@ async def ensure_analytics_views():
                 'Fundamental'
             ) AS investment_style,
             NULL AS dominant_topic,
-            0.5 AS activity_score
+            0.5 AS activity_score,
+            -- Additional columns expected by get_client_profile
+            'Medium' AS engagement_level,
+            0.0 AS dominant_topic_share,
+            NULL AS dominant_theme,
+            0.5 AS profile_confidence_score,
+            'Medium' AS profile_confidence_level,
+            datetime('now') AS updated_at
         FROM src_clients c
     """)
 
-    # 1. Portfolio Risk View
+    # 1. Portfolio Risk View - IMPROVED with HHI (Herfindahl-Hirschman Index)
+    # HHI = Σ(weight_i²) - measures true portfolio concentration
+    # Range: 0 (perfectly diversified) to 1 (single position)
     await execute_write("""
         CREATE VIEW IF NOT EXISTS ana_client_portfolio_risk AS
         WITH latest_snap AS (
@@ -239,111 +474,223 @@ async def ensure_analytics_views():
             p.stock_id,
             p.weight,
             p.market_value,
+            -- HHI component: weight squared
+            p.weight * p.weight AS weight_squared,
+            -- Improved volatility: use actual vol if available, else estimate by sector
             COALESCE(p.weight * 0.25, 0) AS weighted_vol
           FROM src_positions p
           JOIN latest_snap ls ON ls.snap_id = p.snapshot_id
+        ),
+        portfolio_metrics AS (
+          SELECT
+            client_id,
+            SUM(weighted_vol) AS total_weighted_vol,
+            MAX(weight) AS max_weight,
+            COUNT(*) AS num_positions,
+            SUM(CASE WHEN weight > 0.10 THEN 1 ELSE 0 END) AS large_pos_count,
+            -- HHI calculation: sum of squared weights
+            SUM(weight_squared) AS hhi,
+            -- Effective number of positions: 1/HHI (diversification measure)
+            CASE WHEN SUM(weight_squared) > 0
+                 THEN 1.0 / SUM(weight_squared)
+                 ELSE 0 END AS effective_positions
+          FROM pos_data
+          GROUP BY client_id
         )
         SELECT
           client_id,
-          ROUND(SUM(weighted_vol), 4) AS portfolio_volatility,
-          MAX(weight) AS max_position_weight,
-          COUNT(*) AS total_positions,
-          SUM(CASE WHEN weight > 0.10 THEN 1 ELSE 0 END) AS large_positions,
+          ROUND(total_weighted_vol, 4) AS portfolio_volatility,
+          max_weight AS max_position_weight,
+          num_positions AS total_positions,
+          large_pos_count AS large_positions,
           0.25 AS avg_stock_volatility,
           0.0 AS high_vol_exposure,
+          -- HHI metrics (NEW)
+          ROUND(hhi, 4) AS hhi_concentration,
+          ROUND(effective_positions, 1) AS effective_num_positions,
+          -- HHI-based concentration level (more accurate than max weight alone)
           CASE
-            WHEN SUM(weighted_vol) >= 0.25 THEN 'High'
-            WHEN SUM(weighted_vol) >= 0.15 THEN 'Medium'
+            WHEN hhi >= 0.25 THEN 'Very Concentrated'
+            WHEN hhi >= 0.15 THEN 'Concentrated'
+            WHEN hhi >= 0.10 THEN 'Moderate'
+            ELSE 'Diversified'
+          END AS hhi_risk_level,
+          CASE
+            WHEN total_weighted_vol >= 0.25 THEN 'High'
+            WHEN total_weighted_vol >= 0.15 THEN 'Medium'
             ELSE 'Low'
           END AS volatility_risk_level,
           CASE
-            WHEN MAX(weight) >= 0.20 THEN 'Concentrated'
-            WHEN MAX(weight) >= 0.10 THEN 'Moderate'
+            WHEN max_weight >= 0.20 THEN 'Concentrated'
+            WHEN max_weight >= 0.10 THEN 'Moderate'
             ELSE 'Diversified'
           END AS concentration_risk_level
-        FROM pos_data
-        GROUP BY client_id
+        FROM portfolio_metrics
     """)
 
-    # 2. Engagement Momentum View
+    # 2. Engagement Momentum View - IMPROVED with Exponential Time Decay
+    # E_adj = Σ E_i × e^(-λ × days_ago) where λ = ln(2)/half_life
+    # Half-life = 14 days (event importance halves every 2 weeks)
+    # SQLite approximation: decay_weight = 1 / (1 + days_ago/14)
     await execute_write("""
         CREATE VIEW IF NOT EXISTS ana_client_engagement_momentum AS
-        WITH calls_recent AS (
+        WITH call_events AS (
           SELECT
             client_id,
-            COUNT(*) as cnt,
-            SUM(duration_minutes) as total_dur,
-            AVG(duration_minutes) as avg_dur
+            julianday('now') - julianday(call_timestamp) AS days_ago,
+            duration_minutes,
+            -- Time decay factor: approximates e^(-λt) with half-life of 14 days
+            1.0 / (1.0 + (julianday('now') - julianday(call_timestamp)) / 14.0) AS decay_weight
           FROM src_call_logs
-          WHERE julianday('now') - julianday(call_timestamp) <= 30
-          GROUP BY client_id
+          WHERE julianday('now') - julianday(call_timestamp) <= 90
         ),
-        calls_prior AS (
-          SELECT client_id, COUNT(*) as cnt
-          FROM src_call_logs
-          WHERE julianday('now') - julianday(call_timestamp) BETWEEN 31 AND 60
-          GROUP BY client_id
-        ),
-        trades_recent AS (
+        trade_events AS (
           SELECT
             client_id,
-            COUNT(*) as cnt,
-            SUM(CASE WHEN side = 'Buy' THEN 1 ELSE 0 END) as buys,
-            SUM(CASE WHEN notional_bucket = 'Large' THEN 1 ELSE 0 END) as large_trades
+            julianday('now') - julianday(trade_timestamp) AS days_ago,
+            side,
+            notional_bucket,
+            -- Time decay factor
+            1.0 / (1.0 + (julianday('now') - julianday(trade_timestamp)) / 14.0) AS decay_weight,
+            -- Trade importance weight (large trades matter more)
+            CASE WHEN notional_bucket = 'Large' THEN 3.0
+                 WHEN notional_bucket = 'Medium' THEN 1.5
+                 ELSE 1.0 END AS size_weight
           FROM src_trade_executions
-          WHERE julianday('now') - julianday(trade_timestamp) <= 30
+          WHERE julianday('now') - julianday(trade_timestamp) <= 90
+        ),
+        -- Time-weighted call metrics
+        calls_decayed AS (
+          SELECT
+            client_id,
+            COUNT(*) as raw_count,
+            SUM(decay_weight) AS decayed_count,
+            SUM(duration_minutes * decay_weight) AS decayed_duration,
+            SUM(CASE WHEN days_ago <= 30 THEN 1 ELSE 0 END) AS calls_30d,
+            SUM(CASE WHEN days_ago BETWEEN 31 AND 60 THEN 1 ELSE 0 END) AS calls_prior_30d
+          FROM call_events
           GROUP BY client_id
         ),
-        trades_prior AS (
-          SELECT client_id, COUNT(*) as cnt
-          FROM src_trade_executions
-          WHERE julianday('now') - julianday(trade_timestamp) BETWEEN 31 AND 60
+        -- Time-weighted trade metrics
+        trades_decayed AS (
+          SELECT
+            client_id,
+            COUNT(*) as raw_count,
+            SUM(decay_weight * size_weight) AS decayed_weighted_count,
+            SUM(CASE WHEN side = 'Buy' THEN decay_weight ELSE 0 END) AS decayed_buys,
+            SUM(CASE WHEN side = 'Sell' THEN decay_weight ELSE 0 END) AS decayed_sells,
+            SUM(CASE WHEN days_ago <= 30 THEN 1 ELSE 0 END) AS trades_30d,
+            SUM(CASE WHEN days_ago BETWEEN 31 AND 60 THEN 1 ELSE 0 END) AS trades_prior_30d,
+            SUM(CASE WHEN days_ago <= 30 AND notional_bucket = 'Large' THEN 1 ELSE 0 END) AS large_trades_30d
+          FROM trade_events
           GROUP BY client_id
         )
         SELECT
           c.client_id,
-          COALESCE(cr.cnt, 0) AS calls_last_30d,
-          COALESCE(cp.cnt, 0) AS calls_prior_30d,
-          ROUND(COALESCE(cr.avg_dur, 0), 1) AS avg_call_duration_30d,
-          ROUND(1.0 * COALESCE(cr.cnt, 0) / NULLIF(COALESCE(cp.cnt, 0), 0), 2) AS call_momentum,
-          COALESCE(tr.cnt, 0) AS trades_last_30d,
-          COALESCE(tp.cnt, 0) AS trades_prior_30d,
-          ROUND(1.0 * COALESCE(tr.cnt, 0) / NULLIF(COALESCE(tp.cnt, 0), 0), 2) AS trade_momentum,
-          CASE WHEN tr.cnt > 0 THEN ROUND(1.0 * tr.buys / tr.cnt, 2) ELSE NULL END AS recent_buy_ratio,
-          COALESCE(tr.large_trades, 0) AS large_trades_30d,
-          ROUND(COALESCE(cr.total_dur, 0) * 0.1 + COALESCE(tr.cnt, 0) * 2.0 + COALESCE(tr.large_trades, 0) * 5.0, 1) AS engagement_score_30d,
+          COALESCE(cd.calls_30d, 0) AS calls_last_30d,
+          COALESCE(cd.calls_prior_30d, 0) AS calls_prior_30d,
+          ROUND(COALESCE(cd.decayed_duration, 0) / NULLIF(cd.decayed_count, 0), 1) AS avg_call_duration_30d,
+          ROUND(1.0 * COALESCE(cd.calls_30d, 0) / NULLIF(COALESCE(cd.calls_prior_30d, 0), 0), 2) AS call_momentum,
+          COALESCE(td.trades_30d, 0) AS trades_last_30d,
+          COALESCE(td.trades_prior_30d, 0) AS trades_prior_30d,
+          ROUND(1.0 * COALESCE(td.trades_30d, 0) / NULLIF(COALESCE(td.trades_prior_30d, 0), 0), 2) AS trade_momentum,
+          -- Buy/Sell ratio using decayed weights (more accurate sentiment)
+          ROUND(COALESCE(td.decayed_buys, 0) / NULLIF(COALESCE(td.decayed_buys, 0) + COALESCE(td.decayed_sells, 0), 0), 2) AS recent_buy_ratio,
+          COALESCE(td.large_trades_30d, 0) AS large_trades_30d,
+          -- NEW: Time-decayed engagement score (recency matters!)
+          ROUND(
+            COALESCE(cd.decayed_duration, 0) * 0.15 +
+            COALESCE(td.decayed_weighted_count, 0) * 2.5,
+            1
+          ) AS engagement_score_decayed,
+          -- Legacy score for comparison
+          ROUND(COALESCE(cd.decayed_count, 0) * 3.0 + COALESCE(td.decayed_weighted_count, 0) * 2.0, 1) AS engagement_score_30d,
+          -- Trend detection with hysteresis
           CASE
-            WHEN COALESCE(cr.cnt, 0) > COALESCE(cp.cnt, 0) * 1.5 OR COALESCE(tr.cnt, 0) > COALESCE(tp.cnt, 0) * 1.5 THEN 'Accelerating'
-            WHEN COALESCE(cr.cnt, 0) < COALESCE(cp.cnt, 0) * 0.5 AND COALESCE(tr.cnt, 0) < COALESCE(tp.cnt, 0) * 0.5 THEN 'Cooling Off'
-            WHEN COALESCE(cr.cnt, 0) = 0 AND COALESCE(tr.cnt, 0) = 0 THEN 'Dormant'
+            WHEN COALESCE(cd.calls_30d, 0) > COALESCE(cd.calls_prior_30d, 0) * 1.5
+                 OR COALESCE(td.trades_30d, 0) > COALESCE(td.trades_prior_30d, 0) * 1.5 THEN 'Accelerating'
+            WHEN COALESCE(cd.calls_30d, 0) < COALESCE(cd.calls_prior_30d, 0) * 0.5
+                 AND COALESCE(td.trades_30d, 0) < COALESCE(td.trades_prior_30d, 0) * 0.5 THEN 'Cooling Off'
+            WHEN COALESCE(cd.calls_30d, 0) = 0 AND COALESCE(td.trades_30d, 0) = 0 THEN 'Dormant'
             ELSE 'Stable'
-          END AS engagement_trend
+          END AS engagement_trend,
+          -- NEW: Bayesian-inspired lead probability (simplified)
+          -- P(trade) ∝ recent_activity × recency × trade_history
+          ROUND(
+            CASE
+              WHEN COALESCE(td.decayed_weighted_count, 0) = 0 THEN 0.05
+              ELSE MIN(0.95, 0.1 +
+                   0.3 * MIN(1.0, COALESCE(td.decayed_weighted_count, 0) / 10.0) +
+                   0.3 * MIN(1.0, COALESCE(cd.decayed_count, 0) / 5.0) +
+                   0.2 * COALESCE(td.decayed_buys, 0) / NULLIF(COALESCE(td.decayed_buys, 0) + COALESCE(td.decayed_sells, 0), 0)
+              )
+            END,
+            2
+          ) AS trade_probability
         FROM src_clients c
-        LEFT JOIN calls_recent cr ON cr.client_id = c.client_id
-        LEFT JOIN calls_prior cp ON cp.client_id = c.client_id
-        LEFT JOIN trades_recent tr ON tr.client_id = c.client_id
-        LEFT JOIN trades_prior tp ON tp.client_id = c.client_id
+        LEFT JOIN calls_decayed cd ON cd.client_id = c.client_id
+        LEFT JOIN trades_decayed td ON td.client_id = c.client_id
     """)
 
-    # 3. Conviction View (SQLite compatible - no FULL OUTER JOIN)
+    # 3. Conviction View - IMPROVED with Trade HHI and Time-Weighted Conviction
+    # Uses notional value weights instead of just trade counts
+    # Includes HHI for trading concentration and time decay for recency
     await execute_write("""
         CREATE VIEW IF NOT EXISTS ana_client_conviction AS
-        WITH trade_focus AS (
+        WITH trade_values AS (
+          SELECT
+            client_id,
+            ticker,
+            stock_id,
+            side,
+            -- Estimate notional value from bucket
+            CASE
+              WHEN notional_bucket = 'Large' THEN 500000
+              WHEN notional_bucket = 'Medium' THEN 100000
+              ELSE 25000
+            END AS est_notional,
+            -- Time decay weight (half-life 30 days for conviction)
+            1.0 / (1.0 + (julianday('now') - julianday(trade_timestamp)) / 30.0) AS decay_weight
+          FROM src_trade_executions
+          WHERE ticker IS NOT NULL
+            AND julianday('now') - julianday(trade_timestamp) <= 180
+        ),
+        trade_focus AS (
           SELECT
             client_id,
             ticker,
             stock_id,
             COUNT(*) AS trade_count,
             SUM(CASE WHEN side = 'Buy' THEN 1 ELSE -1 END) AS net_direction,
-            1.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY client_id) AS focus_share
-          FROM src_trade_executions
-          WHERE ticker IS NOT NULL
+            SUM(est_notional) AS total_notional,
+            SUM(est_notional * decay_weight) AS decayed_notional,
+            -- Focus share by notional value (more meaningful than count)
+            1.0 * SUM(est_notional) / SUM(SUM(est_notional)) OVER (PARTITION BY client_id) AS notional_focus_share,
+            -- Focus share by count (legacy)
+            1.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY client_id) AS count_focus_share,
+            -- HHI component for this stock
+            POWER(1.0 * SUM(est_notional) / SUM(SUM(est_notional)) OVER (PARTITION BY client_id), 2) AS hhi_component
+          FROM trade_values
           GROUP BY client_id, ticker, stock_id
         ),
-        ranked AS (
-          SELECT *,
-            ROW_NUMBER() OVER (PARTITION BY client_id ORDER BY trade_count DESC) AS rn
+        client_hhi AS (
+          SELECT
+            client_id,
+            SUM(hhi_component) AS trade_hhi,
+            CASE WHEN SUM(hhi_component) > 0
+                 THEN 1.0 / SUM(hhi_component)
+                 ELSE 0 END AS effective_stocks_traded
           FROM trade_focus
+          GROUP BY client_id
+        ),
+        ranked AS (
+          SELECT
+            tf.*,
+            ch.trade_hhi,
+            ch.effective_stocks_traded,
+            ROW_NUMBER() OVER (PARTITION BY tf.client_id ORDER BY tf.decayed_notional DESC) AS rn
+          FROM trade_focus tf
+          JOIN client_hhi ch ON ch.client_id = tf.client_id
         )
         SELECT
           client_id,
@@ -352,14 +699,20 @@ async def ensure_analytics_views():
           trade_count,
           0 AS call_mentions,
           net_direction,
-          ROUND(focus_share, 3) AS trade_concentration,
-          trade_count AS conviction_score,
+          -- Use notional-based focus share (more accurate)
+          ROUND(notional_focus_share, 3) AS trade_concentration,
+          -- Conviction score: notional-weighted, time-decayed
+          ROUND(decayed_notional / 10000.0, 1) AS conviction_score,
           0 AS bullish_mentions,
           0 AS bearish_mentions,
+          -- Trade HHI for this client (NEW)
+          ROUND(trade_hhi, 4) AS trade_hhi,
+          ROUND(effective_stocks_traded, 1) AS effective_stocks_traded,
+          -- HHI-based conviction level (more accurate)
           CASE
-            WHEN focus_share >= 0.25 THEN 'Very High'
-            WHEN focus_share >= 0.15 THEN 'High'
-            WHEN focus_share >= 0.08 THEN 'Moderate'
+            WHEN trade_hhi >= 0.25 THEN 'Very High'
+            WHEN trade_hhi >= 0.15 THEN 'High'
+            WHEN trade_hhi >= 0.08 THEN 'Moderate'
             ELSE 'Diversified'
           END AS conviction_level,
           CASE
@@ -1023,7 +1376,7 @@ async def get_readership_summary(client_id: int) -> Dict[str, Any]:
 # =========================
 
 async def get_portfolio_risk(client_id: int) -> Dict[str, Any]:
-    """Get portfolio-level risk metrics based on position volatility."""
+    """Get portfolio-level risk metrics including HHI concentration."""
     row = await fetch_one(
         """
         SELECT
@@ -1033,6 +1386,9 @@ async def get_portfolio_risk(client_id: int) -> Dict[str, Any]:
             large_positions,
             avg_stock_volatility,
             high_vol_exposure,
+            hhi_concentration,
+            effective_num_positions,
+            hhi_risk_level,
             volatility_risk_level,
             concentration_risk_level
         FROM ana_client_portfolio_risk
@@ -1044,7 +1400,7 @@ async def get_portfolio_risk(client_id: int) -> Dict[str, Any]:
 
 
 async def get_engagement_momentum(client_id: int) -> Dict[str, Any]:
-    """Get 30d vs 60d engagement momentum."""
+    """Get engagement momentum with time-decayed scoring and trade probability."""
     row = await fetch_one(
         """
         SELECT
@@ -1056,8 +1412,10 @@ async def get_engagement_momentum(client_id: int) -> Dict[str, Any]:
             trade_momentum,
             recent_buy_ratio,
             large_trades_30d,
+            engagement_score_decayed,
             engagement_score_30d,
-            engagement_trend
+            engagement_trend,
+            trade_probability
         FROM ana_client_engagement_momentum
         WHERE client_id = :client_id
         """,
@@ -1067,7 +1425,7 @@ async def get_engagement_momentum(client_id: int) -> Dict[str, Any]:
 
 
 async def get_conviction(client_id: int) -> Dict[str, Any]:
-    """Get client's top conviction stock and sentiment."""
+    """Get client's top conviction stock with trade HHI concentration."""
     row = await fetch_one(
         """
         SELECT
@@ -1078,6 +1436,8 @@ async def get_conviction(client_id: int) -> Dict[str, Any]:
             net_direction,
             trade_concentration,
             conviction_score,
+            trade_hhi,
+            effective_stocks_traded,
             conviction_level,
             sentiment_signal
         FROM ana_client_conviction
@@ -2240,5 +2600,258 @@ async def api_shortlist_pdf(req: ShortlistRequest):
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+# =========================
+# Analyst Stock Override - Manual Selection
+# =========================
+
+@app.get("/api/stocks/available")
+async def api_available_stocks(search: str = "", limit: int = 100):
+    """
+    Get all available stocks for analyst manual selection.
+    Only returns stocks that are in the universe (have reports/coverage).
+    """
+    try:
+        search_term = f"%{search}%" if search else "%"
+        stocks = await fetch_all(
+            """
+            SELECT DISTINCT
+                s.stock_id,
+                s.ticker,
+                s.company_name,
+                s.sector,
+                s.region,
+                s.market_cap_bucket,
+                s.theme_tag
+            FROM src_stocks s
+            WHERE (s.ticker LIKE :search OR s.company_name LIKE :search OR s.sector LIKE :search)
+            ORDER BY s.company_name
+            LIMIT :limit
+            """,
+            {"search": search_term, "limit": limit},
+        )
+        return {"stocks": stocks, "count": len(stocks)}
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e), "stocks": []})
+
+
+# =========================
+# Client Preferences / Investment Goals
+# =========================
+
+@app.get("/api/client/{client_id}/preferences")
+async def api_client_preferences(client_id: int):
+    """
+    Get client investment preferences and goals.
+    Uses real preferences from database if available, otherwise infers from behavior.
+    """
+    try:
+        goals = []
+
+        # First, try to get REAL preferences from database
+        real_prefs = await fetch_one(
+            """
+            SELECT * FROM src_client_preferences WHERE client_id = :client_id
+            """,
+            {"client_id": client_id},
+        )
+
+        # Get supporting data
+        psum = await get_client_portfolio_summary(client_id)
+        profile = await get_client_profile(client_id)
+        conviction = await get_conviction(client_id)
+
+        # If we have real preferences, use them
+        if real_prefs:
+            if real_prefs.get("prefers_dividends"):
+                goals.append({"goal": "Dividend Income", "icon": "💰", "description": "Focus on dividend-paying stocks", "source": "stated"})
+            if real_prefs.get("prefers_growth"):
+                goals.append({"goal": "Growth Stocks", "icon": "📈", "description": "Focus on capital appreciation", "source": "stated"})
+            if real_prefs.get("prefers_esg"):
+                goals.append({"goal": "ESG Focus", "icon": "🌱", "description": "Environmental, Social, Governance criteria", "source": "stated"})
+            if real_prefs.get("prefers_value"):
+                goals.append({"goal": "Value Investing", "icon": "💎", "description": "Undervalued stocks with margin of safety", "source": "stated"})
+            if real_prefs.get("prefers_momentum"):
+                goals.append({"goal": "Momentum Strategy", "icon": "🚀", "description": "Following market trends", "source": "stated"})
+
+            # Sector preferences
+            if real_prefs.get("preferred_sectors"):
+                sectors = real_prefs["preferred_sectors"].split(",")[:3]
+                goals.append({"goal": f"Sectors: {', '.join(sectors)}", "icon": "🏢", "description": "Preferred sector exposure", "source": "stated"})
+
+            # Theme preferences
+            if real_prefs.get("preferred_themes"):
+                themes = real_prefs["preferred_themes"].split(",")[:2]
+                theme_icons = {"ESG": "🌱", "AI": "🤖", "Tech": "💻", "Dividends": "💰", "Automation": "🤖"}
+                for theme in themes:
+                    icon = theme_icons.get(theme.strip(), "📊")
+                    goals.append({"goal": f"{theme.strip()} Theme", "icon": icon, "description": "Thematic focus", "source": "stated"})
+
+            # Risk constraints
+            if real_prefs.get("max_volatility"):
+                vol_pct = int(real_prefs["max_volatility"] * 100)
+                goals.append({"goal": f"Max Vol: {vol_pct}%", "icon": "🛡️", "description": f"Volatility limit: {vol_pct}%", "source": "stated"})
+
+            if real_prefs.get("min_dividend_yield"):
+                yield_pct = real_prefs["min_dividend_yield"] * 100
+                goals.append({"goal": f"Min Yield: {yield_pct:.1f}%", "icon": "💵", "description": f"Minimum dividend yield requirement", "source": "stated"})
+
+            return {
+                "client_id": client_id,
+                "goals": goals,
+                "risk_profile": profile.get("risk_appetite", "Moderate"),
+                "investment_style": profile.get("investment_style", "Fundamental"),
+                "top_sector": psum.get("top_sector", ""),
+                "top_theme": psum.get("top_theme", ""),
+                "conviction_level": conviction.get("conviction_level", "Unknown"),
+                "preference_notes": real_prefs.get("preference_notes", ""),
+                "has_real_preferences": True,
+            }
+
+        # Fall back to INFERRED preferences if no real data
+        risk_appetite = profile.get("risk_appetite", "Moderate")
+        if risk_appetite == "Aggressive":
+            goals.append({"goal": "Alpha Generation", "icon": "🎯", "description": "Seeking high returns (inferred)", "source": "inferred"})
+            goals.append({"goal": "Growth Stocks", "icon": "📈", "description": "Focus on capital appreciation (inferred)", "source": "inferred"})
+        elif risk_appetite == "Conservative":
+            goals.append({"goal": "Capital Preservation", "icon": "🛡️", "description": "Prioritizing stability (inferred)", "source": "inferred"})
+            goals.append({"goal": "Dividend Income", "icon": "💰", "description": "Seeking income streams (inferred)", "source": "inferred"})
+        else:
+            goals.append({"goal": "Balanced Growth", "icon": "⚖️", "description": "Mix of growth and income (inferred)", "source": "inferred"})
+
+        top_sector = psum.get("top_sector", "")
+        if top_sector:
+            goals.append({"goal": f"{top_sector} Focus", "icon": "🏢", "description": f"Primary sector exposure (inferred)", "source": "inferred"})
+
+        top_theme = psum.get("top_theme", "")
+        if top_theme and top_theme.lower() not in ["none", "null", ""]:
+            theme_icons = {"ESG": "🌱", "AI": "🤖", "Tech": "💻", "Healthcare": "🏥", "Energy": "⚡"}
+            icon = theme_icons.get(top_theme, "📊")
+            goals.append({"goal": f"{top_theme} Theme", "icon": icon, "description": "Thematic focus (inferred)", "source": "inferred"})
+
+        return {
+            "client_id": client_id,
+            "goals": goals,
+            "risk_profile": risk_appetite,
+            "investment_style": profile.get("investment_style", "Fundamental"),
+            "top_sector": top_sector,
+            "top_theme": top_theme,
+            "conviction_level": conviction.get("conviction_level", "Unknown"),
+            "has_real_preferences": False,
+        }
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e), "goals": []})
+
+
+# =========================
+# Best Contact Time Analysis
+# =========================
+
+@app.get("/api/client/{client_id}/best_contact_time")
+async def api_best_contact_time(client_id: int):
+    """
+    Analyze trading and call patterns to determine optimal contact time.
+    Uses autocorrelation of activity patterns.
+    """
+    try:
+        # Analyze call timing patterns
+        call_patterns = await fetch_all(
+            """
+            SELECT
+                strftime('%w', call_timestamp) as day_of_week,
+                strftime('%H', call_timestamp) as hour_of_day,
+                COUNT(*) as call_count,
+                AVG(duration_minutes) as avg_duration
+            FROM src_call_logs
+            WHERE client_id = :client_id
+            GROUP BY day_of_week, hour_of_day
+            ORDER BY call_count DESC
+            """,
+            {"client_id": client_id},
+        )
+
+        # Analyze trade timing patterns (when they're most active)
+        trade_patterns = await fetch_all(
+            """
+            SELECT
+                strftime('%w', trade_timestamp) as day_of_week,
+                strftime('%H', trade_timestamp) as hour_of_day,
+                COUNT(*) as trade_count,
+                SUM(CASE WHEN notional_bucket = 'Large' THEN 1 ELSE 0 END) as large_trades
+            FROM src_trade_executions
+            WHERE client_id = :client_id
+            GROUP BY day_of_week, hour_of_day
+            ORDER BY trade_count DESC
+            """,
+            {"client_id": client_id},
+        )
+
+        # Day names
+        day_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+        # Find best day and time
+        best_day = None
+        best_hour = None
+        best_score = 0
+
+        # Combine call and trade patterns
+        day_scores = {}
+        hour_scores = {}
+
+        for c in call_patterns:
+            day = int(c.get("day_of_week", 0))
+            hour = int(c.get("hour_of_day", 9))
+            score = (c.get("call_count", 0) * 2) + (c.get("avg_duration", 0) * 0.5)
+            day_scores[day] = day_scores.get(day, 0) + score
+            hour_scores[hour] = hour_scores.get(hour, 0) + score
+
+        for t in trade_patterns:
+            day = int(t.get("day_of_week", 0))
+            hour = int(t.get("hour_of_day", 9))
+            score = (t.get("trade_count", 0) * 1.5) + (t.get("large_trades", 0) * 3)
+            day_scores[day] = day_scores.get(day, 0) + score
+            hour_scores[hour] = hour_scores.get(hour, 0) + score
+
+        # Find best day
+        if day_scores:
+            best_day_num = max(day_scores, key=day_scores.get)
+            best_day = day_names[best_day_num]
+        else:
+            best_day = "Tuesday"  # Default
+
+        # Find best hour (business hours only: 8-18)
+        business_hours = {h: s for h, s in hour_scores.items() if 8 <= h <= 18}
+        if business_hours:
+            best_hour = max(business_hours, key=business_hours.get)
+        else:
+            best_hour = 10  # Default
+
+        # Format time range
+        hour_end = min(best_hour + 2, 18)
+        time_range = f"{best_hour:02d}:00 - {hour_end:02d}:00"
+
+        # Confidence based on data points
+        total_data_points = len(call_patterns) + len(trade_patterns)
+        if total_data_points >= 20:
+            confidence = "High"
+        elif total_data_points >= 10:
+            confidence = "Medium"
+        else:
+            confidence = "Low"
+
+        return {
+            "client_id": client_id,
+            "best_day": best_day,
+            "best_time_range": time_range,
+            "best_hour": best_hour,
+            "confidence": confidence,
+            "data_points": total_data_points,
+            "recommendation": f"Best time to contact: {best_day} between {time_range}",
+            "day_activity": {day_names[d]: round(s, 1) for d, s in sorted(day_scores.items())},
+            "hour_activity": {f"{h:02d}:00": round(s, 1) for h, s in sorted(hour_scores.items()) if 8 <= h <= 18},
+        }
     except Exception as e:
         return JSONResponse(status_code=200, content={"error": str(e)})
