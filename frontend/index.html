@@ -6,7 +6,7 @@
   <title>ODDO BHF Sales Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
   <style>
     :root {
       /* ODDO BHF Official Color Scheme */
@@ -1292,7 +1292,7 @@
     </div>
 
     <div class="search-box">
-      <span class="search-icon">&#128269;</span>
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input
         type="text"
         class="search-input"
@@ -1400,7 +1400,7 @@
         <!-- ANALYST STOCK OVERRIDE -->
         <div class="analyst-override-box">
           <div class="override-header">
-            <span class="override-icon">🎯</span>
+            <span class="override-icon"></span>
             <span class="override-title">Analyst Override</span>
             <span class="override-subtitle">Select your own stock instead of AI recommendations</span>
           </div>
@@ -1878,7 +1878,7 @@ async function loadClientGoals(cid) {
 
     const goalsHtml = data.goals.map(g => `
       <div class="goal-item">
-        <span class="goal-icon">${g.icon || '📊'}</span>
+        <span class="goal-icon">${g.icon || ''}</span>
         <div class="goal-text">
           <div class="goal-name">${g.goal}</div>
           <div class="goal-desc">${g.description || ''}</div>
@@ -2122,7 +2122,7 @@ function renderShortlist(list, topPicks) {
       <div class="stock-card ${selectedTicker === s.ticker ? 'selected' : ''}" data-idx="${i}">
         <div class="stock-header">
           <div>
-            <div class="stock-ticker">${s.ticker} ${isTop ? '<span style="color: var(--accent);">★</span>' : ''}</div>
+            <div class="stock-ticker">${s.ticker}${isTop ? ' <span style="color: var(--secondary-red); font-size: 11px; font-family: var(--font-primary);">TOP</span>' : ''}</div>
             <div class="stock-name">${s.company_name}</div>
           </div>
           <span class="stock-sector">${s.sector || '-'}</span>
