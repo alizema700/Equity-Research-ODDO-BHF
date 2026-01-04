@@ -447,7 +447,14 @@ async def ensure_analytics_views():
                 'Fundamental'
             ) AS investment_style,
             NULL AS dominant_topic,
-            0.5 AS activity_score
+            0.5 AS activity_score,
+            -- Additional columns expected by get_client_profile
+            'Medium' AS engagement_level,
+            0.0 AS dominant_topic_share,
+            NULL AS dominant_theme,
+            0.5 AS profile_confidence_score,
+            'Medium' AS profile_confidence_level,
+            datetime('now') AS updated_at
         FROM src_clients c
     """)
 
