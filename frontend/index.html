@@ -2142,7 +2142,7 @@ function renderShortlist(list, topPicks) {
           </div>
         </div>
         <ul class="stock-reasons">
-          ${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b}</li>`).join('')}
+          ${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b.replace(/^[\s•\-\*]+/, '')}</li>`).join('')}
         </ul>
       </div>
     `;
