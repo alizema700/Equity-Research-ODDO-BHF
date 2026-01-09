@@ -1723,7 +1723,7 @@ function renderSidebar(data) {
   $('sidebarContent').innerHTML = `
     <div class="client-header">
       <div class="client-name">${client.primary_contact_name || client.client_name || 'Unknown'}</div>
-      <div class="client-meta">${client.firm_name || ''} · ${client.client_type || ''} · ${client.region || ''}</div>
+      <div class="client-meta">${[client.firm_name, client.client_type, client.region].filter(Boolean).join(' · ')}</div>
     </div>
 
     <!-- LEAD SCORE BANNER -->
@@ -1946,7 +1946,7 @@ function renderStockSearchResults(stocks) {
     <div class="stock-search-item" data-stock='${JSON.stringify(s)}'>
       <div class="stock-search-ticker">${s.ticker}</div>
       <div class="stock-search-name">${s.company_name}</div>
-      <div class="stock-search-meta">${s.sector || ''} · ${s.region || ''}</div>
+      <div class="stock-search-meta">${[s.sector, s.region].filter(Boolean).join(' · ')}</div>
     </div>
   `).join('');
 
@@ -1999,7 +1999,7 @@ async function search(query) {
         <div class="search-result" data-id="${r.client_id}">
           <div class="search-result-name">${r.primary_contact_name || r.client_name}</div>
           <div class="search-result-meta">
-            ${r.firm_name} &bull; ${r.client_type || ''} &bull; ${r.region || ''}
+            ${[r.firm_name, r.client_type, r.region].filter(Boolean).join(' · ')}
           </div>
         </div>
       `).join('');
@@ -2130,7 +2130,7 @@ function renderShortlist(list, topPicks) {
         <div class="stock-metrics">
           <div class="stock-metric">
             <span class="stock-metric-label">Close</span>
-            <span class="stock-metric-value">${s.last_close ?? '-'}</span>
+            <span class="stock-metric-value">${s.last_close != null ? Number(s.last_close).toFixed(2) : '-'}</span>
           </div>
           <div class="stock-metric">
             <span class="stock-metric-label">Vol 60d</span>
