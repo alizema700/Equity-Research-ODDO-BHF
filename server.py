@@ -3006,6 +3006,77 @@ async def api_stock_profile(ticker: str):
     return result
 
 
+@app.get("/api/stock/{ticker}/history")
+async def api_stock_history(ticker: str, days: int = 30):
+    """
+    Get historical price data for a stock.
+    First tries database, then falls back to Alpha Vantage API.
+    """
+    # Try database first
+    prices = await fetch_all(
+        """
+        SELECT
+            p.price_date as date,
+            p.open,
+            p.high,
+            p.low,
+            p.close,
+            p.volume
+        FROM src_stock_prices p
+        JOIN src_stocks s ON s.stock_id = p.stock_id
+        WHERE s.ticker = :ticker
+        ORDER BY p.price_date DESC
+        LIMIT :days
+        """,
+        {"ticker": ticker, "days": days}
+    )
+
+    if prices and len(prices) >= 5:
+        # Reverse to chronological order
+        prices_list = [dict(p) for p in prices]
+        prices_list.reverse()
+        return {
+            "ticker": ticker,
+            "source": "database",
+            "prices": prices_list
+        }
+
+    # Fall back to Alpha Vantage API
+    client = get_market_data_client()
+    if client:
+        try:
+            api_prices = await anyio.to_thread.run_sync(
+                lambda: client.get_daily_prices(ticker, days)
+            )
+            if api_prices:
+                # Reverse to chronological order
+                api_prices.reverse()
+                return {
+                    "ticker": ticker,
+                    "source": "alphavantage",
+                    "prices": api_prices
+                }
+        except Exception as e:
+            pass
+
+    # Return whatever we have from database (even if less than 5)
+    if prices:
+        prices_list = [dict(p) for p in prices]
+        prices_list.reverse()
+        return {
+            "ticker": ticker,
+            "source": "database",
+            "prices": prices_list
+        }
+
+    return {
+        "ticker": ticker,
+        "source": "none",
+        "prices": [],
+        "message": "No historical data available"
+    }
+
+
 @app.get("/api/market/summary")
 async def api_market_summary():
     """

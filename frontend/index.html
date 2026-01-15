@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       /* ODDO BHF Official Color Scheme */
@@ -1517,6 +1518,44 @@
       border-radius: 8px;
     }
 
+    .stock-chart-container {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .stock-chart-container canvas {
+      max-height: 200px;
+    }
+
+    .chart-period-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .chart-period-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chart-period-btn:hover {
+      border-color: var(--primary);
+    }
+
+    .chart-period-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
     @media (max-width: 600px) {
       .stock-detail-metrics {
         grid-template-columns: repeat(2, 1fr);
@@ -2588,14 +2627,16 @@ async function fetchStockDetails(stock) {
   const ticker = stock.ticker;
 
   try {
-    // Fetch quote and news in parallel
-    const [quoteRes, newsRes] = await Promise.all([
+    // Fetch quote, news, and history in parallel
+    const [quoteRes, newsRes, historyRes] = await Promise.all([
       fetch(apiUrl(`/api/stock/${ticker}/quote`), { headers: authHeaders() }).catch(() => null),
-      fetch(apiUrl(`/api/stock/${ticker}/news?days=7`), { headers: authHeaders() }).catch(() => null)
+      fetch(apiUrl(`/api/stock/${ticker}/news?days=7`), { headers: authHeaders() }).catch(() => null),
+      fetch(apiUrl(`/api/stock/${ticker}/history?days=30`), { headers: authHeaders() }).catch(() => null)
     ]);
 
     let quote = null;
     let news = [];
+    let history = [];
 
     if (quoteRes && quoteRes.ok) {
       const quoteData = await quoteRes.json();
@@ -2607,15 +2648,23 @@ async function fetchStockDetails(stock) {
       news = newsData.news || [];
     }
 
-    renderStockDetailContent(stock, quote, news);
+    if (historyRes && historyRes.ok) {
+      const historyData = await historyRes.json();
+      history = historyData.prices || [];
+    }
+
+    renderStockDetailContent(stock, quote, news, history);
 
   } catch (e) {
     console.error('Error fetching stock details:', e);
-    renderStockDetailContent(stock, null, []);
+    renderStockDetailContent(stock, null, [], []);
   }
 }
 
-function renderStockDetailContent(stock, quote, news) {
+// Global chart instance for cleanup
+let stockPriceChart = null;
+
+function renderStockDetailContent(stock, quote, news, history = []) {
   // Update header with live price if available
   if (quote && quote.price) {
     $('detailPrice').textContent = `$${Number(quote.price).toFixed(2)}`;
@@ -2669,6 +2718,14 @@ function renderStockDetailContent(stock, quote, news) {
           <div class="price-range-marker" style="left: ${rangePosition}%;"></div>
         </div>
         <span class="price-range-label high">${quote?.high ? `$${Number(quote.high).toFixed(2)}` : '-'}</span>
+      </div>
+    </div>
+
+    <!-- Price Chart -->
+    <div class="stock-detail-section">
+      <div class="stock-detail-section-title">Price History (30 Days)</div>
+      <div class="stock-chart-container">
+        <canvas id="stockPriceChartCanvas"></canvas>
       </div>
     </div>
 
@@ -2748,6 +2805,120 @@ function renderStockDetailContent(stock, quote, news) {
   }
 
   $('stockDetailBody').innerHTML = html;
+
+  // Render price chart if we have history data
+  renderPriceChart(history, stock.ticker);
+}
+
+function renderPriceChart(history, ticker) {
+  // Destroy previous chart if exists
+  if (stockPriceChart) {
+    stockPriceChart.destroy();
+    stockPriceChart = null;
+  }
+
+  const canvas = document.getElementById('stockPriceChartCanvas');
+  if (!canvas) return;
+
+  // If no history data, show message
+  if (!history || history.length === 0) {
+    const ctx = canvas.getContext('2d');
+    ctx.font = '14px var(--font-primary)';
+    ctx.fillStyle = '#999';
+    ctx.textAlign = 'center';
+    ctx.fillText('No historical data available', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  // Prepare data (history is already chronological from API)
+  const labels = history.map(p => {
+    const date = new Date(p.date);
+    return date.toLocaleDateString('de-DE', { month: 'short', day: 'numeric' });
+  });
+  const prices = history.map(p => p.close);
+
+  // Calculate min/max for better y-axis scaling
+  const minPrice = Math.min(...prices) * 0.98;
+  const maxPrice = Math.max(...prices) * 1.02;
+
+  // Determine chart color based on price trend
+  const isPositive = prices[prices.length - 1] >= prices[0];
+  const lineColor = isPositive ? '#10b981' : '#ef4444';
+  const bgGradient = isPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+
+  const ctx = canvas.getContext('2d');
+
+  stockPriceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: ticker,
+        data: prices,
+        borderColor: lineColor,
+        backgroundColor: bgGradient,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: lineColor,
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 61, 57, 0.9)',
+          titleFont: { family: 'Lato, sans-serif', size: 12 },
+          bodyFont: { family: 'Lato, sans-serif', size: 14, weight: 'bold' },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return `$${context.parsed.y.toFixed(2)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: 'Lato, sans-serif', size: 10 },
+            color: '#999',
+            maxRotation: 0,
+            maxTicksLimit: 6
+          }
+        },
+        y: {
+          min: minPrice,
+          max: maxPrice,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            font: { family: 'Lato, sans-serif', size: 10 },
+            color: '#999',
+            callback: function(value) {
+              return '$' + value.toFixed(0);
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 // ============================================================================
