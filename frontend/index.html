@@ -1282,6 +1282,246 @@
       color: var(--text-muted);
       font-size: 13px;
     }
+
+    /* === STOCK DETAIL MODAL === */
+    .stock-detail-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 400;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .stock-detail-overlay.open { display: block; opacity: 1; }
+
+    .stock-detail-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 700px;
+      max-height: 85vh;
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      z-index: 401;
+      display: none;
+      overflow: hidden;
+    }
+    .stock-detail-modal.open { display: block; }
+
+    .stock-detail-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent-dark) 100%);
+      color: white;
+    }
+
+    .stock-detail-ticker {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: var(--font-serif);
+    }
+
+    .stock-detail-name {
+      font-size: 14px;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+
+    .stock-detail-price-container {
+      text-align: right;
+    }
+
+    .stock-detail-price {
+      font-size: 36px;
+      font-weight: 700;
+      font-family: var(--font-serif);
+    }
+
+    .stock-detail-change {
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .stock-detail-change.positive { color: #4ade80; }
+    .stock-detail-change.negative { color: #f87171; }
+
+    .stock-detail-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      color: white;
+      transition: background 0.2s;
+    }
+    .stock-detail-close:hover { background: rgba(255,255,255,0.3); }
+
+    .stock-detail-body {
+      padding: 24px;
+      overflow-y: auto;
+      max-height: calc(85vh - 160px);
+    }
+
+    .stock-detail-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stock-metric-box {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .stock-metric-box .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .stock-metric-box .value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stock-detail-section {
+      margin-bottom: 24px;
+    }
+
+    .stock-detail-section-title {
+      font-size: 15px;
+      font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--primary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stock-price-range {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg);
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .price-range-bar {
+      flex: 1;
+      height: 8px;
+      background: linear-gradient(90deg, #f87171 0%, #fbbf24 50%, #4ade80 100%);
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .price-range-marker {
+      position: absolute;
+      top: -4px;
+      width: 16px;
+      height: 16px;
+      background: var(--primary);
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transform: translateX(-50%);
+    }
+
+    .price-range-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      min-width: 50px;
+    }
+    .price-range-label.high { text-align: right; }
+
+    .news-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .news-item {
+      padding: 14px;
+      background: var(--bg);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .news-item:hover {
+      border-color: var(--primary);
+      transform: translateX(4px);
+    }
+
+    .news-headline {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .news-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .news-sentiment {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .news-sentiment.positive { background: #dcfce7; color: #16a34a; }
+    .news-sentiment.negative { background: #fef2f2; color: #dc2626; }
+    .news-sentiment.neutral { background: var(--greige); color: var(--text-muted); }
+
+    .stock-detail-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    .stock-detail-error {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-radius: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .stock-detail-metrics {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
   </style>
 </head>
 <body>
@@ -1327,6 +1567,28 @@
     </div>
     <div class="drawer-body" id="drawerBody">
       <!-- Content will be rendered by JS -->
+    </div>
+  </div>
+
+  <!-- STOCK DETAIL MODAL -->
+  <div class="stock-detail-overlay" id="stockDetailOverlay"></div>
+  <div class="stock-detail-modal" id="stockDetailModal">
+    <button class="stock-detail-close" id="closeStockDetail">&times;</button>
+    <div class="stock-detail-header" id="stockDetailHeader">
+      <div>
+        <div class="stock-detail-ticker" id="detailTicker">-</div>
+        <div class="stock-detail-name" id="detailCompanyName">Loading...</div>
+      </div>
+      <div class="stock-detail-price-container">
+        <div class="stock-detail-price" id="detailPrice">-</div>
+        <div class="stock-detail-change" id="detailChange">-</div>
+      </div>
+    </div>
+    <div class="stock-detail-body" id="stockDetailBody">
+      <div class="stock-detail-loading">
+        <div class="spinner"></div>
+        <span style="margin-left: 12px;">Loading market data...</span>
+      </div>
     </div>
   </div>
 
@@ -1723,7 +1985,7 @@ function renderSidebar(data) {
   $('sidebarContent').innerHTML = `
     <div class="client-header">
       <div class="client-name">${client.primary_contact_name || client.client_name || 'Unknown'}</div>
-      <div class="client-meta">${client.firm_name || ''} · ${client.client_type || ''} · ${client.region || ''}</div>
+      <div class="client-meta">${[client.firm_name, client.client_type, client.region].filter(Boolean).join(' · ')}</div>
     </div>
 
     <!-- LEAD SCORE BANNER -->
@@ -1946,7 +2208,7 @@ function renderStockSearchResults(stocks) {
     <div class="stock-search-item" data-stock='${JSON.stringify(s)}'>
       <div class="stock-search-ticker">${s.ticker}</div>
       <div class="stock-search-name">${s.company_name}</div>
-      <div class="stock-search-meta">${s.sector || ''} · ${s.region || ''}</div>
+      <div class="stock-search-meta">${[s.sector, s.region].filter(Boolean).join(' · ')}</div>
     </div>
   `).join('');
 
@@ -1975,6 +2237,9 @@ function selectManualStock(stock) {
 
   // Show notification
   setStatus(`Selected: ${stock.ticker}`, 'active');
+
+  // Open stock detail modal with live market data
+  openStockDetailModal(stock);
 }
 
 // ============================================================================
@@ -1999,7 +2264,7 @@ async function search(query) {
         <div class="search-result" data-id="${r.client_id}">
           <div class="search-result-name">${r.primary_contact_name || r.client_name}</div>
           <div class="search-result-meta">
-            ${r.firm_name} &bull; ${r.client_type || ''} &bull; ${r.region || ''}
+            ${[r.firm_name, r.client_type, r.region].filter(Boolean).join(' · ')}
           </div>
         </div>
       `).join('');
@@ -2130,7 +2395,7 @@ function renderShortlist(list, topPicks) {
         <div class="stock-metrics">
           <div class="stock-metric">
             <span class="stock-metric-label">Close</span>
-            <span class="stock-metric-value">${s.last_close ?? '-'}</span>
+            <span class="stock-metric-value">${s.last_close != null ? Number(s.last_close).toFixed(2) : '-'}</span>
           </div>
           <div class="stock-metric">
             <span class="stock-metric-label">Vol 60d</span>
@@ -2142,7 +2407,7 @@ function renderShortlist(list, topPicks) {
           </div>
         </div>
         <ul class="stock-reasons">
-          ${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b}</li>`).join('')}
+          ${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b.replace(/^[\s•\-\*]+/, '')}</li>`).join('')}
         </ul>
       </div>
     `;
@@ -2166,6 +2431,9 @@ function selectStock(idx) {
   $('storyFullBtn').disabled = false;
   $('storyBulletsBtn').disabled = false;
   $('storyEmpty').style.display = 'none';
+
+  // Open stock detail modal with live market data
+  openStockDetailModal(stock);
 }
 
 // ============================================================================
@@ -2285,6 +2553,204 @@ function showHistoryDetail(id) {
 }
 
 // ============================================================================
+// STOCK DETAIL MODAL
+// ============================================================================
+function openStockDetailModal(stock) {
+  // Set basic info immediately
+  $('detailTicker').textContent = stock.ticker;
+  $('detailCompanyName').textContent = stock.company_name || 'Loading...';
+  $('detailPrice').textContent = stock.last_close ? `$${Number(stock.last_close).toFixed(2)}` : '-';
+  $('detailChange').textContent = '-';
+  $('detailChange').className = 'stock-detail-change';
+
+  // Show loading state
+  $('stockDetailBody').innerHTML = `
+    <div class="stock-detail-loading">
+      <div class="spinner"></div>
+      <span style="margin-left: 12px;">Loading market data...</span>
+    </div>
+  `;
+
+  // Open modal
+  $('stockDetailOverlay').classList.add('open');
+  $('stockDetailModal').classList.add('open');
+
+  // Fetch live data
+  fetchStockDetails(stock);
+}
+
+function closeStockDetailModal() {
+  $('stockDetailOverlay').classList.remove('open');
+  $('stockDetailModal').classList.remove('open');
+}
+
+async function fetchStockDetails(stock) {
+  const ticker = stock.ticker;
+
+  try {
+    // Fetch quote and news in parallel
+    const [quoteRes, newsRes] = await Promise.all([
+      fetch(apiUrl(`/api/stock/${ticker}/quote`), { headers: authHeaders() }).catch(() => null),
+      fetch(apiUrl(`/api/stock/${ticker}/news?days=7`), { headers: authHeaders() }).catch(() => null)
+    ]);
+
+    let quote = null;
+    let news = [];
+
+    if (quoteRes && quoteRes.ok) {
+      const quoteData = await quoteRes.json();
+      quote = quoteData.quote;
+    }
+
+    if (newsRes && newsRes.ok) {
+      const newsData = await newsRes.json();
+      news = newsData.news || [];
+    }
+
+    renderStockDetailContent(stock, quote, news);
+
+  } catch (e) {
+    console.error('Error fetching stock details:', e);
+    renderStockDetailContent(stock, null, []);
+  }
+}
+
+function renderStockDetailContent(stock, quote, news) {
+  // Update header with live price if available
+  if (quote && quote.price) {
+    $('detailPrice').textContent = `$${Number(quote.price).toFixed(2)}`;
+    const changePercent = parseFloat(quote.change_percent) || 0;
+    const changeValue = quote.change || 0;
+    const changeClass = changePercent >= 0 ? 'positive' : 'negative';
+    const changeSign = changePercent >= 0 ? '+' : '';
+    $('detailChange').textContent = `${changeSign}${Number(changeValue).toFixed(2)} (${changeSign}${changePercent.toFixed(2)}%)`;
+    $('detailChange').className = `stock-detail-change ${changeClass}`;
+  }
+
+  // Calculate price range position
+  let rangePosition = 50; // Default to middle
+  let low = quote?.low || stock.last_close * 0.95;
+  let high = quote?.high || stock.last_close * 1.05;
+  let current = quote?.price || stock.last_close;
+
+  if (high > low && current) {
+    rangePosition = ((current - low) / (high - low)) * 100;
+    rangePosition = Math.max(5, Math.min(95, rangePosition));
+  }
+
+  // Build content
+  let html = `
+    <!-- Price Metrics -->
+    <div class="stock-detail-metrics">
+      <div class="stock-metric-box">
+        <div class="label">Open</div>
+        <div class="value">${quote?.open ? `$${Number(quote.open).toFixed(2)}` : '-'}</div>
+      </div>
+      <div class="stock-metric-box">
+        <div class="label">High</div>
+        <div class="value">${quote?.high ? `$${Number(quote.high).toFixed(2)}` : '-'}</div>
+      </div>
+      <div class="stock-metric-box">
+        <div class="label">Low</div>
+        <div class="value">${quote?.low ? `$${Number(quote.low).toFixed(2)}` : '-'}</div>
+      </div>
+      <div class="stock-metric-box">
+        <div class="label">Volume</div>
+        <div class="value">${quote?.volume ? Number(quote.volume).toLocaleString('de-DE') : '-'}</div>
+      </div>
+    </div>
+
+    <!-- Day Range -->
+    <div class="stock-detail-section">
+      <div class="stock-detail-section-title">Day Range</div>
+      <div class="stock-price-range">
+        <span class="price-range-label">${quote?.low ? `$${Number(quote.low).toFixed(2)}` : '-'}</span>
+        <div class="price-range-bar">
+          <div class="price-range-marker" style="left: ${rangePosition}%;"></div>
+        </div>
+        <span class="price-range-label high">${quote?.high ? `$${Number(quote.high).toFixed(2)}` : '-'}</span>
+      </div>
+    </div>
+
+    <!-- Stock Info from Shortlist -->
+    <div class="stock-detail-section">
+      <div class="stock-detail-section-title">Stock Information</div>
+      <div class="stock-detail-metrics" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="stock-metric-box">
+          <div class="label">Sector</div>
+          <div class="value" style="font-size: 14px;">${stock.sector || '-'}</div>
+        </div>
+        <div class="stock-metric-box">
+          <div class="label">Volatility (60d)</div>
+          <div class="value">${stock.vol_60d ? (stock.vol_60d * 100).toFixed(1) + '%' : '-'}</div>
+        </div>
+        <div class="stock-metric-box">
+          <div class="label">Risk Bucket</div>
+          <div class="value" style="font-size: 14px;">${stock.vol_bucket || '-'}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // AI Reasoning (if available)
+  if (stock.why_bullets && stock.why_bullets.length > 0) {
+    html += `
+      <div class="stock-detail-section">
+        <div class="stock-detail-section-title">Why This Stock?</div>
+        <ul class="stock-reasons" style="font-size: 14px; line-height: 1.8;">
+          ${stock.why_bullets.map(b => `<li>${b.replace(/^[\s•\-\*]+/, '')}</li>`).join('')}
+        </ul>
+      </div>
+    `;
+  }
+
+  // News Section
+  html += `
+    <div class="stock-detail-section">
+      <div class="stock-detail-section-title">
+        Recent News
+        <span style="font-size: 11px; background: var(--bg); padding: 2px 8px; border-radius: 10px; font-family: var(--font-primary);">${news.length}</span>
+      </div>
+  `;
+
+  if (news.length > 0) {
+    html += `<div class="news-list">`;
+    news.slice(0, 5).forEach(article => {
+      html += `
+        <div class="news-item" onclick="window.open('${article.url}', '_blank')">
+          <div class="news-headline">${article.headline}</div>
+          <div class="news-meta">
+            <span class="news-sentiment ${article.sentiment || 'neutral'}">${article.sentiment || 'neutral'}</span>
+            <span>${article.source || 'Unknown'}</span>
+            <span>${article.datetime || ''}</span>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  } else {
+    html += `
+      <div class="stock-detail-error">
+        No recent news available for ${stock.ticker}
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+
+  // Trading Date
+  if (quote?.latest_trading_day) {
+    html += `
+      <div style="text-align: center; margin-top: 20px; font-size: 11px; color: var(--text-muted);">
+        Data as of ${quote.latest_trading_day}
+      </div>
+    `;
+  }
+
+  $('stockDetailBody').innerHTML = html;
+}
+
+// ============================================================================
 // COPY
 // ============================================================================
 function copyOutput() {
@@ -2324,6 +2790,9 @@ $('modalOverlay').addEventListener('click', hideModal);
 
 $('closeDrawer').addEventListener('click', closeDetailsDrawer);
 $('drawerOverlay').addEventListener('click', closeDetailsDrawer);
+
+$('closeStockDetail').addEventListener('click', closeStockDetailModal);
+$('stockDetailOverlay').addEventListener('click', closeStockDetailModal);
 
 $('generateBtn').addEventListener('click', generateShortlist);
 $('storyFullBtn').addEventListener('click', () => generateStory('FULL'));

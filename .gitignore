@@ -46,3 +46,4 @@ node_modules/
 out/
 .vercel/
 data.db
+data.db.backup
