@@ -2665,11 +2665,35 @@ async function fetchStockDetails(stock) {
 let stockPriceChart = null;
 
 function renderStockDetailContent(stock, quote, news, history = []) {
+  // Get latest day data from history as fallback
+  const latestDay = history && history.length > 0 ? history[history.length - 1] : null;
+
+  // Use quote data if available, otherwise fall back to history
+  const openPrice = quote?.open || latestDay?.open || null;
+  const highPrice = quote?.high || latestDay?.high || null;
+  const lowPrice = quote?.low || latestDay?.low || null;
+  const closePrice = quote?.price || latestDay?.close || stock.last_close;
+  const volume = quote?.volume || latestDay?.volume || null;
+
   // Update header with live price if available
-  if (quote && quote.price) {
-    $('detailPrice').textContent = `$${Number(quote.price).toFixed(2)}`;
-    const changePercent = parseFloat(quote.change_percent) || 0;
-    const changeValue = quote.change || 0;
+  if (closePrice) {
+    $('detailPrice').textContent = `$${Number(closePrice).toFixed(2)}`;
+
+    // Calculate change from history if no quote
+    let changePercent = 0;
+    let changeValue = 0;
+
+    if (quote && quote.change_percent) {
+      changePercent = parseFloat(quote.change_percent) || 0;
+      changeValue = quote.change || 0;
+    } else if (history && history.length >= 2) {
+      const prevDay = history[history.length - 2];
+      if (prevDay && prevDay.close && latestDay && latestDay.close) {
+        changeValue = latestDay.close - prevDay.close;
+        changePercent = (changeValue / prevDay.close) * 100;
+      }
+    }
+
     const changeClass = changePercent >= 0 ? 'positive' : 'negative';
     const changeSign = changePercent >= 0 ? '+' : '';
     $('detailChange').textContent = `${changeSign}${Number(changeValue).toFixed(2)} (${changeSign}${changePercent.toFixed(2)}%)`;
@@ -2678,9 +2702,9 @@ function renderStockDetailContent(stock, quote, news, history = []) {
 
   // Calculate price range position
   let rangePosition = 50; // Default to middle
-  let low = quote?.low || stock.last_close * 0.95;
-  let high = quote?.high || stock.last_close * 1.05;
-  let current = quote?.price || stock.last_close;
+  let low = lowPrice || stock.last_close * 0.95;
+  let high = highPrice || stock.last_close * 1.05;
+  let current = closePrice || stock.last_close;
 
   if (high > low && current) {
     rangePosition = ((current - low) / (high - low)) * 100;
@@ -2693,19 +2717,19 @@ function renderStockDetailContent(stock, quote, news, history = []) {
     <div class="stock-detail-metrics">
       <div class="stock-metric-box">
         <div class="label">Open</div>
-        <div class="value">${quote?.open ? `$${Number(quote.open).toFixed(2)}` : '-'}</div>
+        <div class="value">${openPrice ? `$${Number(openPrice).toFixed(2)}` : '-'}</div>
       </div>
       <div class="stock-metric-box">
         <div class="label">High</div>
-        <div class="value">${quote?.high ? `$${Number(quote.high).toFixed(2)}` : '-'}</div>
+        <div class="value">${highPrice ? `$${Number(highPrice).toFixed(2)}` : '-'}</div>
       </div>
       <div class="stock-metric-box">
         <div class="label">Low</div>
-        <div class="value">${quote?.low ? `$${Number(quote.low).toFixed(2)}` : '-'}</div>
+        <div class="value">${lowPrice ? `$${Number(lowPrice).toFixed(2)}` : '-'}</div>
       </div>
       <div class="stock-metric-box">
         <div class="label">Volume</div>
-        <div class="value">${quote?.volume ? Number(quote.volume).toLocaleString('de-DE') : '-'}</div>
+        <div class="value">${volume ? Number(volume).toLocaleString('de-DE') : '-'}</div>
       </div>
     </div>
 
@@ -2713,11 +2737,11 @@ function renderStockDetailContent(stock, quote, news, history = []) {
     <div class="stock-detail-section">
       <div class="stock-detail-section-title">Day Range</div>
       <div class="stock-price-range">
-        <span class="price-range-label">${quote?.low ? `$${Number(quote.low).toFixed(2)}` : '-'}</span>
+        <span class="price-range-label">${lowPrice ? `$${Number(lowPrice).toFixed(2)}` : '-'}</span>
         <div class="price-range-bar">
           <div class="price-range-marker" style="left: ${rangePosition}%;"></div>
         </div>
-        <span class="price-range-label high">${quote?.high ? `$${Number(quote.high).toFixed(2)}` : '-'}</span>
+        <span class="price-range-label high">${highPrice ? `$${Number(highPrice).toFixed(2)}` : '-'}</span>
       </div>
     </div>
 
