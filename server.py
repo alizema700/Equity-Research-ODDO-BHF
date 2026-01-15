@@ -2855,3 +2855,196 @@ async def api_best_contact_time(client_id: int):
         }
     except Exception as e:
         return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+# =========================
+# Real-Time Market Data (Alpha Vantage & Finnhub)
+# =========================
+
+# Lazy import to avoid startup delay
+_market_data_client = None
+
+def get_market_data_client():
+    """Get or create market data client (lazy initialization)."""
+    global _market_data_client
+    if _market_data_client is None:
+        try:
+            from lib.market_data import MarketDataClient
+            _market_data_client = MarketDataClient()
+        except ImportError:
+            return None
+    return _market_data_client
+
+
+@app.get("/api/stock/{ticker}/quote")
+async def api_stock_quote(ticker: str):
+    """
+    Get real-time stock quote from Alpha Vantage.
+
+    Note: Alpha Vantage free tier is limited to 5 calls/minute.
+    """
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        # Run in thread to avoid blocking
+        quote = await anyio.to_thread.run_sync(client.get_quote, ticker)
+
+        if quote:
+            return {
+                "ticker": ticker,
+                "price": quote["price"],
+                "change": quote["change"],
+                "change_percent": quote["change_percent"],
+                "open": quote["open"],
+                "high": quote["high"],
+                "low": quote["low"],
+                "volume": quote["volume"],
+                "latest_trading_day": quote["latest_trading_day"],
+            }
+        else:
+            # Fallback to database price
+            db_price = await fetch_one(
+                """
+                SELECT p.close, p.price_date, s.company_name
+                FROM src_stock_prices p
+                JOIN src_stocks s ON s.stock_id = p.stock_id
+                WHERE s.ticker = :ticker
+                ORDER BY p.price_date DESC
+                LIMIT 1
+                """,
+                {"ticker": ticker}
+            )
+            if db_price:
+                return {
+                    "ticker": ticker,
+                    "price": db_price["close"],
+                    "source": "database",
+                    "as_of": db_price["price_date"],
+                    "company_name": db_price["company_name"],
+                }
+            return JSONResponse(status_code=404, content={"error": f"No quote found for {ticker}"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/news")
+async def api_stock_news(ticker: str, days: int = 7):
+    """
+    Get recent news for a stock from Finnhub.
+    """
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        news = await anyio.to_thread.run_sync(lambda: client.get_news(ticker, days))
+
+        if news:
+            return {
+                "ticker": ticker,
+                "count": len(news),
+                "articles": news,
+            }
+        else:
+            return {
+                "ticker": ticker,
+                "count": 0,
+                "articles": [],
+                "message": "No recent news found"
+            }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/profile")
+async def api_stock_profile(ticker: str):
+    """
+    Get company profile from database with optional Finnhub enrichment.
+    """
+    # First try database
+    stock = await fetch_one(
+        """
+        SELECT
+            s.stock_id,
+            s.ticker,
+            s.company_name,
+            s.sector,
+            s.region,
+            s.market_cap_bucket,
+            s.theme_tag,
+            p.close as last_price,
+            p.price_date
+        FROM src_stocks s
+        LEFT JOIN src_stock_prices p ON p.stock_id = s.stock_id
+        WHERE s.ticker = :ticker
+        ORDER BY p.price_date DESC
+        LIMIT 1
+        """,
+        {"ticker": ticker}
+    )
+
+    if not stock:
+        return JSONResponse(status_code=404, content={"error": f"Stock {ticker} not found"})
+
+    result = dict(stock)
+
+    # Try to enrich with Finnhub data
+    client = get_market_data_client()
+    if client:
+        try:
+            profile = await anyio.to_thread.run_sync(client.get_company_profile, ticker)
+            if profile:
+                result["market_cap"] = profile.get("market_cap")
+                result["industry"] = profile.get("industry")
+                result["website"] = profile.get("website")
+                result["logo"] = profile.get("logo")
+        except:
+            pass  # Ignore enrichment errors
+
+    return result
+
+
+@app.get("/api/market/summary")
+async def api_market_summary():
+    """
+    Get market summary with top movers from database.
+    """
+    # Get latest prices for all stocks
+    stocks = await fetch_all(
+        """
+        SELECT
+            s.ticker,
+            s.company_name,
+            s.sector,
+            s.theme_tag,
+            p.close as price,
+            p.price_date
+        FROM src_stocks s
+        LEFT JOIN src_stock_prices p ON p.stock_id = s.stock_id
+        WHERE p.price_id IN (
+            SELECT MAX(price_id) FROM src_stock_prices GROUP BY stock_id
+        )
+        ORDER BY s.sector, s.company_name
+        """
+    )
+
+    # Group by sector
+    sectors = {}
+    for stock in stocks:
+        sector = stock.get("sector", "Other")
+        if sector not in sectors:
+            sectors[sector] = []
+        sectors[sector].append({
+            "ticker": stock["ticker"],
+            "company": stock["company_name"],
+            "price": stock["price"],
+            "theme": stock["theme_tag"],
+        })
+
+    return {
+        "total_stocks": len(stocks),
+        "sectors": sectors,
+        "last_updated": stocks[0]["price_date"] if stocks else None,
+    }
