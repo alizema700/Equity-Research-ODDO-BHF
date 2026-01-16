@@ -2,12 +2,56 @@ import os
 import json
 import sqlite3
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
+from functools import lru_cache
+import time
 
 import anyio
 
 from dotenv import load_dotenv
+
+# =========================
+# Simple In-Memory Cache
+# =========================
+class SimpleCache:
+    """Simple TTL-based in-memory cache for API responses."""
+
+    def __init__(self):
+        self._cache: Dict[str, Tuple[Any, float]] = {}
+        self._default_ttl = 300  # 5 minutes default
+
+    def get(self, key: str) -> Optional[Any]:
+        """Get value from cache if not expired."""
+        if key in self._cache:
+            value, expires_at = self._cache[key]
+            if time.time() < expires_at:
+                return value
+            del self._cache[key]
+        return None
+
+    def set(self, key: str, value: Any, ttl: int = None) -> None:
+        """Set value in cache with TTL."""
+        ttl = ttl or self._default_ttl
+        self._cache[key] = (value, time.time() + ttl)
+
+    def delete(self, key: str) -> None:
+        """Remove key from cache."""
+        self._cache.pop(key, None)
+
+    def clear(self) -> None:
+        """Clear entire cache."""
+        self._cache.clear()
+
+    def stats(self) -> Dict[str, int]:
+        """Get cache statistics."""
+        now = time.time()
+        valid = sum(1 for _, (_, exp) in self._cache.items() if exp > now)
+        return {"total_keys": len(self._cache), "valid_keys": valid}
+
+
+# Global cache instance
+api_cache = SimpleCache()
 
 # Load .env from the project directory (same folder as this file),
 # so it works even if you start uvicorn from a different working directory.
@@ -2347,6 +2391,170 @@ def api_env():
         "env_path": ENV_PATH,
         "cwd": os.getcwd(),
     }
+
+
+@app.get("/api/analytics")
+async def api_analytics():
+    """
+    Get comprehensive analytics for the platform.
+    Includes client engagement, stock coverage, and activity metrics.
+    """
+    try:
+        # Client stats
+        client_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_clients,
+                COUNT(CASE WHEN engagement_status = 'Active' THEN 1 END) as active_clients,
+                COUNT(CASE WHEN engagement_status = 'Dormant' THEN 1 END) as dormant_clients
+            FROM int_client_profile
+        """)
+
+        # Stock coverage
+        stock_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_stocks,
+                COUNT(DISTINCT sector) as sectors_covered
+            FROM src_stocks WHERE is_active = 1
+        """)
+
+        # Activity in last 30 days
+        activity_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_calls,
+                COUNT(DISTINCT client_id) as clients_contacted
+            FROM src_call_logs
+            WHERE call_timestamp >= date('now', '-30 days')
+        """)
+
+        # Readership stats
+        readership_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_reads,
+                COUNT(DISTINCT client_id) as readers
+            FROM ana_readership_daysdiff
+            WHERE read_date >= date('now', '-30 days')
+        """)
+
+        # Top sectors by client interest
+        top_sectors = await fetch_all("""
+            SELECT sector, COUNT(*) as count
+            FROM ana_readership_daysdiff
+            GROUP BY sector
+            ORDER BY count DESC
+            LIMIT 5
+        """)
+
+        # Recent activity timeline
+        recent_activity = await fetch_all("""
+            SELECT
+                date(call_timestamp) as date,
+                COUNT(*) as calls
+            FROM src_call_logs
+            WHERE call_timestamp >= date('now', '-14 days')
+            GROUP BY date(call_timestamp)
+            ORDER BY date DESC
+        """)
+
+        # Cache stats
+        cache_stats = api_cache.stats()
+
+        return {
+            "clients": {
+                "total": client_stats["total_clients"] if client_stats else 0,
+                "active": client_stats["active_clients"] if client_stats else 0,
+                "dormant": client_stats["dormant_clients"] if client_stats else 0,
+            },
+            "stocks": {
+                "total": stock_stats["total_stocks"] if stock_stats else 0,
+                "sectors": stock_stats["sectors_covered"] if stock_stats else 0,
+            },
+            "activity_30d": {
+                "calls": activity_stats["total_calls"] if activity_stats else 0,
+                "clients_contacted": activity_stats["clients_contacted"] if activity_stats else 0,
+                "reads": readership_stats["total_reads"] if readership_stats else 0,
+                "readers": readership_stats["readers"] if readership_stats else 0,
+            },
+            "top_sectors": [dict(s) for s in top_sectors] if top_sectors else [],
+            "recent_activity": [dict(a) for a in recent_activity] if recent_activity else [],
+            "cache": cache_stats,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/analytics/client/{client_id}")
+async def api_client_analytics(client_id: int):
+    """
+    Get detailed analytics for a specific client.
+    """
+    try:
+        # Client profile
+        profile = await fetch_one("""
+            SELECT * FROM int_client_profile WHERE client_id = :cid
+        """, {"cid": client_id})
+
+        if not profile:
+            return JSONResponse(status_code=404, content={"error": "Client not found"})
+
+        # Call history stats
+        call_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_calls,
+                MAX(call_timestamp) as last_call,
+                COUNT(DISTINCT stock_id) as stocks_discussed
+            FROM src_call_logs
+            WHERE client_id = :cid
+        """, {"cid": client_id})
+
+        # Reading patterns
+        reading_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_reads,
+                AVG(days_diff) as avg_read_delay,
+                COUNT(DISTINCT ticker) as tickers_read
+            FROM ana_readership_daysdiff
+            WHERE client_id = :cid
+        """, {"cid": client_id})
+
+        # Sector preferences
+        sector_prefs = await fetch_all("""
+            SELECT sector, COUNT(*) as count
+            FROM ana_readership_daysdiff
+            WHERE client_id = :cid
+            GROUP BY sector
+            ORDER BY count DESC
+            LIMIT 5
+        """, {"cid": client_id})
+
+        # Recent reads
+        recent_reads = await fetch_all("""
+            SELECT ticker, sector, report_title, read_date
+            FROM ana_readership_daysdiff
+            WHERE client_id = :cid
+            ORDER BY read_date DESC
+            LIMIT 10
+        """, {"cid": client_id})
+
+        return {
+            "client_id": client_id,
+            "profile": dict(profile),
+            "calls": {
+                "total": call_stats["total_calls"] if call_stats else 0,
+                "last_call": call_stats["last_call"] if call_stats else None,
+                "stocks_discussed": call_stats["stocks_discussed"] if call_stats else 0,
+            },
+            "reading": {
+                "total_reads": reading_stats["total_reads"] if reading_stats else 0,
+                "avg_delay_days": round(reading_stats["avg_read_delay"] or 0, 1),
+                "tickers_read": reading_stats["tickers_read"] if reading_stats else 0,
+            },
+            "sector_preferences": [dict(s) for s in sector_prefs] if sector_prefs else [],
+            "recent_reads": [dict(r) for r in recent_reads] if recent_reads else [],
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/search")
 async def api_search(q: str = Query(..., min_length=1), limit: int = 20):
