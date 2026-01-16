@@ -2761,7 +2761,7 @@ function renderShortlist(list, topPicks) {
           </div>
         </div>
         <ul class="stock-reasons">
-          ${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b.replace(/^[\s•\-\*]+/, '')}</li>`).join('')}
+          ${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b.replace(/^[\s•\-\*\u2022\u2023\u25E6\u2043\u2219·]+/g, '').trim()}</li>`).join('')}
         </ul>
       </div>
     `;
@@ -3191,7 +3191,7 @@ function renderStockDetailContent(stock, quote, news, history = []) {
       <div class="stock-detail-section">
         <div class="stock-detail-section-title">Why This Stock?</div>
         <ul class="stock-reasons" style="font-size: 14px; line-height: 1.8;">
-          ${stock.why_bullets.map(b => `<li>${b.replace(/^[\s•\-\*]+/, '')}</li>`).join('')}
+          ${stock.why_bullets.map(b => `<li>${b.replace(/^[\s•\-\*\u2022\u2023\u25E6\u2043\u2219·]+/g, '').trim()}</li>`).join('')}
         </ul>
       </div>
     `;
