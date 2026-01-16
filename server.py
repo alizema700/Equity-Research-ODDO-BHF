@@ -2933,25 +2933,38 @@ async def api_stock_quote(ticker: str):
 async def api_stock_news(ticker: str, days: int = 7):
     """
     Get recent news for a stock from Finnhub.
+    Falls back to company name search if ticker-based search fails.
     """
     client = get_market_data_client()
     if not client:
         return JSONResponse(status_code=500, content={"error": "Market data client not available"})
 
     try:
+        # First try ticker-based news
         news = await anyio.to_thread.run_sync(lambda: client.get_news(ticker, days))
+
+        # If no news found, try searching by company name
+        if not news:
+            # Get company name from database
+            stock = await fetch_one(
+                "SELECT company_name FROM src_stocks WHERE ticker = :ticker",
+                {"ticker": ticker}
+            )
+            if stock and stock["company_name"]:
+                company_name = stock["company_name"].split()[0]  # Use first word (e.g., "Infineon" from "Infineon Technologies")
+                news = await anyio.to_thread.run_sync(lambda: client.search_market_news(company_name, days))
 
         if news:
             return {
                 "ticker": ticker,
                 "count": len(news),
-                "articles": news,
+                "news": news,  # Changed from "articles" to "news" for consistency
             }
         else:
             return {
                 "ticker": ticker,
                 "count": 0,
-                "articles": [],
+                "news": [],
                 "message": "No recent news found"
             }
     except Exception as e:
@@ -3075,6 +3088,84 @@ async def api_stock_history(ticker: str, days: int = 30):
         "prices": [],
         "message": "No historical data available"
     }
+
+
+@app.get("/api/stock/{ticker}/indicators")
+async def api_stock_indicators(ticker: str):
+    """
+    Get technical indicators for a stock (RSI, MACD, SMA, Bollinger Bands).
+    Note: Due to API rate limits, this may take a few seconds.
+    """
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        # Get RSI only for quick response (full indicators too slow due to rate limits)
+        rsi = await anyio.to_thread.run_sync(lambda: client.get_rsi(ticker))
+
+        return {
+            "ticker": ticker,
+            "indicators": {
+                "rsi": rsi,
+            },
+            "note": "Use /api/stock/{ticker}/indicators/all for full indicators (slower due to API rate limits)"
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/indicators/all")
+async def api_stock_all_indicators(ticker: str):
+    """
+    Get all technical indicators for a stock.
+    Warning: This endpoint is slow due to API rate limits (~60 seconds).
+    """
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        indicators = await anyio.to_thread.run_sync(lambda: client.get_all_indicators(ticker))
+
+        return {
+            "ticker": ticker,
+            "indicators": indicators
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/rsi")
+async def api_stock_rsi(ticker: str, period: int = 14):
+    """Get RSI indicator for a stock."""
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        rsi = await anyio.to_thread.run_sync(lambda: client.get_rsi(ticker, period))
+        if rsi:
+            return {"ticker": ticker, "rsi": rsi}
+        return JSONResponse(status_code=404, content={"error": "RSI data not available"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/macd")
+async def api_stock_macd(ticker: str):
+    """Get MACD indicator for a stock."""
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        macd = await anyio.to_thread.run_sync(lambda: client.get_macd(ticker))
+        if macd:
+            return {"ticker": ticker, "macd": macd}
+        return JSONResponse(status_code=404, content={"error": "MACD data not available"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.get("/api/market/summary")
