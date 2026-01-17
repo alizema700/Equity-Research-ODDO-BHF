@@ -2378,6 +2378,74 @@ function authHeaders() {
 function $(id) { return document.getElementById(id); }
 function $$(sel) { return document.querySelectorAll(sel); }
 
+// Pie chart color palette
+const PIE_COLORS = [
+  '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe',
+  '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140',
+  '#a8edea', '#fed6e3', '#d299c2', '#fef9d7', '#89f7fe'
+];
+
+function getPieColor(index) {
+  return PIE_COLORS[index % PIE_COLORS.length];
+}
+
+// Render portfolio pie chart
+function renderPortfolioPieChart() {
+  const canvas = document.getElementById('portfolioPieChart');
+  if (!canvas || !window._portfolioSectorData) return;
+
+  const ctx = canvas.getContext('2d');
+  const { labels, data } = window._portfolioSectorData;
+
+  if (!labels || labels.length === 0) return;
+
+  // Destroy existing chart if any
+  if (window._portfolioPieChart) {
+    window._portfolioPieChart.destroy();
+  }
+
+  window._portfolioPieChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: labels.map((_, i) => getPieColor(i)),
+        borderColor: 'rgba(255,255,255,0.2)',
+        borderWidth: 2,
+        hoverBorderColor: '#fff',
+        hoverBorderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '55%',
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return context.label + ': ' + context.raw + '%';
+            }
+          }
+        }
+      },
+      animation: {
+        animateRotate: true,
+        animateScale: true
+      }
+    }
+  });
+}
+
 function setStatus(text, type = 'default') {
   const chip = $('statusChip');
   chip.textContent = text;
@@ -2502,9 +2570,39 @@ function renderDrawerContent(data) {
     </div>
   `;
 
-  // POSITIONS TABLE
+  // POSITIONS TABLE with Pie Chart
+  // Aggregate by sector for pie chart
+  const sectorWeights = {};
+  positions.forEach(p => {
+    const sector = p.sector || 'Other';
+    const weight = p.weight || 0;
+    sectorWeights[sector] = (sectorWeights[sector] || 0) + weight;
+  });
+  const sectorLabels = Object.keys(sectorWeights);
+  const sectorData = Object.values(sectorWeights).map(w => (w * 100).toFixed(1));
+
   html += `
     <div class="drawer-panel" id="drawer-positions">
+      ${positions.length > 0 ? `
+      <div class="portfolio-chart-container" style="display: flex; gap: 24px; margin-bottom: 20px; align-items: flex-start;">
+        <div style="flex: 0 0 280px;">
+          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-muted);">Sektor-Verteilung</h4>
+          <canvas id="portfolioPieChart" width="260" height="260"></canvas>
+        </div>
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-muted);">Portfolio-Zusammensetzung</h4>
+          <div class="sector-legend" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+            ${sectorLabels.map((label, i) => `
+              <div class="legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                <span class="legend-color" style="width: 12px; height: 12px; border-radius: 3px; background: ${getPieColor(i)};"></span>
+                <span style="color: var(--text);">${label}</span>
+                <span style="color: var(--text-muted); margin-left: auto;">${sectorData[i]}%</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      ` : ''}
       <table class="detail-table">
         <thead>
           <tr><th>Ticker</th><th>Name</th><th>Sector</th><th>Weight</th><th>Value</th><th>Theme</th></tr>
@@ -2525,6 +2623,9 @@ function renderDrawerContent(data) {
       </table>
     </div>
   `;
+
+  // Store sector data for pie chart rendering
+  window._portfolioSectorData = { labels: sectorLabels, data: sectorData };
 
   // HINTS TABLE
   html += `
@@ -2559,6 +2660,11 @@ function renderDrawerContent(data) {
       $$('.drawer-panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       $('drawer-' + tab.dataset.panel).classList.add('active');
+
+      // Render pie chart when positions tab is activated
+      if (tab.dataset.panel === 'positions') {
+        setTimeout(renderPortfolioPieChart, 50);
+      }
     });
   });
 }
@@ -3338,16 +3444,18 @@ async function fetchStockDetails(stock) {
   const ticker = stock.ticker;
 
   try {
-    // Fetch quote, news, and history in parallel
-    const [quoteRes, newsRes, historyRes] = await Promise.all([
+    // Fetch quote, news, history, and fundamentals in parallel
+    const [quoteRes, newsRes, historyRes, fundamentalsRes] = await Promise.all([
       fetch(apiUrl(`/api/stock/${ticker}/quote`), { headers: authHeaders() }).catch(() => null),
       fetch(apiUrl(`/api/stock/${ticker}/news?days=7`), { headers: authHeaders() }).catch(() => null),
-      fetch(apiUrl(`/api/stock/${ticker}/history?days=30`), { headers: authHeaders() }).catch(() => null)
+      fetch(apiUrl(`/api/stock/${ticker}/history?days=30`), { headers: authHeaders() }).catch(() => null),
+      fetch(apiUrl(`/api/stock/${ticker}/fundamentals`), { headers: authHeaders() }).catch(() => null)
     ]);
 
     let quote = null;
     let news = [];
     let history = [];
+    let fundamentals = null;
 
     if (quoteRes && quoteRes.ok) {
       const quoteData = await quoteRes.json();
@@ -3364,18 +3472,22 @@ async function fetchStockDetails(stock) {
       history = historyData.prices || [];
     }
 
-    renderStockDetailContent(stock, quote, news, history);
+    if (fundamentalsRes && fundamentalsRes.ok) {
+      fundamentals = await fundamentalsRes.json();
+    }
+
+    renderStockDetailContent(stock, quote, news, history, fundamentals);
 
   } catch (e) {
     console.error('Error fetching stock details:', e);
-    renderStockDetailContent(stock, null, [], []);
+    renderStockDetailContent(stock, null, [], [], null);
   }
 }
 
 // Global chart instance for cleanup
 let stockPriceChart = null;
 
-function renderStockDetailContent(stock, quote, news, history = []) {
+function renderStockDetailContent(stock, quote, news, history = [], fundamentals = null) {
   // Get latest day data from history as fallback
   const latestDay = history && history.length > 0 ? history[history.length - 1] : null;
 
@@ -3483,6 +3595,116 @@ function renderStockDetailContent(stock, quote, news, history = []) {
       </div>
     </div>
   `;
+
+  // Fundamentals Section (from yfinance)
+  if (fundamentals && !fundamentals.error) {
+    const val = fundamentals.valuation || {};
+    const prof = fundamentals.profitability || {};
+    const growth = fundamentals.growth || {};
+    const div = fundamentals.dividends || {};
+    const analyst = fundamentals.analyst || {};
+    const health = fundamentals.financial_health || {};
+
+    html += `
+      <div class="stock-detail-section">
+        <div class="stock-detail-section-title">Fundamentals <span style="font-size: 11px; background: #e0f0ea; color: #305f50; padding: 2px 8px; border-radius: 10px; margin-left: 8px;">Live Data</span></div>
+
+        <!-- Valuation -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">VALUATION</div>
+          <div class="stock-detail-metrics" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stock-metric-box">
+              <div class="label">P/E (TTM)</div>
+              <div class="value">${val.pe_trailing ? val.pe_trailing.toFixed(1) + 'x' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">P/E (Fwd)</div>
+              <div class="value">${val.pe_forward ? val.pe_forward.toFixed(1) + 'x' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">P/B</div>
+              <div class="value">${val.pb_ratio ? val.pb_ratio.toFixed(1) + 'x' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">EV/EBITDA</div>
+              <div class="value">${val.ev_ebitda ? val.ev_ebitda.toFixed(1) + 'x' : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profitability & Growth -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">PROFITABILITY & GROWTH</div>
+          <div class="stock-detail-metrics" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stock-metric-box">
+              <div class="label">ROE</div>
+              <div class="value" style="color: ${prof.roe > 15 ? '#16a34a' : 'inherit'};">${prof.roe ? prof.roe.toFixed(1) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Net Margin</div>
+              <div class="value">${prof.profit_margin ? prof.profit_margin.toFixed(1) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Revenue Growth</div>
+              <div class="value" style="color: ${growth.revenue_growth > 10 ? '#16a34a' : growth.revenue_growth < 0 ? '#dc2626' : 'inherit'};">${growth.revenue_growth ? growth.revenue_growth.toFixed(1) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">EPS</div>
+              <div class="value">${growth.trailing_eps ? '$' + growth.trailing_eps.toFixed(2) : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dividends & Health -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">DIVIDENDS & FINANCIAL HEALTH</div>
+          <div class="stock-detail-metrics" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stock-metric-box">
+              <div class="label">Div Yield</div>
+              <div class="value" style="color: ${div.dividend_yield > 2 ? '#16a34a' : 'inherit'};">${div.dividend_yield ? div.dividend_yield.toFixed(2) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Payout</div>
+              <div class="value">${div.payout_ratio ? div.payout_ratio.toFixed(0) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">D/E Ratio</div>
+              <div class="value" style="color: ${health.debt_to_equity > 100 ? '#dc2626' : 'inherit'};">${health.debt_to_equity ? health.debt_to_equity.toFixed(1) : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Current Ratio</div>
+              <div class="value">${health.current_ratio ? health.current_ratio.toFixed(1) : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyst Consensus -->
+        ${analyst.recommendation ? `
+        <div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">ANALYST CONSENSUS</div>
+          <div class="stock-detail-metrics" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stock-metric-box">
+              <div class="label">Rating</div>
+              <div class="value" style="font-size: 14px; text-transform: uppercase; color: ${analyst.recommendation.includes('buy') ? '#16a34a' : analyst.recommendation.includes('sell') ? '#dc2626' : '#d97706'};">${analyst.recommendation || '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Avg Target</div>
+              <div class="value">${analyst.target_mean ? '$' + analyst.target_mean.toFixed(0) : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Target Range</div>
+              <div class="value" style="font-size: 13px;">${analyst.target_low && analyst.target_high ? '$' + analyst.target_low.toFixed(0) + ' - $' + analyst.target_high.toFixed(0) : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Coverage</div>
+              <div class="value">${analyst.number_of_analysts ? analyst.number_of_analysts + ' analysts' : '-'}</div>
+            </div>
+          </div>
+        </div>
+        ` : ''}
+      </div>
+    `;
+  }
 
   // AI Reasoning (if available)
   if (stock.why_bullets && stock.why_bullets.length > 0) {

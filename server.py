@@ -2084,6 +2084,7 @@ def prompt_for_story(
     max_words: int,
     call_summary: Optional[Dict[str, Any]] = None,
     objection_section: Optional[str] = None,
+    fundamentals_block: Optional[str] = None,
 ) -> str:
     mode = (mode or "FULL").upper()
     if mode not in ("FULL", "BULLETS"):
@@ -2150,11 +2151,27 @@ IMPORTANT: Address likely objections proactively in your story. Include a dedica
 "POTENTIAL OBJECTIONS & BEST ANSWERS" with 2-3 anticipated client pushbacks and how to handle them.
 """
 
+    # Build fundamentals section
+    fundamentals_section = ""
+    if fundamentals_block:
+        fundamentals_section = f"""
+{fundamentals_block}
+
+CRITICAL: Use these REAL fundamentals in your story! Reference specific metrics:
+- Use valuation (P/E, EV/EBITDA) to justify or challenge current price
+- Cite profitability (ROE, margins) to demonstrate quality
+- Reference growth rates to support momentum thesis
+- Mention analyst ratings and price targets for credibility
+- Use dividend yield for income-focused clients
+"""
+
     return f"""
 You are an elite equity sales storyteller at ODDO BHF. Your job is to craft compelling,
 personalized investment narratives that connect research insights to client needs.
 
 {risk_guidance}
+
+{fundamentals_section}
 
 === STORYTELLING FRAMEWORK ===
 
@@ -2737,12 +2754,24 @@ async def api_story_for_stock(req: StoryForStockRequest):
             "vol_date": m.get("vol_date"),
         }
 
+        # Fetch real fundamentals via yfinance (if available)
+        fundamentals_block = ""
+        try:
+            from lib.fundamentals import get_fundamentals_summary
+            summary = await anyio.to_thread.run_sync(lambda: get_fundamentals_summary(ticker))
+            if summary and "prompt_block" in summary:
+                fundamentals_block = summary["prompt_block"]
+                selected_stock["fundamentals"] = summary.get("key_metrics", {})
+        except Exception as e:
+            logger.warning(f"Could not fetch fundamentals for {ticker}: {e}")
+
         prompt = prompt_for_story(
             client_ctx=ctx,
             selected_stock=selected_stock,
             instruction=instruction,
             mode=req.mode,
             max_words=req.max_words,
+            fundamentals_block=fundamentals_block,
         )
 
         story = llm_text(prompt)
@@ -3372,6 +3401,114 @@ async def api_stock_macd(ticker: str):
         if macd:
             return {"ticker": ticker, "macd": macd}
         return JSONResponse(status_code=404, content={"error": "MACD data not available"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# =============================================================================
+# FUNDAMENTALS API (via yfinance)
+# =============================================================================
+
+@app.get("/api/stock/{ticker}/fundamentals")
+async def api_stock_fundamentals(ticker: str):
+    """
+    Get comprehensive fundamental data for a stock.
+
+    Returns valuation (P/E, P/B, EV/EBITDA), profitability (ROE, margins),
+    growth metrics, dividends, analyst ratings, and institutional holdings.
+    """
+    try:
+        from lib.fundamentals import get_stock_fundamentals
+        fundamentals = await anyio.to_thread.run_sync(lambda: get_stock_fundamentals(ticker))
+
+        if "error" in fundamentals:
+            return JSONResponse(status_code=404, content=fundamentals)
+
+        return fundamentals
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed. Run: pip install yfinance"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/fundamentals/summary")
+async def api_stock_fundamentals_summary(ticker: str):
+    """
+    Get a concise summary of fundamentals for prompt injection.
+
+    Returns formatted text blocks ready for LLM consumption.
+    """
+    try:
+        from lib.fundamentals import get_fundamentals_summary
+        summary = await anyio.to_thread.run_sync(lambda: get_fundamentals_summary(ticker))
+
+        if "error" in summary:
+            return JSONResponse(status_code=404, content=summary)
+
+        return summary
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/analyst")
+async def api_stock_analyst(ticker: str):
+    """
+    Get analyst recommendations and price targets.
+
+    Returns current rating, price target range, and recent upgrades/downgrades.
+    """
+    try:
+        from lib.fundamentals import get_analyst_recommendations
+        recs = await anyio.to_thread.run_sync(lambda: get_analyst_recommendations(ticker))
+
+        if "error" in recs:
+            return JSONResponse(status_code=404, content=recs)
+
+        return recs
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/holders")
+async def api_stock_holders(ticker: str):
+    """
+    Get institutional and insider holdings.
+
+    Returns top institutional holders and ownership percentages.
+    """
+    try:
+        from lib.fundamentals import get_institutional_holders
+        holders = await anyio.to_thread.run_sync(lambda: get_institutional_holders(ticker))
+
+        if "error" in holders:
+            return JSONResponse(status_code=404, content=holders)
+
+        return holders
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/earnings")
+async def api_stock_earnings(ticker: str):
+    """
+    Get earnings history and upcoming earnings date.
+    """
+    try:
+        from lib.fundamentals import get_earnings_history
+        earnings = await anyio.to_thread.run_sync(lambda: get_earnings_history(ticker))
+
+        if "error" in earnings:
+            return JSONResponse(status_code=404, content=earnings)
+
+        return earnings
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
