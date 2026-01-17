@@ -3,10 +3,11 @@ Realistic Seed Data for ODDO BHF Client Intelligence Platform
 =============================================================
 
 This script replaces synthetic data with realistic:
-- Real European stocks (ODDO BHF coverage universe)
-- Realistic institutional clients
+- Real European stocks (ODDO BHF coverage universe) - 174+ stocks
+- Realistic institutional clients - 46+ diverse clients
 - Call history referencing actual market events (2023/2024)
 - Realistic research reports
+- CRM and Compliance/KYC data
 
 Usage:
     python seed_realistic_data.py [--with-api]
@@ -19,6 +20,20 @@ import random
 import json
 from datetime import datetime, timedelta
 import os
+import sys
+
+# Add data directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "data"))
+
+# Import expanded data
+try:
+    from expanded_stocks import EXPANDED_STOCKS
+    from expanded_clients import EXPANDED_CLIENTS
+    print("Using expanded stock and client data")
+except ImportError:
+    EXPANDED_STOCKS = None
+    EXPANDED_CLIENTS = None
+    print("Warning: Expanded data not found, using default data")
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data.db")
 
@@ -282,6 +297,9 @@ def create_database():
             region TEXT,
             market_cap_bucket TEXT,
             theme_tag TEXT,
+            volatility TEXT DEFAULT 'medium',  -- low, medium, high
+            dividend_yield REAL DEFAULT 0,
+            beta REAL DEFAULT 1.0,
             is_active INTEGER DEFAULT 1,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -296,6 +314,12 @@ def create_database():
             primary_contact_role TEXT,
             email TEXT,
             phone TEXT,
+            aum_eur REAL,  -- Assets under management in EUR
+            risk_profile TEXT DEFAULT 'moderate',  -- conservative, moderate, aggressive
+            investment_horizon TEXT DEFAULT 'medium',  -- short, medium, long
+            preferred_sectors TEXT,  -- JSON array
+            restricted_sectors TEXT,  -- JSON array
+            esg_mandate INTEGER DEFAULT 0,  -- Boolean
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -518,39 +542,68 @@ def create_database():
 
 
 def insert_stocks(conn):
-    """Insert real stocks."""
+    """Insert real stocks with extended metadata."""
     print("Inserting real stocks...")
 
     # Clear existing
     conn.execute("DELETE FROM src_stocks")
 
-    for stock in REAL_STOCKS:
+    # Use expanded data if available, otherwise fall back to REAL_STOCKS
+    stocks_to_insert = EXPANDED_STOCKS if EXPANDED_STOCKS else REAL_STOCKS
+
+    for stock in stocks_to_insert:
         conn.execute("""
-            INSERT INTO src_stocks (ticker, company_name, sector, region, market_cap_bucket, theme_tag)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (stock["ticker"], stock["company_name"], stock["sector"],
-              stock["region"], stock["market_cap_bucket"], stock["theme_tag"]))
+            INSERT INTO src_stocks (ticker, company_name, sector, region, market_cap_bucket, theme_tag,
+                                   volatility, dividend_yield, beta)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            stock["ticker"],
+            stock["company_name"],
+            stock["sector"],
+            stock["region"],
+            stock["market_cap_bucket"],
+            stock["theme_tag"],
+            stock.get("volatility", "medium"),
+            stock.get("dividend_yield", 0),
+            stock.get("beta", 1.0)
+        ))
 
     conn.commit()
-    print(f"  Inserted {len(REAL_STOCKS)} stocks")
+    print(f"  Inserted {len(stocks_to_insert)} stocks")
 
 
 def insert_clients(conn):
-    """Insert realistic clients."""
+    """Insert realistic clients with extended profiles."""
     print("Inserting realistic clients...")
 
     # Clear existing
     conn.execute("DELETE FROM src_clients")
 
-    for client in REAL_CLIENTS:
+    # Use expanded data if available, otherwise fall back to REAL_CLIENTS
+    clients_to_insert = EXPANDED_CLIENTS if EXPANDED_CLIENTS else REAL_CLIENTS
+
+    for client in clients_to_insert:
         conn.execute("""
-            INSERT INTO src_clients (client_name, firm_name, client_type, region, email)
-            VALUES (?, ?, ?, ?, ?)
-        """, (client["client_name"], client["firm_name"], client["client_type"],
-              client["region"], client["email"]))
+            INSERT INTO src_clients (client_name, firm_name, client_type, region, email,
+                                    aum_eur, risk_profile, investment_horizon,
+                                    preferred_sectors, restricted_sectors, esg_mandate)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            client["client_name"],
+            client["firm_name"],
+            client["client_type"],
+            client["region"],
+            client["email"],
+            client.get("aum_eur"),
+            client.get("risk_profile", "moderate"),
+            client.get("investment_horizon", "medium"),
+            json.dumps(client.get("preferred_sectors", [])),
+            json.dumps(client.get("restricted_sectors", [])),
+            1 if client.get("esg_mandate", False) else 0
+        ))
 
     conn.commit()
-    print(f"  Inserted {len(REAL_CLIENTS)} clients")
+    print(f"  Inserted {len(clients_to_insert)} clients")
 
 
 def get_stock_id(conn, ticker):

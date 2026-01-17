@@ -299,7 +299,7 @@
     }
 
     .theme-toggle::after {
-      content: '☀️';
+      content: 'L';
       position: absolute;
       left: 2px;
       top: 2px;
@@ -310,7 +310,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #1e3a5f;
       transition: transform 0.3s, content 0.3s;
     }
 
@@ -319,7 +321,7 @@
     }
 
     [data-theme="dark"] .theme-toggle::after {
-      content: '🌙';
+      content: 'D';
       transform: translateX(20px);
     }
 
@@ -2254,14 +2256,7 @@
             <span class="filter-label">Sector:</span>
             <select class="filter-select" id="filterSector">
               <option value="">All Sectors</option>
-              <option value="Technology">Technology</option>
-              <option value="Financials">Financials</option>
-              <option value="Consumer">Consumer</option>
-              <option value="Healthcare">Healthcare</option>
-              <option value="Industrials">Industrials</option>
-              <option value="Energy">Energy</option>
-              <option value="Automotive">Automotive</option>
-              <option value="Utilities">Utilities</option>
+              <!-- Dynamically loaded from API -->
             </select>
           </div>
           <div class="filter-group">
@@ -2718,18 +2713,18 @@ function renderCRMPanel(data) {
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
           <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Bevorzugter Kanal</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
-            ${prefs.preferred_channel === 'phone' ? '📞 Telefon' :
-              prefs.preferred_channel === 'email' ? '📧 E-Mail' :
-              prefs.preferred_channel === 'video' ? '🎥 Video' :
-              prefs.preferred_channel === 'in_person' ? '🤝 Persönlich' : prefs.preferred_channel || '-'}
+            ${prefs.preferred_channel === 'phone' ? 'Telefon' :
+              prefs.preferred_channel === 'email' ? 'E-Mail' :
+              prefs.preferred_channel === 'video' ? 'Video' :
+              prefs.preferred_channel === 'in_person' ? 'Persoenlich' : prefs.preferred_channel || '-'}
           </div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
           <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Beste Zeit</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
-            ${prefs.preferred_time === 'morning' ? '🌅 Morgens' :
-              prefs.preferred_time === 'afternoon' ? '☀️ Nachmittag' :
-              prefs.preferred_time === 'evening' ? '🌙 Abend' : prefs.preferred_time || '-'}
+            ${prefs.preferred_time === 'morning' ? 'Morgens (08-12h)' :
+              prefs.preferred_time === 'afternoon' ? 'Nachmittags (12-18h)' :
+              prefs.preferred_time === 'evening' ? 'Abends (18-21h)' : prefs.preferred_time || '-'}
           </div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
@@ -2813,8 +2808,8 @@ function renderCRMPanel(data) {
                 </td>
                 <td>
                   <span class="tag ${m.outcome === 'positive' ? 'buy' : m.outcome === 'follow_up_needed' ? 'sell' : 'neutral'}">
-                    ${m.outcome === 'positive' ? '✓ Positiv' :
-                      m.outcome === 'follow_up_needed' ? '⟳ Follow-up' : 'Neutral'}
+                    ${m.outcome === 'positive' ? 'Positiv' :
+                      m.outcome === 'follow_up_needed' ? 'Follow-up' : 'Neutral'}
                   </span>
                 </td>
               </tr>
@@ -2835,7 +2830,7 @@ function renderCRMPanel(data) {
           <div style="background: var(--greige); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
             <span style="font-weight: 600;">${e.event_name}</span>
             <span style="color: var(--text-muted); margin-left: 8px;">${e.event_date ? new Date(e.event_date).toLocaleDateString('de-DE') : ''}</span>
-            ${e.feedback_score ? `<span style="margin-left: 8px;">⭐ ${e.feedback_score}/5</span>` : ''}
+            ${e.feedback_score ? `<span style="margin-left: 8px;">${e.feedback_score}/5</span>` : ''}
           </div>
         `).join('')}
       </div>
@@ -2876,10 +2871,10 @@ function renderCompliancePanel(compliance) {
   };
 
   const kycStatusLabel = {
-    'approved': '✓ Genehmigt',
-    'pending': '⏳ Ausstehend',
-    'review_needed': '⚠️ Review nötig',
-    'expired': '✗ Abgelaufen'
+    'approved': 'Genehmigt',
+    'pending': 'Ausstehend',
+    'review_needed': 'Review noetig',
+    'expired': 'Abgelaufen'
   };
 
   let html = `
@@ -2911,7 +2906,7 @@ function renderCompliancePanel(compliance) {
           <div style="font-size: 14px; font-weight: 700; color: ${compliance.kyc_expiring_soon ? '#dc2626' : 'inherit'};">
             ${compliance.kyc_expiry_date ? new Date(compliance.kyc_expiry_date).toLocaleDateString('de-DE') : '-'}
           </div>
-          ${compliance.kyc_expiring_soon ? '<div style="font-size: 10px; color: #dc2626; margin-top: 4px;">⚠️ Läuft bald ab!</div>' : ''}
+          ${compliance.kyc_expiring_soon ? '<div style="font-size: 10px; color: #dc2626; margin-top: 4px;">Laeuft bald ab!</div>' : ''}
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
           <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Letztes Review</div>
@@ -2963,7 +2958,7 @@ function renderCompliancePanel(compliance) {
       <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
         ${Array.isArray(compliance.allowed_instruments) ? compliance.allowed_instruments.map(inst => `
           <span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-            ✓ ${inst === 'equities' ? 'Aktien' :
+            ${inst === 'equities' ? 'Aktien' :
                 inst === 'bonds' ? 'Anleihen' :
                 inst === 'derivatives' ? 'Derivate' :
                 inst === 'etf' ? 'ETFs' :
@@ -2971,8 +2966,8 @@ function renderCompliancePanel(compliance) {
                 inst === 'commodities' ? 'Rohstoffe' : inst}
           </span>
         `).join('') : ''}
-        ${compliance.short_selling_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✓ Short Selling</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✗ Kein Short Selling</span>'}
-        ${compliance.leverage_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✓ Leverage</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✗ Kein Leverage</span>'}
+        ${compliance.short_selling_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Short Selling erlaubt</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Kein Short Selling</span>'}
+        ${compliance.leverage_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Leverage erlaubt</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Kein Leverage</span>'}
         ${compliance.max_single_position_pct ? `<span style="background: var(--greige); color: var(--text); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Max. Position: ${compliance.max_single_position_pct}%</span>` : ''}
       </div>
     </div>
@@ -2986,16 +2981,16 @@ function renderCompliancePanel(compliance) {
       <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
         ${Array.isArray(compliance.restricted_sectors) ? compliance.restricted_sectors.map(s => `
           <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-            ⊘ ${s === 'defense' ? 'Rüstung' :
+            Sektor: ${s === 'defense' ? 'Ruestung' :
                 s === 'tobacco' ? 'Tabak' :
-                s === 'gambling' ? 'Glücksspiel' :
+                s === 'gambling' ? 'Gluecksspiel' :
                 s === 'fossil_fuels' ? 'Fossile Brennstoffe' :
                 s === 'nuclear' ? 'Nuklear' : s}
           </span>
         `).join('') : ''}
         ${Array.isArray(compliance.restricted_countries) ? compliance.restricted_countries.map(c => `
           <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-            🚫 ${c}
+            Land: ${c}
           </span>
         `).join('') : ''}
       </div>
@@ -3011,7 +3006,7 @@ function renderCompliancePanel(compliance) {
         <div style="background: ${compliance.esg_mandate ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' : 'var(--greige)'}; padding: 16px; border-radius: 10px; text-align: center; color: ${compliance.esg_mandate ? 'white' : 'var(--text)'};">
           <div style="font-size: 11px; ${compliance.esg_mandate ? 'opacity: 0.85' : 'color: var(--text-muted)'}; margin-bottom: 8px;">ESG-Mandat</div>
           <div style="font-size: 18px; font-weight: 700;">
-            ${compliance.esg_mandate ? '✓ Ja' : '✗ Nein'}
+            ${compliance.esg_mandate ? 'Ja' : 'Nein'}
           </div>
         </div>
         ${compliance.esg_mandate ? `
@@ -4405,6 +4400,38 @@ async function loadLiveTicker() {
 setTimeout(loadLiveTicker, 1000);
 
 // ============================================================================
+// LOAD FILTER OPTIONS FROM API
+// ============================================================================
+async function loadFilterOptions() {
+  try {
+    const response = await fetch(apiUrl('/api/filters'), { headers: authHeaders() });
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    // Populate sector dropdown
+    const sectorSelect = $('filterSector');
+    if (sectorSelect && data.sectors && data.sectors.length > 0) {
+      // Keep the first "All Sectors" option
+      sectorSelect.innerHTML = '<option value="">All Sectors</option>';
+      data.sectors.forEach(sector => {
+        const option = document.createElement('option');
+        option.value = sector;
+        option.textContent = sector;
+        sectorSelect.appendChild(option);
+      });
+    }
+
+    console.log(`Loaded ${data.sectors?.length || 0} sectors, ${data.themes?.length || 0} themes`);
+  } catch (e) {
+    console.error('Error loading filter options:', e);
+  }
+}
+
+// Load filters on startup
+setTimeout(loadFilterOptions, 500);
+
+// ============================================================================
 // STOCK FILTERS
 // ============================================================================
 let allShortlistStocks = [];
@@ -4479,7 +4506,7 @@ if ($('filterTopOnly')) $('filterTopOnly').addEventListener('click', function() 
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
-  if (e.key === 'g' && clientId) { e.preventDefault(); $('generateBtn').click(); showToast('⌨️ Generating...', 'info'); }
+  if (e.key === 'g' && clientId) { e.preventDefault(); $('generateBtn').click(); showToast('Generating...', 'info'); }
   if (e.key === 's' && selectedTicker) { e.preventDefault(); $('storyFullBtn').click(); }
   if (e.key === 'b' && selectedTicker) { e.preventDefault(); $('storyBulletsBtn').click(); }
   if (e.key === 'd') { e.preventDefault(); toggleTheme(); }
