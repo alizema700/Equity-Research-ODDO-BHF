@@ -2195,6 +2195,18 @@ RULES
 - vol_bucket: decide using vol_60d only if present; else "unknown"
 - Do NOT output markdown. Do NOT output extra keys. JSON only.
 
+WHY_BULLETS FORMAT REQUIREMENTS:
+Each bullet MUST include a specific data source reference. Examples:
+- "Matches client's {sector} sector focus (portfolio top_sector: {value})"
+- "Discussed in recent call on {date} - client expressed interest in {topic}"
+- "Client read {report_count} reports on similar stocks in last 30 days (reading_focus_sector)"
+- "Aligns with {theme} theme preference (dominant_theme from profile)"
+- "Suitable for {risk_appetite} risk profile - volatility {vol_60d}%"
+- "Diversifies away from current top_sector exposure"
+- "Low volatility ({vol_60d}%) matches conservative mandate"
+- "Mentioned in position_hints from call notes"
+Do NOT use generic bullets like "Good investment" - always cite specific data!
+
 ANALYST INSTRUCTION:
 {instruction}
 
