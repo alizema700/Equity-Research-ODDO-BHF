@@ -2349,6 +2349,7 @@
 // STATE
 // ============================================================================
 let clientId = null;
+let selectedClientId = null;
 let clientData = null;
 let shortlist = [];
 let selectedTicker = null;
@@ -2494,7 +2495,8 @@ function renderDrawerContent(data) {
       <button class="drawer-tab" data-panel="trades">Trades <span class="badge">${trades.length}</span></button>
       <button class="drawer-tab" data-panel="reads">Reads <span class="badge">${reads.length}</span></button>
       <button class="drawer-tab" data-panel="positions">Positionen <span class="badge">${positions.length}</span></button>
-      <button class="drawer-tab" data-panel="hints">Hints <span class="badge">${hints.length}</span></button>
+      <button class="drawer-tab" data-panel="crm">CRM</button>
+      <button class="drawer-tab" data-panel="compliance">Compliance</button>
     </div>
   `;
 
@@ -2627,27 +2629,25 @@ function renderDrawerContent(data) {
   // Store sector data for pie chart rendering
   window._portfolioSectorData = { labels: sectorLabels, data: sectorData };
 
-  // HINTS TABLE
+  // HINTS TABLE - removed to make room for CRM/Compliance
+
+  // CRM PANEL
   html += `
-    <div class="drawer-panel" id="drawer-hints">
-      <table class="detail-table">
-        <thead>
-          <tr><th>Ticker</th><th>Mentions</th><th>Hold</th><th>Add</th><th>Reduce</th><th>Diversify</th></tr>
-        </thead>
-        <tbody>
-          ${hints.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No Hints</td></tr>' : ''}
-          ${hints.map(h => `
-            <tr>
-              <td class="ticker">${h.ticker || '-'}</td>
-              <td>${h.mention_count || 0}</td>
-              <td>${h.holding_hints || '-'}</td>
-              <td>${h.add_hints ? `<span class="tag buy">${h.add_hints}</span>` : '-'}</td>
-              <td>${h.reduce_hints ? `<span class="tag sell">${h.reduce_hints}</span>` : '-'}</td>
-              <td>${h.diversification_hints || '-'}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+    <div class="drawer-panel" id="drawer-crm">
+      <div class="crm-loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <div class="spinner"></div>
+        <p style="margin-top: 12px;">Lade CRM-Daten...</p>
+      </div>
+    </div>
+  `;
+
+  // COMPLIANCE PANEL
+  html += `
+    <div class="drawer-panel" id="drawer-compliance">
+      <div class="compliance-loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <div class="spinner"></div>
+        <p style="margin-top: 12px;">Lade Compliance-Daten...</p>
+      </div>
     </div>
   `;
 
@@ -2665,8 +2665,381 @@ function renderDrawerContent(data) {
       if (tab.dataset.panel === 'positions') {
         setTimeout(renderPortfolioPieChart, 50);
       }
+
+      // Load CRM data when tab is activated
+      if (tab.dataset.panel === 'crm' && selectedClientId) {
+        loadCRMData(selectedClientId);
+      }
+
+      // Load Compliance data when tab is activated
+      if (tab.dataset.panel === 'compliance' && selectedClientId) {
+        loadComplianceData(selectedClientId);
+      }
     });
   });
+}
+
+// ============================================================================
+// CRM & COMPLIANCE DATA LOADING
+// ============================================================================
+
+let crmDataLoaded = false;
+let complianceDataLoaded = false;
+
+async function loadCRMData(clientId) {
+  if (crmDataLoaded) return;
+
+  try {
+    const response = await fetch(apiUrl(`/api/client/${clientId}/crm`), { headers: authHeaders() });
+    if (!response.ok) throw new Error('Failed to load CRM data');
+
+    const data = await response.json();
+    renderCRMPanel(data);
+    crmDataLoaded = true;
+  } catch (e) {
+    console.error('Error loading CRM data:', e);
+    $('drawer-crm').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Fehler beim Laden der CRM-Daten</div>`;
+  }
+}
+
+function renderCRMPanel(data) {
+  const prefs = data.contact_preferences || {};
+  const engagement = data.engagement_summary || {};
+  const meetings = data.meetings || [];
+  const events = data.events || [];
+
+  let html = `
+    <!-- Contact Preferences -->
+    <div class="crm-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Kontakt-Präferenzen
+      </h4>
+      <div class="crm-prefs-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Bevorzugter Kanal</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
+            ${prefs.preferred_channel === 'phone' ? '📞 Telefon' :
+              prefs.preferred_channel === 'email' ? '📧 E-Mail' :
+              prefs.preferred_channel === 'video' ? '🎥 Video' :
+              prefs.preferred_channel === 'in_person' ? '🤝 Persönlich' : prefs.preferred_channel || '-'}
+          </div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Beste Zeit</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
+            ${prefs.preferred_time === 'morning' ? '🌅 Morgens' :
+              prefs.preferred_time === 'afternoon' ? '☀️ Nachmittag' :
+              prefs.preferred_time === 'evening' ? '🌙 Abend' : prefs.preferred_time || '-'}
+          </div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Frequenz</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
+            ${prefs.preferred_frequency === 'daily' ? 'Täglich' :
+              prefs.preferred_frequency === 'weekly' ? 'Wöchentlich' :
+              prefs.preferred_frequency === 'bi-weekly' ? 'Alle 2 Wochen' :
+              prefs.preferred_frequency === 'monthly' ? 'Monatlich' : prefs.preferred_frequency || '-'}
+          </div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Sprache</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text);">${prefs.language || '-'}</div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Zeitzone</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text);">${prefs.timezone || '-'}</div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Bevorzugte Tage</div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text);">
+            ${Array.isArray(prefs.preferred_days) ? prefs.preferred_days.slice(0, 3).map(d => d.substring(0, 2)).join(', ') : '-'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Engagement Summary -->
+    <div class="crm-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Engagement Übersicht (12 Monate)
+      </h4>
+      <div class="crm-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div class="crm-stat-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 10px; color: white;">
+          <div style="font-size: 24px; font-weight: 700;">${engagement.total_meetings_12m || 0}</div>
+          <div style="font-size: 11px; opacity: 0.85;">Meetings</div>
+        </div>
+        <div class="crm-stat-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 16px; border-radius: 10px; color: white;">
+          <div style="font-size: 24px; font-weight: 700;">${engagement.meeting_success_rate ? engagement.meeting_success_rate + '%' : '-'}</div>
+          <div style="font-size: 11px; opacity: 0.85;">Erfolgsrate</div>
+        </div>
+        <div class="crm-stat-box" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); padding: 16px; border-radius: 10px; color: white;">
+          <div style="font-size: 24px; font-weight: 700;">${engagement.avg_email_response_hours ? engagement.avg_email_response_hours + 'h' : '-'}</div>
+          <div style="font-size: 11px; opacity: 0.85;">Ø Antwortzeit</div>
+        </div>
+        <div class="crm-stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 16px; border-radius: 10px; color: white;">
+          <div style="font-size: 24px; font-weight: 700;">${engagement.events_attended || 0}</div>
+          <div style="font-size: 11px; opacity: 0.85;">Events besucht</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Meetings -->
+    <div class="crm-section">
+      <h4 style="margin: 0 0 12px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Letzte Meetings
+      </h4>
+      ${meetings.length > 0 ? `
+        <table class="detail-table">
+          <thead>
+            <tr><th>Datum</th><th>Typ</th><th>Ort</th><th>Dauer</th><th>Themen</th><th>Ergebnis</th></tr>
+          </thead>
+          <tbody>
+            ${meetings.slice(0, 10).map(m => `
+              <tr>
+                <td class="date">${m.meeting_date ? new Date(m.meeting_date).toLocaleDateString('de-DE') : '-'}</td>
+                <td>
+                  <span class="tag neutral" style="text-transform: capitalize;">
+                    ${m.meeting_type === 'in_person' ? 'Persönlich' :
+                      m.meeting_type === 'video_call' ? 'Video' :
+                      m.meeting_type === 'roadshow' ? 'Roadshow' :
+                      m.meeting_type === 'conference' ? 'Konferenz' :
+                      m.meeting_type === 'dinner' ? 'Dinner' : m.meeting_type || '-'}
+                  </span>
+                </td>
+                <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis;">${m.location || '-'}</td>
+                <td>${m.duration_minutes ? m.duration_minutes + ' min' : '-'}</td>
+                <td style="max-width: 150px; font-size: 11px;">
+                  ${Array.isArray(m.topics_discussed) ? m.topics_discussed.slice(0, 2).join(', ') : '-'}
+                </td>
+                <td>
+                  <span class="tag ${m.outcome === 'positive' ? 'buy' : m.outcome === 'follow_up_needed' ? 'sell' : 'neutral'}">
+                    ${m.outcome === 'positive' ? '✓ Positiv' :
+                      m.outcome === 'follow_up_needed' ? '⟳ Follow-up' : 'Neutral'}
+                  </span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Keine Meetings vorhanden</div>'}
+    </div>
+
+    <!-- Events Attended -->
+    ${events.length > 0 ? `
+    <div class="crm-section" style="margin-top: 24px;">
+      <h4 style="margin: 0 0 12px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Event-Teilnahme
+      </h4>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        ${events.slice(0, 6).map(e => `
+          <div style="background: var(--greige); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
+            <span style="font-weight: 600;">${e.event_name}</span>
+            <span style="color: var(--text-muted); margin-left: 8px;">${e.event_date ? new Date(e.event_date).toLocaleDateString('de-DE') : ''}</span>
+            ${e.feedback_score ? `<span style="margin-left: 8px;">⭐ ${e.feedback_score}/5</span>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+  `;
+
+  $('drawer-crm').innerHTML = html;
+}
+
+async function loadComplianceData(clientId) {
+  if (complianceDataLoaded) return;
+
+  try {
+    const response = await fetch(apiUrl(`/api/client/${clientId}/compliance`), { headers: authHeaders() });
+    if (!response.ok) throw new Error('Failed to load compliance data');
+
+    const data = await response.json();
+    renderCompliancePanel(data.compliance);
+    complianceDataLoaded = true;
+  } catch (e) {
+    console.error('Error loading compliance data:', e);
+    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Fehler beim Laden der Compliance-Daten</div>`;
+  }
+}
+
+function renderCompliancePanel(compliance) {
+  if (!compliance) {
+    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Keine Compliance-Daten vorhanden</div>`;
+    return;
+  }
+
+  const kycStatusColor = {
+    'approved': '#16a34a',
+    'pending': '#d97706',
+    'review_needed': '#dc2626',
+    'expired': '#dc2626'
+  };
+
+  const kycStatusLabel = {
+    'approved': '✓ Genehmigt',
+    'pending': '⏳ Ausstehend',
+    'review_needed': '⚠️ Review nötig',
+    'expired': '✗ Abgelaufen'
+  };
+
+  let html = `
+    <!-- KYC Status -->
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        KYC Status
+      </h4>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Status</div>
+          <div style="font-size: 14px; font-weight: 700; color: ${kycStatusColor[compliance.kyc_status] || 'inherit'};">
+            ${kycStatusLabel[compliance.kyc_status] || compliance.kyc_status}
+          </div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Risiko-Rating</div>
+          <div style="font-size: 14px; font-weight: 700; text-transform: capitalize; color: ${
+            compliance.kyc_risk_rating === 'enhanced' ? '#dc2626' :
+            compliance.kyc_risk_rating === 'standard' ? '#d97706' : '#16a34a'
+          };">
+            ${compliance.kyc_risk_rating === 'low' ? 'Niedrig' :
+              compliance.kyc_risk_rating === 'standard' ? 'Standard' :
+              compliance.kyc_risk_rating === 'enhanced' ? 'Erhöht' : compliance.kyc_risk_rating || '-'}
+          </div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Ablaufdatum</div>
+          <div style="font-size: 14px; font-weight: 700; color: ${compliance.kyc_expiring_soon ? '#dc2626' : 'inherit'};">
+            ${compliance.kyc_expiry_date ? new Date(compliance.kyc_expiry_date).toLocaleDateString('de-DE') : '-'}
+          </div>
+          ${compliance.kyc_expiring_soon ? '<div style="font-size: 10px; color: #dc2626; margin-top: 4px;">⚠️ Läuft bald ab!</div>' : ''}
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Letztes Review</div>
+          <div style="font-size: 14px; font-weight: 700;">
+            ${compliance.kyc_last_review ? new Date(compliance.kyc_last_review).toLocaleDateString('de-DE') : '-'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Investor Classification -->
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Anleger-Klassifizierung (MiFID II)
+      </h4>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Investortyp</div>
+          <div style="font-size: 14px; font-weight: 700; text-transform: capitalize;">
+            ${compliance.investor_type === 'professional' ? 'Professionell' :
+              compliance.investor_type === 'retail' ? 'Retail' :
+              compliance.investor_type === 'eligible_counterparty' ? 'Geeignete Gegenpartei' : compliance.investor_type || '-'}
+          </div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Mandatstyp</div>
+          <div style="font-size: 14px; font-weight: 700; text-transform: capitalize;">
+            ${compliance.mandate_type === 'discretionary' ? 'Diskretionär' :
+              compliance.mandate_type === 'advisory' ? 'Beratung' :
+              compliance.mandate_type === 'execution_only' ? 'Execution Only' : compliance.mandate_type || '-'}
+          </div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">AUM (deklariert)</div>
+          <div style="font-size: 14px; font-weight: 700;">${compliance.aum_formatted || '-'}</div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Domizil</div>
+          <div style="font-size: 14px; font-weight: 700;">${compliance.domicile_country || '-'}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trading Permissions -->
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Handels-Berechtigungen
+      </h4>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+        ${Array.isArray(compliance.allowed_instruments) ? compliance.allowed_instruments.map(inst => `
+          <span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+            ✓ ${inst === 'equities' ? 'Aktien' :
+                inst === 'bonds' ? 'Anleihen' :
+                inst === 'derivatives' ? 'Derivate' :
+                inst === 'etf' ? 'ETFs' :
+                inst === 'fx' ? 'Devisen' :
+                inst === 'commodities' ? 'Rohstoffe' : inst}
+          </span>
+        `).join('') : ''}
+        ${compliance.short_selling_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✓ Short Selling</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✗ Kein Short Selling</span>'}
+        ${compliance.leverage_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✓ Leverage</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✗ Kein Leverage</span>'}
+        ${compliance.max_single_position_pct ? `<span style="background: var(--greige); color: var(--text); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Max. Position: ${compliance.max_single_position_pct}%</span>` : ''}
+      </div>
+    </div>
+
+    <!-- Restrictions -->
+    ${(compliance.restricted_sectors && compliance.restricted_sectors.length > 0) || (compliance.restricted_countries && compliance.restricted_countries.length > 0) ? `
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Einschränkungen
+      </h4>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+        ${Array.isArray(compliance.restricted_sectors) ? compliance.restricted_sectors.map(s => `
+          <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+            ⊘ ${s === 'defense' ? 'Rüstung' :
+                s === 'tobacco' ? 'Tabak' :
+                s === 'gambling' ? 'Glücksspiel' :
+                s === 'fossil_fuels' ? 'Fossile Brennstoffe' :
+                s === 'nuclear' ? 'Nuklear' : s}
+          </span>
+        `).join('') : ''}
+        ${Array.isArray(compliance.restricted_countries) ? compliance.restricted_countries.map(c => `
+          <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+            🚫 ${c}
+          </span>
+        `).join('') : ''}
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- ESG Requirements -->
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        ESG-Anforderungen
+      </h4>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+        <div style="background: ${compliance.esg_mandate ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' : 'var(--greige)'}; padding: 16px; border-radius: 10px; text-align: center; color: ${compliance.esg_mandate ? 'white' : 'var(--text)'};">
+          <div style="font-size: 11px; ${compliance.esg_mandate ? 'opacity: 0.85' : 'color: var(--text-muted)'}; margin-bottom: 8px;">ESG-Mandat</div>
+          <div style="font-size: 18px; font-weight: 700;">
+            ${compliance.esg_mandate ? '✓ Ja' : '✗ Nein'}
+          </div>
+        </div>
+        ${compliance.esg_mandate ? `
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Min. ESG-Score</div>
+          <div style="font-size: 18px; font-weight: 700;">${compliance.esg_min_score ? compliance.esg_min_score.toFixed(0) : '-'}</div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">SFDR-Klassifizierung</div>
+          <div style="font-size: 18px; font-weight: 700; color: ${
+            compliance.sfdr_classification === 'article_9' ? '#16a34a' :
+            compliance.sfdr_classification === 'article_8' ? '#d97706' : 'inherit'
+          };">
+            ${compliance.sfdr_classification === 'article_6' ? 'Art. 6' :
+              compliance.sfdr_classification === 'article_8' ? 'Art. 8' :
+              compliance.sfdr_classification === 'article_9' ? 'Art. 9' : compliance.sfdr_classification || '-'}
+          </div>
+        </div>
+        ` : `
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center; grid-column: span 2;">
+          <div style="color: var(--text-muted); font-size: 13px;">Keine ESG-Anforderungen definiert</div>
+        </div>
+        `}
+      </div>
+    </div>
+  `;
+
+  $('drawer-compliance').innerHTML = html;
 }
 
 function switchTab(tabName) {
@@ -3046,10 +3419,15 @@ async function loadClient(id) {
     }
 
     clientId = id;
+    selectedClientId = id;  // For CRM/Compliance tabs
     clientData = data;
     shortlist = [];
     selectedTicker = null;
     selectedStock = null;
+
+    // Reset CRM/Compliance data loaded flags for new client
+    crmDataLoaded = false;
+    complianceDataLoaded = false;
 
     renderSidebar(data);
 
