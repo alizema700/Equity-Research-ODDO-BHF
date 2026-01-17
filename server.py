@@ -2,12 +2,56 @@ import os
 import json
 import sqlite3
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
+from functools import lru_cache
+import time
 
 import anyio
 
 from dotenv import load_dotenv
+
+# =========================
+# Simple In-Memory Cache
+# =========================
+class SimpleCache:
+    """Simple TTL-based in-memory cache for API responses."""
+
+    def __init__(self):
+        self._cache: Dict[str, Tuple[Any, float]] = {}
+        self._default_ttl = 300  # 5 minutes default
+
+    def get(self, key: str) -> Optional[Any]:
+        """Get value from cache if not expired."""
+        if key in self._cache:
+            value, expires_at = self._cache[key]
+            if time.time() < expires_at:
+                return value
+            del self._cache[key]
+        return None
+
+    def set(self, key: str, value: Any, ttl: int = None) -> None:
+        """Set value in cache with TTL."""
+        ttl = ttl or self._default_ttl
+        self._cache[key] = (value, time.time() + ttl)
+
+    def delete(self, key: str) -> None:
+        """Remove key from cache."""
+        self._cache.pop(key, None)
+
+    def clear(self) -> None:
+        """Clear entire cache."""
+        self._cache.clear()
+
+    def stats(self) -> Dict[str, int]:
+        """Get cache statistics."""
+        now = time.time()
+        valid = sum(1 for _, (_, exp) in self._cache.items() if exp > now)
+        return {"total_keys": len(self._cache), "valid_keys": valid}
+
+
+# Global cache instance
+api_cache = SimpleCache()
 
 # Load .env from the project directory (same folder as this file),
 # so it works even if you start uvicorn from a different working directory.
@@ -2040,6 +2084,7 @@ def prompt_for_story(
     max_words: int,
     call_summary: Optional[Dict[str, Any]] = None,
     objection_section: Optional[str] = None,
+    fundamentals_block: Optional[str] = None,
 ) -> str:
     mode = (mode or "FULL").upper()
     if mode not in ("FULL", "BULLETS"):
@@ -2106,11 +2151,27 @@ IMPORTANT: Address likely objections proactively in your story. Include a dedica
 "POTENTIAL OBJECTIONS & BEST ANSWERS" with 2-3 anticipated client pushbacks and how to handle them.
 """
 
+    # Build fundamentals section
+    fundamentals_section = ""
+    if fundamentals_block:
+        fundamentals_section = f"""
+{fundamentals_block}
+
+CRITICAL: Use these REAL fundamentals in your story! Reference specific metrics:
+- Use valuation (P/E, EV/EBITDA) to justify or challenge current price
+- Cite profitability (ROE, margins) to demonstrate quality
+- Reference growth rates to support momentum thesis
+- Mention analyst ratings and price targets for credibility
+- Use dividend yield for income-focused clients
+"""
+
     return f"""
 You are an elite equity sales storyteller at ODDO BHF. Your job is to craft compelling,
 personalized investment narratives that connect research insights to client needs.
 
 {risk_guidance}
+
+{fundamentals_section}
 
 === STORYTELLING FRAMEWORK ===
 
@@ -2348,6 +2409,170 @@ def api_env():
         "cwd": os.getcwd(),
     }
 
+
+@app.get("/api/analytics")
+async def api_analytics():
+    """
+    Get comprehensive analytics for the platform.
+    Includes client engagement, stock coverage, and activity metrics.
+    """
+    try:
+        # Client stats
+        client_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_clients,
+                COUNT(CASE WHEN engagement_status = 'Active' THEN 1 END) as active_clients,
+                COUNT(CASE WHEN engagement_status = 'Dormant' THEN 1 END) as dormant_clients
+            FROM int_client_profile
+        """)
+
+        # Stock coverage
+        stock_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_stocks,
+                COUNT(DISTINCT sector) as sectors_covered
+            FROM src_stocks WHERE is_active = 1
+        """)
+
+        # Activity in last 30 days
+        activity_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_calls,
+                COUNT(DISTINCT client_id) as clients_contacted
+            FROM src_call_logs
+            WHERE call_timestamp >= date('now', '-30 days')
+        """)
+
+        # Readership stats
+        readership_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_reads,
+                COUNT(DISTINCT client_id) as readers
+            FROM ana_readership_daysdiff
+            WHERE read_date >= date('now', '-30 days')
+        """)
+
+        # Top sectors by client interest
+        top_sectors = await fetch_all("""
+            SELECT sector, COUNT(*) as count
+            FROM ana_readership_daysdiff
+            GROUP BY sector
+            ORDER BY count DESC
+            LIMIT 5
+        """)
+
+        # Recent activity timeline
+        recent_activity = await fetch_all("""
+            SELECT
+                date(call_timestamp) as date,
+                COUNT(*) as calls
+            FROM src_call_logs
+            WHERE call_timestamp >= date('now', '-14 days')
+            GROUP BY date(call_timestamp)
+            ORDER BY date DESC
+        """)
+
+        # Cache stats
+        cache_stats = api_cache.stats()
+
+        return {
+            "clients": {
+                "total": client_stats["total_clients"] if client_stats else 0,
+                "active": client_stats["active_clients"] if client_stats else 0,
+                "dormant": client_stats["dormant_clients"] if client_stats else 0,
+            },
+            "stocks": {
+                "total": stock_stats["total_stocks"] if stock_stats else 0,
+                "sectors": stock_stats["sectors_covered"] if stock_stats else 0,
+            },
+            "activity_30d": {
+                "calls": activity_stats["total_calls"] if activity_stats else 0,
+                "clients_contacted": activity_stats["clients_contacted"] if activity_stats else 0,
+                "reads": readership_stats["total_reads"] if readership_stats else 0,
+                "readers": readership_stats["readers"] if readership_stats else 0,
+            },
+            "top_sectors": [dict(s) for s in top_sectors] if top_sectors else [],
+            "recent_activity": [dict(a) for a in recent_activity] if recent_activity else [],
+            "cache": cache_stats,
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/analytics/client/{client_id}")
+async def api_client_analytics(client_id: int):
+    """
+    Get detailed analytics for a specific client.
+    """
+    try:
+        # Client profile
+        profile = await fetch_one("""
+            SELECT * FROM int_client_profile WHERE client_id = :cid
+        """, {"cid": client_id})
+
+        if not profile:
+            return JSONResponse(status_code=404, content={"error": "Client not found"})
+
+        # Call history stats
+        call_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_calls,
+                MAX(call_timestamp) as last_call,
+                COUNT(DISTINCT stock_id) as stocks_discussed
+            FROM src_call_logs
+            WHERE client_id = :cid
+        """, {"cid": client_id})
+
+        # Reading patterns
+        reading_stats = await fetch_one("""
+            SELECT
+                COUNT(*) as total_reads,
+                AVG(days_diff) as avg_read_delay,
+                COUNT(DISTINCT ticker) as tickers_read
+            FROM ana_readership_daysdiff
+            WHERE client_id = :cid
+        """, {"cid": client_id})
+
+        # Sector preferences
+        sector_prefs = await fetch_all("""
+            SELECT sector, COUNT(*) as count
+            FROM ana_readership_daysdiff
+            WHERE client_id = :cid
+            GROUP BY sector
+            ORDER BY count DESC
+            LIMIT 5
+        """, {"cid": client_id})
+
+        # Recent reads
+        recent_reads = await fetch_all("""
+            SELECT ticker, sector, report_title, read_date
+            FROM ana_readership_daysdiff
+            WHERE client_id = :cid
+            ORDER BY read_date DESC
+            LIMIT 10
+        """, {"cid": client_id})
+
+        return {
+            "client_id": client_id,
+            "profile": dict(profile),
+            "calls": {
+                "total": call_stats["total_calls"] if call_stats else 0,
+                "last_call": call_stats["last_call"] if call_stats else None,
+                "stocks_discussed": call_stats["stocks_discussed"] if call_stats else 0,
+            },
+            "reading": {
+                "total_reads": reading_stats["total_reads"] if reading_stats else 0,
+                "avg_delay_days": round(reading_stats["avg_read_delay"] or 0, 1),
+                "tickers_read": reading_stats["tickers_read"] if reading_stats else 0,
+            },
+            "sector_preferences": [dict(s) for s in sector_prefs] if sector_prefs else [],
+            "recent_reads": [dict(r) for r in recent_reads] if recent_reads else [],
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 @app.get("/api/search")
 async def api_search(q: str = Query(..., min_length=1), limit: int = 20):
     try:
@@ -2529,12 +2754,24 @@ async def api_story_for_stock(req: StoryForStockRequest):
             "vol_date": m.get("vol_date"),
         }
 
+        # Fetch real fundamentals via yfinance (if available)
+        fundamentals_block = ""
+        try:
+            from lib.fundamentals import get_fundamentals_summary
+            summary = await anyio.to_thread.run_sync(lambda: get_fundamentals_summary(ticker))
+            if summary and "prompt_block" in summary:
+                fundamentals_block = summary["prompt_block"]
+                selected_stock["fundamentals"] = summary.get("key_metrics", {})
+        except Exception as e:
+            logger.warning(f"Could not fetch fundamentals for {ticker}: {e}")
+
         prompt = prompt_for_story(
             client_ctx=ctx,
             selected_stock=selected_stock,
             instruction=instruction,
             mode=req.mode,
             max_words=req.max_words,
+            fundamentals_block=fundamentals_block,
         )
 
         story = llm_text(prompt)
@@ -2858,6 +3095,271 @@ async def api_best_contact_time(client_id: int):
 
 
 # =========================
+# CRM Data Endpoints
+# =========================
+
+@app.get("/api/client/{client_id}/crm")
+async def api_client_crm(client_id: int):
+    """
+    Get comprehensive CRM data for a client including meetings, email activity,
+    contact preferences, and event attendance.
+    """
+    try:
+        # Get contact preferences
+        contact_prefs = await fetch_one(
+            """
+            SELECT * FROM src_client_contact_prefs WHERE client_id = :client_id
+            """,
+            {"client_id": client_id},
+        )
+
+        # Get recent meetings (last 12 months)
+        meetings = await fetch_all(
+            """
+            SELECT *
+            FROM src_client_meetings
+            WHERE client_id = :client_id
+            ORDER BY meeting_date DESC
+            LIMIT 20
+            """,
+            {"client_id": client_id},
+        )
+
+        # Get email activity (last 6 months)
+        email_activity = await fetch_all(
+            """
+            SELECT *
+            FROM src_client_email_activity
+            WHERE client_id = :client_id
+            ORDER BY month DESC
+            LIMIT 6
+            """,
+            {"client_id": client_id},
+        )
+
+        # Get event attendance
+        events = await fetch_all(
+            """
+            SELECT *
+            FROM src_client_events
+            WHERE client_id = :client_id
+            ORDER BY event_date DESC
+            LIMIT 10
+            """,
+            {"client_id": client_id},
+        )
+
+        # Calculate engagement metrics
+        total_meetings = len(meetings) if meetings else 0
+        positive_meetings = sum(1 for m in (meetings or []) if m.get("outcome") == "positive")
+        avg_email_response = None
+        if email_activity:
+            response_times = [e.get("avg_response_time_hours") for e in email_activity if e.get("avg_response_time_hours")]
+            if response_times:
+                avg_email_response = round(sum(response_times) / len(response_times), 1)
+
+        events_attended = sum(1 for e in (events or []) if e.get("attended"))
+        avg_event_feedback = None
+        if events:
+            feedbacks = [e.get("feedback_score") for e in events if e.get("feedback_score")]
+            if feedbacks:
+                avg_event_feedback = round(sum(feedbacks) / len(feedbacks), 1)
+
+        # Parse JSON fields
+        if contact_prefs and contact_prefs.get("preferred_days"):
+            try:
+                contact_prefs = dict(contact_prefs)
+                contact_prefs["preferred_days"] = json.loads(contact_prefs["preferred_days"])
+            except:
+                pass
+
+        for meeting in (meetings or []):
+            try:
+                if meeting.get("topics_discussed"):
+                    meeting["topics_discussed"] = json.loads(meeting["topics_discussed"])
+                if meeting.get("attendees"):
+                    meeting["attendees"] = json.loads(meeting["attendees"])
+            except:
+                pass
+
+        return {
+            "client_id": client_id,
+            "contact_preferences": contact_prefs,
+            "meetings": meetings or [],
+            "email_activity": email_activity or [],
+            "events": events or [],
+            "engagement_summary": {
+                "total_meetings_12m": total_meetings,
+                "positive_meetings": positive_meetings,
+                "meeting_success_rate": round(positive_meetings / total_meetings * 100, 1) if total_meetings > 0 else None,
+                "avg_email_response_hours": avg_email_response,
+                "events_attended": events_attended,
+                "avg_event_feedback": avg_event_feedback,
+            }
+        }
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+@app.get("/api/client/{client_id}/meetings")
+async def api_client_meetings(client_id: int, limit: int = 20):
+    """Get meeting history for a client."""
+    try:
+        meetings = await fetch_all(
+            """
+            SELECT *
+            FROM src_client_meetings
+            WHERE client_id = :client_id
+            ORDER BY meeting_date DESC
+            LIMIT :limit
+            """,
+            {"client_id": client_id, "limit": limit},
+        )
+
+        # Parse JSON fields
+        for meeting in (meetings or []):
+            try:
+                if meeting.get("topics_discussed"):
+                    meeting["topics_discussed"] = json.loads(meeting["topics_discussed"])
+                if meeting.get("attendees"):
+                    meeting["attendees"] = json.loads(meeting["attendees"])
+            except:
+                pass
+
+        return {"client_id": client_id, "meetings": meetings or []}
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e), "meetings": []})
+
+
+# =========================
+# Compliance / KYC Endpoints
+# =========================
+
+@app.get("/api/client/{client_id}/compliance")
+async def api_client_compliance(client_id: int):
+    """
+    Get compliance and KYC data for a client.
+    Includes investor classification, mandate type, restrictions, and ESG requirements.
+    """
+    try:
+        compliance = await fetch_one(
+            """
+            SELECT * FROM src_client_compliance WHERE client_id = :client_id
+            """,
+            {"client_id": client_id},
+        )
+
+        if not compliance:
+            return {"client_id": client_id, "compliance": None, "message": "No compliance data available"}
+
+        compliance = dict(compliance)
+
+        # Parse JSON fields
+        json_fields = ["allowed_instruments", "restricted_sectors", "restricted_countries", "exclusion_list", "reporting_requirements"]
+        for field in json_fields:
+            if compliance.get(field):
+                try:
+                    compliance[field] = json.loads(compliance[field])
+                except:
+                    pass
+
+        # Format AUM
+        aum = compliance.get("aum_declared")
+        if aum:
+            if aum >= 1e9:
+                compliance["aum_formatted"] = f"€{aum/1e9:.1f}B"
+            else:
+                compliance["aum_formatted"] = f"€{aum/1e6:.0f}M"
+
+        # Calculate KYC status info
+        kyc_expiry = compliance.get("kyc_expiry_date")
+        if kyc_expiry:
+            from datetime import datetime
+            try:
+                expiry_date = datetime.strptime(kyc_expiry, "%Y-%m-%d")
+                days_until_expiry = (expiry_date - datetime.now()).days
+                compliance["kyc_days_until_expiry"] = days_until_expiry
+                compliance["kyc_expiring_soon"] = days_until_expiry < 90
+            except:
+                pass
+
+        # Build restrictions summary
+        restrictions = []
+        if compliance.get("restricted_sectors"):
+            restrictions.append(f"Sectors: {', '.join(compliance['restricted_sectors'])}")
+        if compliance.get("restricted_countries"):
+            restrictions.append(f"Countries: {', '.join(compliance['restricted_countries'])}")
+        if compliance.get("max_single_position_pct"):
+            restrictions.append(f"Max position: {compliance['max_single_position_pct']}%")
+        if not compliance.get("derivatives_allowed"):
+            restrictions.append("No derivatives")
+        if not compliance.get("short_selling_allowed"):
+            restrictions.append("No short selling")
+        compliance["restrictions_summary"] = restrictions
+
+        # ESG summary
+        if compliance.get("esg_mandate"):
+            compliance["esg_summary"] = {
+                "required": True,
+                "min_score": compliance.get("esg_min_score"),
+                "sfdr": compliance.get("sfdr_classification"),
+            }
+        else:
+            compliance["esg_summary"] = {"required": False}
+
+        return {"client_id": client_id, "compliance": compliance}
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+@app.get("/api/client/{client_id}/profile/full")
+async def api_client_full_profile(client_id: int):
+    """
+    Get complete client profile including basic info, CRM, compliance, and behavioral data.
+    This is the comprehensive view for the detail panel.
+    """
+    try:
+        # Get basic client info
+        client = await fetch_one(
+            "SELECT * FROM src_clients WHERE client_id = :client_id",
+            {"client_id": client_id},
+        )
+
+        if not client:
+            return JSONResponse(status_code=404, content={"error": "Client not found"})
+
+        # Get CRM data
+        crm_response = await api_client_crm(client_id)
+        crm_data = crm_response if isinstance(crm_response, dict) else {}
+
+        # Get compliance data
+        compliance_response = await api_client_compliance(client_id)
+        compliance_data = compliance_response.get("compliance") if isinstance(compliance_response, dict) else None
+
+        # Get portfolio summary
+        portfolio = await get_client_portfolio_summary(client_id)
+
+        # Get behavioral profile
+        profile = await get_client_profile(client_id)
+
+        return {
+            "client_id": client_id,
+            "basic_info": dict(client),
+            "crm": {
+                "contact_preferences": crm_data.get("contact_preferences"),
+                "engagement_summary": crm_data.get("engagement_summary"),
+                "recent_meetings": (crm_data.get("meetings") or [])[:5],
+                "recent_events": (crm_data.get("events") or [])[:5],
+            },
+            "compliance": compliance_data,
+            "portfolio": portfolio,
+            "behavioral_profile": profile,
+        }
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+# =========================
 # Real-Time Market Data (Alpha Vantage & Finnhub)
 # =========================
 
@@ -2933,25 +3435,38 @@ async def api_stock_quote(ticker: str):
 async def api_stock_news(ticker: str, days: int = 7):
     """
     Get recent news for a stock from Finnhub.
+    Falls back to company name search if ticker-based search fails.
     """
     client = get_market_data_client()
     if not client:
         return JSONResponse(status_code=500, content={"error": "Market data client not available"})
 
     try:
+        # First try ticker-based news
         news = await anyio.to_thread.run_sync(lambda: client.get_news(ticker, days))
+
+        # If no news found, try searching by company name
+        if not news:
+            # Get company name from database
+            stock = await fetch_one(
+                "SELECT company_name FROM src_stocks WHERE ticker = :ticker",
+                {"ticker": ticker}
+            )
+            if stock and stock["company_name"]:
+                company_name = stock["company_name"].split()[0]  # Use first word (e.g., "Infineon" from "Infineon Technologies")
+                news = await anyio.to_thread.run_sync(lambda: client.search_market_news(company_name, days))
 
         if news:
             return {
                 "ticker": ticker,
                 "count": len(news),
-                "articles": news,
+                "news": news,  # Changed from "articles" to "news" for consistency
             }
         else:
             return {
                 "ticker": ticker,
                 "count": 0,
-                "articles": [],
+                "news": [],
                 "message": "No recent news found"
             }
     except Exception as e:
@@ -3004,6 +3519,263 @@ async def api_stock_profile(ticker: str):
             pass  # Ignore enrichment errors
 
     return result
+
+
+@app.get("/api/stock/{ticker}/history")
+async def api_stock_history(ticker: str, days: int = 30):
+    """
+    Get historical price data for a stock.
+    First tries database, then falls back to Alpha Vantage API.
+    """
+    # Try database first
+    prices = await fetch_all(
+        """
+        SELECT
+            p.price_date as date,
+            p.open,
+            p.high,
+            p.low,
+            p.close,
+            p.volume
+        FROM src_stock_prices p
+        JOIN src_stocks s ON s.stock_id = p.stock_id
+        WHERE s.ticker = :ticker
+        ORDER BY p.price_date DESC
+        LIMIT :days
+        """,
+        {"ticker": ticker, "days": days}
+    )
+
+    if prices and len(prices) >= 5:
+        # Reverse to chronological order
+        prices_list = [dict(p) for p in prices]
+        prices_list.reverse()
+        return {
+            "ticker": ticker,
+            "source": "database",
+            "prices": prices_list
+        }
+
+    # Fall back to Alpha Vantage API
+    client = get_market_data_client()
+    if client:
+        try:
+            api_prices = await anyio.to_thread.run_sync(
+                lambda: client.get_daily_prices(ticker, days)
+            )
+            if api_prices:
+                # Reverse to chronological order
+                api_prices.reverse()
+                return {
+                    "ticker": ticker,
+                    "source": "alphavantage",
+                    "prices": api_prices
+                }
+        except Exception as e:
+            pass
+
+    # Return whatever we have from database (even if less than 5)
+    if prices:
+        prices_list = [dict(p) for p in prices]
+        prices_list.reverse()
+        return {
+            "ticker": ticker,
+            "source": "database",
+            "prices": prices_list
+        }
+
+    return {
+        "ticker": ticker,
+        "source": "none",
+        "prices": [],
+        "message": "No historical data available"
+    }
+
+
+@app.get("/api/stock/{ticker}/indicators")
+async def api_stock_indicators(ticker: str):
+    """
+    Get technical indicators for a stock (RSI, MACD, SMA, Bollinger Bands).
+    Note: Due to API rate limits, this may take a few seconds.
+    """
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        # Get RSI only for quick response (full indicators too slow due to rate limits)
+        rsi = await anyio.to_thread.run_sync(lambda: client.get_rsi(ticker))
+
+        return {
+            "ticker": ticker,
+            "indicators": {
+                "rsi": rsi,
+            },
+            "note": "Use /api/stock/{ticker}/indicators/all for full indicators (slower due to API rate limits)"
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/indicators/all")
+async def api_stock_all_indicators(ticker: str):
+    """
+    Get all technical indicators for a stock.
+    Warning: This endpoint is slow due to API rate limits (~60 seconds).
+    """
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        indicators = await anyio.to_thread.run_sync(lambda: client.get_all_indicators(ticker))
+
+        return {
+            "ticker": ticker,
+            "indicators": indicators
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/rsi")
+async def api_stock_rsi(ticker: str, period: int = 14):
+    """Get RSI indicator for a stock."""
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        rsi = await anyio.to_thread.run_sync(lambda: client.get_rsi(ticker, period))
+        if rsi:
+            return {"ticker": ticker, "rsi": rsi}
+        return JSONResponse(status_code=404, content={"error": "RSI data not available"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/macd")
+async def api_stock_macd(ticker: str):
+    """Get MACD indicator for a stock."""
+    client = get_market_data_client()
+    if not client:
+        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
+
+    try:
+        macd = await anyio.to_thread.run_sync(lambda: client.get_macd(ticker))
+        if macd:
+            return {"ticker": ticker, "macd": macd}
+        return JSONResponse(status_code=404, content={"error": "MACD data not available"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# =============================================================================
+# FUNDAMENTALS API (via yfinance)
+# =============================================================================
+
+@app.get("/api/stock/{ticker}/fundamentals")
+async def api_stock_fundamentals(ticker: str):
+    """
+    Get comprehensive fundamental data for a stock.
+
+    Returns valuation (P/E, P/B, EV/EBITDA), profitability (ROE, margins),
+    growth metrics, dividends, analyst ratings, and institutional holdings.
+    """
+    try:
+        from lib.fundamentals import get_stock_fundamentals
+        fundamentals = await anyio.to_thread.run_sync(lambda: get_stock_fundamentals(ticker))
+
+        if "error" in fundamentals:
+            return JSONResponse(status_code=404, content=fundamentals)
+
+        return fundamentals
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed. Run: pip install yfinance"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/fundamentals/summary")
+async def api_stock_fundamentals_summary(ticker: str):
+    """
+    Get a concise summary of fundamentals for prompt injection.
+
+    Returns formatted text blocks ready for LLM consumption.
+    """
+    try:
+        from lib.fundamentals import get_fundamentals_summary
+        summary = await anyio.to_thread.run_sync(lambda: get_fundamentals_summary(ticker))
+
+        if "error" in summary:
+            return JSONResponse(status_code=404, content=summary)
+
+        return summary
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/analyst")
+async def api_stock_analyst(ticker: str):
+    """
+    Get analyst recommendations and price targets.
+
+    Returns current rating, price target range, and recent upgrades/downgrades.
+    """
+    try:
+        from lib.fundamentals import get_analyst_recommendations
+        recs = await anyio.to_thread.run_sync(lambda: get_analyst_recommendations(ticker))
+
+        if "error" in recs:
+            return JSONResponse(status_code=404, content=recs)
+
+        return recs
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/holders")
+async def api_stock_holders(ticker: str):
+    """
+    Get institutional and insider holdings.
+
+    Returns top institutional holders and ownership percentages.
+    """
+    try:
+        from lib.fundamentals import get_institutional_holders
+        holders = await anyio.to_thread.run_sync(lambda: get_institutional_holders(ticker))
+
+        if "error" in holders:
+            return JSONResponse(status_code=404, content=holders)
+
+        return holders
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/stock/{ticker}/earnings")
+async def api_stock_earnings(ticker: str):
+    """
+    Get earnings history and upcoming earnings date.
+    """
+    try:
+        from lib.fundamentals import get_earnings_history
+        earnings = await anyio.to_thread.run_sync(lambda: get_earnings_history(ticker))
+
+        if "error" in earnings:
+            return JSONResponse(status_code=404, content=earnings)
+
+        return earnings
+    except ImportError:
+        return JSONResponse(status_code=500, content={"error": "yfinance not installed"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.get("/api/market/summary")

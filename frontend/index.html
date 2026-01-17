@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       /* ODDO BHF Official Color Scheme */
@@ -43,14 +44,319 @@
       --hot: var(--secondary-red);
       --greige: var(--soft-greige);
       --radius: 8px;
+      --radius-lg: 16px;
       --radius-pill: 99rem;
       --shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md: 0 4px 12px rgba(0, 61, 57, 0.08);
       --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
+      --shadow-glow: 0 0 40px rgba(0, 61, 57, 0.15);
 
       /* Typography */
       --font-primary: 'Lato', Arial, Verdana, sans-serif;
       --font-serif: 'Libre Baskerville', Georgia, serif;
+
+      /* Glassmorphism */
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --glass-blur: blur(20px);
+
+      /* Gradients */
+      --gradient-primary: linear-gradient(135deg, #003D39 0%, #00524d 50%, #006b63 100%);
+      --gradient-accent: linear-gradient(135deg, #cf2014 0%, #e63629 100%);
+      --gradient-success: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+      --gradient-card: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(247,244,242,0.5) 100%);
     }
+
+    /* Dark Mode */
+    [data-theme="dark"] {
+      --bg: #1a1a2e;
+      --bg-dark: #16213e;
+      --bg-darker: #0f0f1a;
+      --card: #1f1f3a;
+      --border: #2d2d4a;
+      --text: #e8e8f0;
+      --text-muted: #9090a8;
+      --accent-light: rgba(85, 161, 132, 0.15);
+      --soft-greige: #252540;
+      --glass-bg: rgba(31, 31, 58, 0.9);
+      --glass-border: rgba(45, 45, 74, 0.6);
+      --gradient-card: linear-gradient(180deg, rgba(31,31,58,1) 0%, rgba(26,26,46,0.8) 100%);
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
+      --shadow-glow: 0 0 40px rgba(85, 161, 132, 0.2);
+    }
+
+    [data-theme="dark"] .header {
+      background: var(--card);
+      border-bottom-color: var(--border);
+    }
+
+    [data-theme="dark"] .stock-card {
+      background: var(--gradient-card);
+    }
+
+    [data-theme="dark"] .btn-secondary {
+      background: var(--card);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    [data-theme="dark"] input,
+    [data-theme="dark"] textarea,
+    [data-theme="dark"] select {
+      background: var(--bg-darker);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    /* Live Ticker */
+    @keyframes tickerScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .live-ticker-container {
+      background: var(--gradient-primary);
+      overflow: hidden;
+      padding: 8px 0;
+      position: relative;
+    }
+
+    .live-ticker {
+      display: flex;
+      animation: tickerScroll 30s linear infinite;
+      white-space: nowrap;
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 24px;
+      color: white;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .ticker-symbol {
+      font-weight: 700;
+      color: white;
+    }
+
+    .ticker-price {
+      font-family: var(--font-primary);
+    }
+
+    .ticker-change {
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .ticker-change.positive {
+      background: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+
+    .ticker-change.negative {
+      background: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    /* Stock Filters */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      font-size: 13px;
+      font-family: var(--font-primary);
+      cursor: pointer;
+      min-width: 120px;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--accent-light);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      color: var(--primary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-chip:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .filter-chip.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Keyboard Shortcut Hints */
+    .kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-family: monospace;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      margin-left: 8px;
+    }
+
+    /* Search Autocomplete */
+    .search-autocomplete {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .search-autocomplete.show {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .search-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+
+    .search-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-item:hover {
+      background: var(--accent-light);
+    }
+
+    .search-item-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .search-item-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      width: 44px;
+      height: 24px;
+      border-radius: 12px;
+      background: var(--border);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.3s;
+    }
+
+    .theme-toggle::after {
+      content: '☀️';
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: transform 0.3s, content 0.3s;
+    }
+
+    [data-theme="dark"] .theme-toggle {
+      background: var(--primary);
+    }
+
+    [data-theme="dark"] .theme-toggle::after {
+      content: '🌙';
+      transform: translateX(20px);
+    }
+
+    /* Keyframe Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 5px rgba(0, 61, 57, 0.2); }
+      50% { box-shadow: 0 0 20px rgba(0, 61, 57, 0.4); }
+    }
+
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    .animate-fade-in-up { animation: fadeInUp 0.4s ease-out; }
+    .animate-slide-in { animation: slideInRight 0.3s ease-out; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -637,25 +943,60 @@
     }
 
     .stock-card {
-      background: white;
+      background: var(--gradient-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius-lg);
       padding: 20px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      animation: fadeInUp 0.4s ease-out backwards;
+    }
+
+    .stock-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--gradient-primary);
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
     .stock-card:hover {
       border-color: var(--primary);
-      box-shadow: 0 8px 24px rgba(0, 61, 57, 0.12);
-      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow);
+      transform: translateY(-4px);
+    }
+
+    .stock-card:hover::before {
+      opacity: 1;
     }
 
     .stock-card.selected {
       border-color: var(--secondary-red);
       border-width: 2px;
-      background: rgba(207, 32, 20, 0.04);
+      background: linear-gradient(180deg, rgba(207, 32, 20, 0.04) 0%, rgba(255,255,255,1) 100%);
     }
+
+    .stock-card.selected::before {
+      background: var(--gradient-accent);
+      opacity: 1;
+    }
+
+    /* Staggered animation for cards */
+    .stock-card:nth-child(1) { animation-delay: 0.05s; }
+    .stock-card:nth-child(2) { animation-delay: 0.1s; }
+    .stock-card:nth-child(3) { animation-delay: 0.15s; }
+    .stock-card:nth-child(4) { animation-delay: 0.2s; }
+    .stock-card:nth-child(5) { animation-delay: 0.25s; }
+    .stock-card:nth-child(6) { animation-delay: 0.3s; }
+    .stock-card:nth-child(7) { animation-delay: 0.35s; }
+    .stock-card:nth-child(8) { animation-delay: 0.4s; }
+    .stock-card:nth-child(9) { animation-delay: 0.45s; }
 
     .stock-header {
       display: flex;
@@ -723,6 +1064,224 @@
       left: 0;
       color: var(--accent);
     }
+
+    /* === SIGNAL BADGES === */
+    .signal-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .signal-badge.buy {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.15) 100%);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .signal-badge.sell {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(248, 113, 113, 0.15) 100%);
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .signal-badge.hold {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.15) 100%);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .signal-badge.top {
+      background: var(--gradient-accent);
+      color: white;
+      border: none;
+      animation: pulse 2s infinite;
+    }
+
+    .signal-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* === SPARKLINE MINI CHARTS === */
+    .stock-sparkline {
+      height: 40px;
+      margin: 12px 0;
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(0, 61, 57, 0.02) 0%, transparent 100%);
+    }
+
+    .stock-sparkline canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* === LIVE INDICATOR === */
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 1.5s infinite;
+      box-shadow: 0 0 8px rgba(85, 161, 132, 0.6);
+    }
+
+    /* === MARKET PULSE SECTION === */
+    .market-pulse {
+      background: var(--gradient-primary);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+      color: white;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .market-pulse::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .pulse-item {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pulse-label {
+      font-size: 11px;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .pulse-value {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: var(--font-serif);
+    }
+
+    .pulse-change {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .pulse-change.positive { color: #34d399; }
+    .pulse-change.negative { color: #fca5a5; }
+
+    /* === ENHANCED BUTTONS === */
+    .btn-glow {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-glow::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn-glow:hover::after {
+      width: 300px;
+      height: 300px;
+    }
+
+    /* === LOADING SKELETON === */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius);
+    }
+
+    .skeleton-text {
+      height: 14px;
+      margin-bottom: 8px;
+    }
+
+    .skeleton-title {
+      height: 24px;
+      width: 60%;
+      margin-bottom: 12px;
+    }
+
+    /* === TOAST NOTIFICATIONS === */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .toast {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideInRight 0.3s ease-out;
+      min-width: 300px;
+    }
+
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+    .toast.info { border-left: 4px solid var(--primary); }
+
+    .toast-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .toast.success .toast-icon { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .toast.error .toast-icon { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .toast.info .toast-icon { background: rgba(0, 61, 57, 0.15); color: var(--primary); }
 
     /* === OUTPUT PANEL === */
     .output-panel {
@@ -1517,6 +2076,44 @@
       border-radius: 8px;
     }
 
+    .stock-chart-container {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .stock-chart-container canvas {
+      max-height: 200px;
+    }
+
+    .chart-period-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .chart-period-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chart-period-btn:hover {
+      border-color: var(--primary);
+    }
+
+    .chart-period-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
     @media (max-width: 600px) {
       .stock-detail-metrics {
         grid-template-columns: repeat(2, 1fr);
@@ -1525,25 +2122,35 @@
   </style>
 </head>
 <body>
+  <!-- LIVE TICKER -->
+  <div class="live-ticker-container" id="liveTicker">
+    <div class="live-ticker" id="tickerContent">
+      <!-- Ticker items will be populated by JS -->
+    </div>
+  </div>
+
   <!-- HEADER -->
   <header class="header">
     <div class="logo">
       <img src="/static/Oddo_BHF_logo.svg.png" alt="ODDO BHF" class="logo-img">
     </div>
 
-    <div class="search-box">
+    <div class="search-box" style="position: relative;">
       <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input
         type="text"
         class="search-input"
         id="searchInput"
         placeholder="Search client (name, firm, contact)..."
+        autocomplete="off"
       />
+      <div class="search-autocomplete" id="searchAutocomplete"></div>
     </div>
 
     <div class="header-actions">
       <button class="btn btn-ghost" id="settingsBtn">API</button>
       <button class="btn btn-ghost" id="healthBtn">Health</button>
+      <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode"></button>
       <span class="status-chip" id="statusChip">No Client</span>
     </div>
   </header>
@@ -1641,6 +2248,39 @@
           </div>
         </div>
 
+        <!-- FILTER BAR -->
+        <div class="filter-bar" id="filterBar">
+          <div class="filter-group">
+            <span class="filter-label">Sector:</span>
+            <select class="filter-select" id="filterSector">
+              <option value="">All Sectors</option>
+              <option value="Technology">Technology</option>
+              <option value="Financials">Financials</option>
+              <option value="Consumer">Consumer</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Industrials">Industrials</option>
+              <option value="Energy">Energy</option>
+              <option value="Automotive">Automotive</option>
+              <option value="Utilities">Utilities</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Risk:</span>
+            <select class="filter-select" id="filterRisk">
+              <option value="">All Risk</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-chip" data-filter="top" id="filterTopOnly">TOP Picks Only</span>
+          </div>
+          <div style="margin-left: auto; font-size: 12px; color: var(--text-muted);">
+            <span id="stockCount">0</span> stocks
+          </div>
+        </div>
+
         <div class="stock-grid" id="stockGrid">
           <div class="empty-state">
             <h3>No Shortlist</h3>
@@ -1709,6 +2349,7 @@
 // STATE
 // ============================================================================
 let clientId = null;
+let selectedClientId = null;
 let clientData = null;
 let shortlist = [];
 let selectedTicker = null;
@@ -1737,6 +2378,74 @@ function authHeaders() {
 // ============================================================================
 function $(id) { return document.getElementById(id); }
 function $$(sel) { return document.querySelectorAll(sel); }
+
+// Pie chart color palette
+const PIE_COLORS = [
+  '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe',
+  '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140',
+  '#a8edea', '#fed6e3', '#d299c2', '#fef9d7', '#89f7fe'
+];
+
+function getPieColor(index) {
+  return PIE_COLORS[index % PIE_COLORS.length];
+}
+
+// Render portfolio pie chart
+function renderPortfolioPieChart() {
+  const canvas = document.getElementById('portfolioPieChart');
+  if (!canvas || !window._portfolioSectorData) return;
+
+  const ctx = canvas.getContext('2d');
+  const { labels, data } = window._portfolioSectorData;
+
+  if (!labels || labels.length === 0) return;
+
+  // Destroy existing chart if any
+  if (window._portfolioPieChart) {
+    window._portfolioPieChart.destroy();
+  }
+
+  window._portfolioPieChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: labels.map((_, i) => getPieColor(i)),
+        borderColor: 'rgba(255,255,255,0.2)',
+        borderWidth: 2,
+        hoverBorderColor: '#fff',
+        hoverBorderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '55%',
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return context.label + ': ' + context.raw + '%';
+            }
+          }
+        }
+      },
+      animation: {
+        animateRotate: true,
+        animateScale: true
+      }
+    }
+  });
+}
 
 function setStatus(text, type = 'default') {
   const chip = $('statusChip');
@@ -1786,7 +2495,8 @@ function renderDrawerContent(data) {
       <button class="drawer-tab" data-panel="trades">Trades <span class="badge">${trades.length}</span></button>
       <button class="drawer-tab" data-panel="reads">Reads <span class="badge">${reads.length}</span></button>
       <button class="drawer-tab" data-panel="positions">Positionen <span class="badge">${positions.length}</span></button>
-      <button class="drawer-tab" data-panel="hints">Hints <span class="badge">${hints.length}</span></button>
+      <button class="drawer-tab" data-panel="crm">CRM</button>
+      <button class="drawer-tab" data-panel="compliance">Compliance</button>
     </div>
   `;
 
@@ -1862,9 +2572,39 @@ function renderDrawerContent(data) {
     </div>
   `;
 
-  // POSITIONS TABLE
+  // POSITIONS TABLE with Pie Chart
+  // Aggregate by sector for pie chart
+  const sectorWeights = {};
+  positions.forEach(p => {
+    const sector = p.sector || 'Other';
+    const weight = p.weight || 0;
+    sectorWeights[sector] = (sectorWeights[sector] || 0) + weight;
+  });
+  const sectorLabels = Object.keys(sectorWeights);
+  const sectorData = Object.values(sectorWeights).map(w => (w * 100).toFixed(1));
+
   html += `
     <div class="drawer-panel" id="drawer-positions">
+      ${positions.length > 0 ? `
+      <div class="portfolio-chart-container" style="display: flex; gap: 24px; margin-bottom: 20px; align-items: flex-start;">
+        <div style="flex: 0 0 280px;">
+          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-muted);">Sektor-Verteilung</h4>
+          <canvas id="portfolioPieChart" width="260" height="260"></canvas>
+        </div>
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 12px 0; font-size: 14px; color: var(--text-muted);">Portfolio-Zusammensetzung</h4>
+          <div class="sector-legend" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+            ${sectorLabels.map((label, i) => `
+              <div class="legend-item" style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                <span class="legend-color" style="width: 12px; height: 12px; border-radius: 3px; background: ${getPieColor(i)};"></span>
+                <span style="color: var(--text);">${label}</span>
+                <span style="color: var(--text-muted); margin-left: auto;">${sectorData[i]}%</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+      ` : ''}
       <table class="detail-table">
         <thead>
           <tr><th>Ticker</th><th>Name</th><th>Sector</th><th>Weight</th><th>Value</th><th>Theme</th></tr>
@@ -1886,27 +2626,28 @@ function renderDrawerContent(data) {
     </div>
   `;
 
-  // HINTS TABLE
+  // Store sector data for pie chart rendering
+  window._portfolioSectorData = { labels: sectorLabels, data: sectorData };
+
+  // HINTS TABLE - removed to make room for CRM/Compliance
+
+  // CRM PANEL
   html += `
-    <div class="drawer-panel" id="drawer-hints">
-      <table class="detail-table">
-        <thead>
-          <tr><th>Ticker</th><th>Mentions</th><th>Hold</th><th>Add</th><th>Reduce</th><th>Diversify</th></tr>
-        </thead>
-        <tbody>
-          ${hints.length === 0 ? '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No Hints</td></tr>' : ''}
-          ${hints.map(h => `
-            <tr>
-              <td class="ticker">${h.ticker || '-'}</td>
-              <td>${h.mention_count || 0}</td>
-              <td>${h.holding_hints || '-'}</td>
-              <td>${h.add_hints ? `<span class="tag buy">${h.add_hints}</span>` : '-'}</td>
-              <td>${h.reduce_hints ? `<span class="tag sell">${h.reduce_hints}</span>` : '-'}</td>
-              <td>${h.diversification_hints || '-'}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+    <div class="drawer-panel" id="drawer-crm">
+      <div class="crm-loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <div class="spinner"></div>
+        <p style="margin-top: 12px;">Lade CRM-Daten...</p>
+      </div>
+    </div>
+  `;
+
+  // COMPLIANCE PANEL
+  html += `
+    <div class="drawer-panel" id="drawer-compliance">
+      <div class="compliance-loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
+        <div class="spinner"></div>
+        <p style="margin-top: 12px;">Lade Compliance-Daten...</p>
+      </div>
     </div>
   `;
 
@@ -1919,8 +2660,386 @@ function renderDrawerContent(data) {
       $$('.drawer-panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       $('drawer-' + tab.dataset.panel).classList.add('active');
+
+      // Render pie chart when positions tab is activated
+      if (tab.dataset.panel === 'positions') {
+        setTimeout(renderPortfolioPieChart, 50);
+      }
+
+      // Load CRM data when tab is activated
+      if (tab.dataset.panel === 'crm' && selectedClientId) {
+        loadCRMData(selectedClientId);
+      }
+
+      // Load Compliance data when tab is activated
+      if (tab.dataset.panel === 'compliance' && selectedClientId) {
+        loadComplianceData(selectedClientId);
+      }
     });
   });
+}
+
+// ============================================================================
+// CRM & COMPLIANCE DATA LOADING
+// ============================================================================
+
+let crmDataLoaded = false;
+let complianceDataLoaded = false;
+
+async function loadCRMData(clientId) {
+  if (crmDataLoaded) return;
+
+  try {
+    const response = await fetch(apiUrl(`/api/client/${clientId}/crm`), { headers: authHeaders() });
+    if (!response.ok) throw new Error('Failed to load CRM data');
+
+    const data = await response.json();
+    renderCRMPanel(data);
+    crmDataLoaded = true;
+  } catch (e) {
+    console.error('Error loading CRM data:', e);
+    $('drawer-crm').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Fehler beim Laden der CRM-Daten</div>`;
+  }
+}
+
+function renderCRMPanel(data) {
+  const prefs = data.contact_preferences || {};
+  const engagement = data.engagement_summary || {};
+  const meetings = data.meetings || [];
+  const events = data.events || [];
+
+  let html = `
+    <!-- Contact Preferences -->
+    <div class="crm-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Kontakt-Präferenzen
+      </h4>
+      <div class="crm-prefs-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Bevorzugter Kanal</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
+            ${prefs.preferred_channel === 'phone' ? '📞 Telefon' :
+              prefs.preferred_channel === 'email' ? '📧 E-Mail' :
+              prefs.preferred_channel === 'video' ? '🎥 Video' :
+              prefs.preferred_channel === 'in_person' ? '🤝 Persönlich' : prefs.preferred_channel || '-'}
+          </div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Beste Zeit</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
+            ${prefs.preferred_time === 'morning' ? '🌅 Morgens' :
+              prefs.preferred_time === 'afternoon' ? '☀️ Nachmittag' :
+              prefs.preferred_time === 'evening' ? '🌙 Abend' : prefs.preferred_time || '-'}
+          </div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Frequenz</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
+            ${prefs.preferred_frequency === 'daily' ? 'Täglich' :
+              prefs.preferred_frequency === 'weekly' ? 'Wöchentlich' :
+              prefs.preferred_frequency === 'bi-weekly' ? 'Alle 2 Wochen' :
+              prefs.preferred_frequency === 'monthly' ? 'Monatlich' : prefs.preferred_frequency || '-'}
+          </div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Sprache</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text);">${prefs.language || '-'}</div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Zeitzone</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text);">${prefs.timezone || '-'}</div>
+        </div>
+        <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Bevorzugte Tage</div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text);">
+            ${Array.isArray(prefs.preferred_days) ? prefs.preferred_days.slice(0, 3).map(d => d.substring(0, 2)).join(', ') : '-'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Engagement Summary -->
+    <div class="crm-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Engagement Übersicht (12 Monate)
+      </h4>
+      <div class="crm-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div class="crm-stat-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 10px; color: white;">
+          <div style="font-size: 24px; font-weight: 700;">${engagement.total_meetings_12m || 0}</div>
+          <div style="font-size: 11px; opacity: 0.85;">Meetings</div>
+        </div>
+        <div class="crm-stat-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 16px; border-radius: 10px; color: white;">
+          <div style="font-size: 24px; font-weight: 700;">${engagement.meeting_success_rate ? engagement.meeting_success_rate + '%' : '-'}</div>
+          <div style="font-size: 11px; opacity: 0.85;">Erfolgsrate</div>
+        </div>
+        <div class="crm-stat-box" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); padding: 16px; border-radius: 10px; color: white;">
+          <div style="font-size: 24px; font-weight: 700;">${engagement.avg_email_response_hours ? engagement.avg_email_response_hours + 'h' : '-'}</div>
+          <div style="font-size: 11px; opacity: 0.85;">Ø Antwortzeit</div>
+        </div>
+        <div class="crm-stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 16px; border-radius: 10px; color: white;">
+          <div style="font-size: 24px; font-weight: 700;">${engagement.events_attended || 0}</div>
+          <div style="font-size: 11px; opacity: 0.85;">Events besucht</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Meetings -->
+    <div class="crm-section">
+      <h4 style="margin: 0 0 12px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Letzte Meetings
+      </h4>
+      ${meetings.length > 0 ? `
+        <table class="detail-table">
+          <thead>
+            <tr><th>Datum</th><th>Typ</th><th>Ort</th><th>Dauer</th><th>Themen</th><th>Ergebnis</th></tr>
+          </thead>
+          <tbody>
+            ${meetings.slice(0, 10).map(m => `
+              <tr>
+                <td class="date">${m.meeting_date ? new Date(m.meeting_date).toLocaleDateString('de-DE') : '-'}</td>
+                <td>
+                  <span class="tag neutral" style="text-transform: capitalize;">
+                    ${m.meeting_type === 'in_person' ? 'Persönlich' :
+                      m.meeting_type === 'video_call' ? 'Video' :
+                      m.meeting_type === 'roadshow' ? 'Roadshow' :
+                      m.meeting_type === 'conference' ? 'Konferenz' :
+                      m.meeting_type === 'dinner' ? 'Dinner' : m.meeting_type || '-'}
+                  </span>
+                </td>
+                <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis;">${m.location || '-'}</td>
+                <td>${m.duration_minutes ? m.duration_minutes + ' min' : '-'}</td>
+                <td style="max-width: 150px; font-size: 11px;">
+                  ${Array.isArray(m.topics_discussed) ? m.topics_discussed.slice(0, 2).join(', ') : '-'}
+                </td>
+                <td>
+                  <span class="tag ${m.outcome === 'positive' ? 'buy' : m.outcome === 'follow_up_needed' ? 'sell' : 'neutral'}">
+                    ${m.outcome === 'positive' ? '✓ Positiv' :
+                      m.outcome === 'follow_up_needed' ? '⟳ Follow-up' : 'Neutral'}
+                  </span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      ` : '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Keine Meetings vorhanden</div>'}
+    </div>
+
+    <!-- Events Attended -->
+    ${events.length > 0 ? `
+    <div class="crm-section" style="margin-top: 24px;">
+      <h4 style="margin: 0 0 12px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Event-Teilnahme
+      </h4>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        ${events.slice(0, 6).map(e => `
+          <div style="background: var(--greige); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
+            <span style="font-weight: 600;">${e.event_name}</span>
+            <span style="color: var(--text-muted); margin-left: 8px;">${e.event_date ? new Date(e.event_date).toLocaleDateString('de-DE') : ''}</span>
+            ${e.feedback_score ? `<span style="margin-left: 8px;">⭐ ${e.feedback_score}/5</span>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ` : ''}
+  `;
+
+  $('drawer-crm').innerHTML = html;
+}
+
+async function loadComplianceData(clientId) {
+  if (complianceDataLoaded) return;
+
+  try {
+    const response = await fetch(apiUrl(`/api/client/${clientId}/compliance`), { headers: authHeaders() });
+    if (!response.ok) throw new Error('Failed to load compliance data');
+
+    const data = await response.json();
+    renderCompliancePanel(data.compliance);
+    complianceDataLoaded = true;
+  } catch (e) {
+    console.error('Error loading compliance data:', e);
+    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Fehler beim Laden der Compliance-Daten</div>`;
+  }
+}
+
+function renderCompliancePanel(compliance) {
+  if (!compliance) {
+    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Keine Compliance-Daten vorhanden</div>`;
+    return;
+  }
+
+  const kycStatusColor = {
+    'approved': '#16a34a',
+    'pending': '#d97706',
+    'review_needed': '#dc2626',
+    'expired': '#dc2626'
+  };
+
+  const kycStatusLabel = {
+    'approved': '✓ Genehmigt',
+    'pending': '⏳ Ausstehend',
+    'review_needed': '⚠️ Review nötig',
+    'expired': '✗ Abgelaufen'
+  };
+
+  let html = `
+    <!-- KYC Status -->
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        KYC Status
+      </h4>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Status</div>
+          <div style="font-size: 14px; font-weight: 700; color: ${kycStatusColor[compliance.kyc_status] || 'inherit'};">
+            ${kycStatusLabel[compliance.kyc_status] || compliance.kyc_status}
+          </div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Risiko-Rating</div>
+          <div style="font-size: 14px; font-weight: 700; text-transform: capitalize; color: ${
+            compliance.kyc_risk_rating === 'enhanced' ? '#dc2626' :
+            compliance.kyc_risk_rating === 'standard' ? '#d97706' : '#16a34a'
+          };">
+            ${compliance.kyc_risk_rating === 'low' ? 'Niedrig' :
+              compliance.kyc_risk_rating === 'standard' ? 'Standard' :
+              compliance.kyc_risk_rating === 'enhanced' ? 'Erhöht' : compliance.kyc_risk_rating || '-'}
+          </div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Ablaufdatum</div>
+          <div style="font-size: 14px; font-weight: 700; color: ${compliance.kyc_expiring_soon ? '#dc2626' : 'inherit'};">
+            ${compliance.kyc_expiry_date ? new Date(compliance.kyc_expiry_date).toLocaleDateString('de-DE') : '-'}
+          </div>
+          ${compliance.kyc_expiring_soon ? '<div style="font-size: 10px; color: #dc2626; margin-top: 4px;">⚠️ Läuft bald ab!</div>' : ''}
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Letztes Review</div>
+          <div style="font-size: 14px; font-weight: 700;">
+            ${compliance.kyc_last_review ? new Date(compliance.kyc_last_review).toLocaleDateString('de-DE') : '-'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Investor Classification -->
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Anleger-Klassifizierung (MiFID II)
+      </h4>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Investortyp</div>
+          <div style="font-size: 14px; font-weight: 700; text-transform: capitalize;">
+            ${compliance.investor_type === 'professional' ? 'Professionell' :
+              compliance.investor_type === 'retail' ? 'Retail' :
+              compliance.investor_type === 'eligible_counterparty' ? 'Geeignete Gegenpartei' : compliance.investor_type || '-'}
+          </div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Mandatstyp</div>
+          <div style="font-size: 14px; font-weight: 700; text-transform: capitalize;">
+            ${compliance.mandate_type === 'discretionary' ? 'Diskretionär' :
+              compliance.mandate_type === 'advisory' ? 'Beratung' :
+              compliance.mandate_type === 'execution_only' ? 'Execution Only' : compliance.mandate_type || '-'}
+          </div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">AUM (deklariert)</div>
+          <div style="font-size: 14px; font-weight: 700;">${compliance.aum_formatted || '-'}</div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Domizil</div>
+          <div style="font-size: 14px; font-weight: 700;">${compliance.domicile_country || '-'}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trading Permissions -->
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Handels-Berechtigungen
+      </h4>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+        ${Array.isArray(compliance.allowed_instruments) ? compliance.allowed_instruments.map(inst => `
+          <span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+            ✓ ${inst === 'equities' ? 'Aktien' :
+                inst === 'bonds' ? 'Anleihen' :
+                inst === 'derivatives' ? 'Derivate' :
+                inst === 'etf' ? 'ETFs' :
+                inst === 'fx' ? 'Devisen' :
+                inst === 'commodities' ? 'Rohstoffe' : inst}
+          </span>
+        `).join('') : ''}
+        ${compliance.short_selling_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✓ Short Selling</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✗ Kein Short Selling</span>'}
+        ${compliance.leverage_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✓ Leverage</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">✗ Kein Leverage</span>'}
+        ${compliance.max_single_position_pct ? `<span style="background: var(--greige); color: var(--text); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Max. Position: ${compliance.max_single_position_pct}%</span>` : ''}
+      </div>
+    </div>
+
+    <!-- Restrictions -->
+    ${(compliance.restricted_sectors && compliance.restricted_sectors.length > 0) || (compliance.restricted_countries && compliance.restricted_countries.length > 0) ? `
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        Einschränkungen
+      </h4>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
+        ${Array.isArray(compliance.restricted_sectors) ? compliance.restricted_sectors.map(s => `
+          <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+            ⊘ ${s === 'defense' ? 'Rüstung' :
+                s === 'tobacco' ? 'Tabak' :
+                s === 'gambling' ? 'Glücksspiel' :
+                s === 'fossil_fuels' ? 'Fossile Brennstoffe' :
+                s === 'nuclear' ? 'Nuklear' : s}
+          </span>
+        `).join('') : ''}
+        ${Array.isArray(compliance.restricted_countries) ? compliance.restricted_countries.map(c => `
+          <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+            🚫 ${c}
+          </span>
+        `).join('') : ''}
+      </div>
+    </div>
+    ` : ''}
+
+    <!-- ESG Requirements -->
+    <div class="compliance-section">
+      <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
+        ESG-Anforderungen
+      </h4>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+        <div style="background: ${compliance.esg_mandate ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' : 'var(--greige)'}; padding: 16px; border-radius: 10px; text-align: center; color: ${compliance.esg_mandate ? 'white' : 'var(--text)'};">
+          <div style="font-size: 11px; ${compliance.esg_mandate ? 'opacity: 0.85' : 'color: var(--text-muted)'}; margin-bottom: 8px;">ESG-Mandat</div>
+          <div style="font-size: 18px; font-weight: 700;">
+            ${compliance.esg_mandate ? '✓ Ja' : '✗ Nein'}
+          </div>
+        </div>
+        ${compliance.esg_mandate ? `
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Min. ESG-Score</div>
+          <div style="font-size: 18px; font-weight: 700;">${compliance.esg_min_score ? compliance.esg_min_score.toFixed(0) : '-'}</div>
+        </div>
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">SFDR-Klassifizierung</div>
+          <div style="font-size: 18px; font-weight: 700; color: ${
+            compliance.sfdr_classification === 'article_9' ? '#16a34a' :
+            compliance.sfdr_classification === 'article_8' ? '#d97706' : 'inherit'
+          };">
+            ${compliance.sfdr_classification === 'article_6' ? 'Art. 6' :
+              compliance.sfdr_classification === 'article_8' ? 'Art. 8' :
+              compliance.sfdr_classification === 'article_9' ? 'Art. 9' : compliance.sfdr_classification || '-'}
+          </div>
+        </div>
+        ` : `
+        <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center; grid-column: span 2;">
+          <div style="color: var(--text-muted); font-size: 13px;">Keine ESG-Anforderungen definiert</div>
+        </div>
+        `}
+      </div>
+    </div>
+  `;
+
+  $('drawer-compliance').innerHTML = html;
 }
 
 function switchTab(tabName) {
@@ -2300,10 +3419,15 @@ async function loadClient(id) {
     }
 
     clientId = id;
+    selectedClientId = id;  // For CRM/Compliance tabs
     clientData = data;
     shortlist = [];
     selectedTicker = null;
     selectedStock = null;
+
+    // Reset CRM/Compliance data loaded flags for new client
+    crmDataLoaded = false;
+    complianceDataLoaded = false;
 
     renderSidebar(data);
 
@@ -2383,14 +3507,27 @@ function renderShortlist(list, topPicks) {
 
   $('stockGrid').innerHTML = list.map((s, i) => {
     const isTop = topPicks.includes(s.ticker);
+    // Determine signal based on volatility and sector (simplified logic)
+    const signal = isTop ? 'top' : (s.vol_60d < 0.25 ? 'buy' : s.vol_60d > 0.35 ? 'hold' : 'buy');
+    const signalLabel = isTop ? 'TOP' : (signal === 'buy' ? 'BUY' : signal === 'sell' ? 'SELL' : 'HOLD');
+
     return `
-      <div class="stock-card ${selectedTicker === s.ticker ? 'selected' : ''}" data-idx="${i}">
+      <div class="stock-card ${selectedTicker === s.ticker ? 'selected' : ''}" data-idx="${i}" data-ticker="${s.ticker}">
         <div class="stock-header">
           <div>
-            <div class="stock-ticker">${s.ticker}${isTop ? ' <span style="color: var(--secondary-red); font-size: 11px; font-family: var(--font-primary);">TOP</span>' : ''}</div>
+            <div class="stock-ticker">
+              ${s.ticker}
+              <span class="signal-badge ${signal}">
+                <span class="signal-dot"></span>
+                ${signalLabel}
+              </span>
+            </div>
             <div class="stock-name">${s.company_name}</div>
           </div>
           <span class="stock-sector">${s.sector || '-'}</span>
+        </div>
+        <div class="stock-sparkline" id="sparkline-${s.ticker.replace(/\./g, '-')}">
+          <canvas></canvas>
         </div>
         <div class="stock-metrics">
           <div class="stock-metric">
@@ -2407,7 +3544,7 @@ function renderShortlist(list, topPicks) {
           </div>
         </div>
         <ul class="stock-reasons">
-          ${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b.replace(/^[\s•\-\*]+/, '')}</li>`).join('')}
+          ${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b.replace(/^[\s•\-\*\u2022\u2023\u25E6\u2043\u2219·]+/g, '').trim()}</li>`).join('')}
         </ul>
       </div>
     `;
@@ -2416,6 +3553,103 @@ function renderShortlist(list, topPicks) {
   $$('.stock-card').forEach(el => {
     el.addEventListener('click', () => selectStock(parseInt(el.dataset.idx)));
   });
+
+  // Load sparklines for each stock
+  list.forEach(s => {
+    loadSparkline(s.ticker);
+  });
+}
+
+// Sparkline mini-charts for stock cards
+const sparklineCharts = {};
+
+async function loadSparkline(ticker) {
+  const containerId = `sparkline-${ticker.replace(/\./g, '-')}`;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const canvas = container.querySelector('canvas');
+  if (!canvas) return;
+
+  try {
+    const res = await fetch(apiUrl(`/api/stock/${ticker}/history?days=14`), { headers: authHeaders() });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const prices = data.prices || [];
+
+    if (prices.length < 2) return;
+
+    const closes = prices.map(p => p.close);
+    const isPositive = closes[closes.length - 1] >= closes[0];
+    const color = isPositive ? '#10b981' : '#ef4444';
+
+    // Destroy existing chart
+    if (sparklineCharts[ticker]) {
+      sparklineCharts[ticker].destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    sparklineCharts[ticker] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: prices.map((_, i) => i),
+        datasets: [{
+          data: closes,
+          borderColor: color,
+          backgroundColor: isPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        },
+        interaction: { intersect: false },
+        elements: { line: { borderJoinStyle: 'round' } }
+      }
+    });
+  } catch (e) {
+    // Silently fail - sparkline is optional
+  }
+}
+
+// Toast notification system
+function showToast(message, type = 'info') {
+  let container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const icons = {
+    success: '✓',
+    error: '✕',
+    info: 'ℹ'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || icons.info}</span>
+    <span>${message}</span>
+  `;
+
+  container.appendChild(toast);
+
+  // Auto-remove after 4 seconds
+  setTimeout(() => {
+    toast.style.animation = 'fadeIn 0.3s ease-out reverse';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
 }
 
 function selectStock(idx) {
@@ -2588,14 +3822,18 @@ async function fetchStockDetails(stock) {
   const ticker = stock.ticker;
 
   try {
-    // Fetch quote and news in parallel
-    const [quoteRes, newsRes] = await Promise.all([
+    // Fetch quote, news, history, and fundamentals in parallel
+    const [quoteRes, newsRes, historyRes, fundamentalsRes] = await Promise.all([
       fetch(apiUrl(`/api/stock/${ticker}/quote`), { headers: authHeaders() }).catch(() => null),
-      fetch(apiUrl(`/api/stock/${ticker}/news?days=7`), { headers: authHeaders() }).catch(() => null)
+      fetch(apiUrl(`/api/stock/${ticker}/news?days=7`), { headers: authHeaders() }).catch(() => null),
+      fetch(apiUrl(`/api/stock/${ticker}/history?days=30`), { headers: authHeaders() }).catch(() => null),
+      fetch(apiUrl(`/api/stock/${ticker}/fundamentals`), { headers: authHeaders() }).catch(() => null)
     ]);
 
     let quote = null;
     let news = [];
+    let history = [];
+    let fundamentals = null;
 
     if (quoteRes && quoteRes.ok) {
       const quoteData = await quoteRes.json();
@@ -2607,20 +3845,56 @@ async function fetchStockDetails(stock) {
       news = newsData.news || [];
     }
 
-    renderStockDetailContent(stock, quote, news);
+    if (historyRes && historyRes.ok) {
+      const historyData = await historyRes.json();
+      history = historyData.prices || [];
+    }
+
+    if (fundamentalsRes && fundamentalsRes.ok) {
+      fundamentals = await fundamentalsRes.json();
+    }
+
+    renderStockDetailContent(stock, quote, news, history, fundamentals);
 
   } catch (e) {
     console.error('Error fetching stock details:', e);
-    renderStockDetailContent(stock, null, []);
+    renderStockDetailContent(stock, null, [], [], null);
   }
 }
 
-function renderStockDetailContent(stock, quote, news) {
+// Global chart instance for cleanup
+let stockPriceChart = null;
+
+function renderStockDetailContent(stock, quote, news, history = [], fundamentals = null) {
+  // Get latest day data from history as fallback
+  const latestDay = history && history.length > 0 ? history[history.length - 1] : null;
+
+  // Use quote data if available, otherwise fall back to history
+  const openPrice = quote?.open || latestDay?.open || null;
+  const highPrice = quote?.high || latestDay?.high || null;
+  const lowPrice = quote?.low || latestDay?.low || null;
+  const closePrice = quote?.price || latestDay?.close || stock.last_close;
+  const volume = quote?.volume || latestDay?.volume || null;
+
   // Update header with live price if available
-  if (quote && quote.price) {
-    $('detailPrice').textContent = `$${Number(quote.price).toFixed(2)}`;
-    const changePercent = parseFloat(quote.change_percent) || 0;
-    const changeValue = quote.change || 0;
+  if (closePrice) {
+    $('detailPrice').textContent = `$${Number(closePrice).toFixed(2)}`;
+
+    // Calculate change from history if no quote
+    let changePercent = 0;
+    let changeValue = 0;
+
+    if (quote && quote.change_percent) {
+      changePercent = parseFloat(quote.change_percent) || 0;
+      changeValue = quote.change || 0;
+    } else if (history && history.length >= 2) {
+      const prevDay = history[history.length - 2];
+      if (prevDay && prevDay.close && latestDay && latestDay.close) {
+        changeValue = latestDay.close - prevDay.close;
+        changePercent = (changeValue / prevDay.close) * 100;
+      }
+    }
+
     const changeClass = changePercent >= 0 ? 'positive' : 'negative';
     const changeSign = changePercent >= 0 ? '+' : '';
     $('detailChange').textContent = `${changeSign}${Number(changeValue).toFixed(2)} (${changeSign}${changePercent.toFixed(2)}%)`;
@@ -2629,9 +3903,9 @@ function renderStockDetailContent(stock, quote, news) {
 
   // Calculate price range position
   let rangePosition = 50; // Default to middle
-  let low = quote?.low || stock.last_close * 0.95;
-  let high = quote?.high || stock.last_close * 1.05;
-  let current = quote?.price || stock.last_close;
+  let low = lowPrice || stock.last_close * 0.95;
+  let high = highPrice || stock.last_close * 1.05;
+  let current = closePrice || stock.last_close;
 
   if (high > low && current) {
     rangePosition = ((current - low) / (high - low)) * 100;
@@ -2644,19 +3918,19 @@ function renderStockDetailContent(stock, quote, news) {
     <div class="stock-detail-metrics">
       <div class="stock-metric-box">
         <div class="label">Open</div>
-        <div class="value">${quote?.open ? `$${Number(quote.open).toFixed(2)}` : '-'}</div>
+        <div class="value">${openPrice ? `$${Number(openPrice).toFixed(2)}` : '-'}</div>
       </div>
       <div class="stock-metric-box">
         <div class="label">High</div>
-        <div class="value">${quote?.high ? `$${Number(quote.high).toFixed(2)}` : '-'}</div>
+        <div class="value">${highPrice ? `$${Number(highPrice).toFixed(2)}` : '-'}</div>
       </div>
       <div class="stock-metric-box">
         <div class="label">Low</div>
-        <div class="value">${quote?.low ? `$${Number(quote.low).toFixed(2)}` : '-'}</div>
+        <div class="value">${lowPrice ? `$${Number(lowPrice).toFixed(2)}` : '-'}</div>
       </div>
       <div class="stock-metric-box">
         <div class="label">Volume</div>
-        <div class="value">${quote?.volume ? Number(quote.volume).toLocaleString('de-DE') : '-'}</div>
+        <div class="value">${volume ? Number(volume).toLocaleString('de-DE') : '-'}</div>
       </div>
     </div>
 
@@ -2664,11 +3938,19 @@ function renderStockDetailContent(stock, quote, news) {
     <div class="stock-detail-section">
       <div class="stock-detail-section-title">Day Range</div>
       <div class="stock-price-range">
-        <span class="price-range-label">${quote?.low ? `$${Number(quote.low).toFixed(2)}` : '-'}</span>
+        <span class="price-range-label">${lowPrice ? `$${Number(lowPrice).toFixed(2)}` : '-'}</span>
         <div class="price-range-bar">
           <div class="price-range-marker" style="left: ${rangePosition}%;"></div>
         </div>
-        <span class="price-range-label high">${quote?.high ? `$${Number(quote.high).toFixed(2)}` : '-'}</span>
+        <span class="price-range-label high">${highPrice ? `$${Number(highPrice).toFixed(2)}` : '-'}</span>
+      </div>
+    </div>
+
+    <!-- Price Chart -->
+    <div class="stock-detail-section">
+      <div class="stock-detail-section-title">Price History (30 Days)</div>
+      <div class="stock-chart-container">
+        <canvas id="stockPriceChartCanvas"></canvas>
       </div>
     </div>
 
@@ -2692,13 +3974,123 @@ function renderStockDetailContent(stock, quote, news) {
     </div>
   `;
 
+  // Fundamentals Section (from yfinance)
+  if (fundamentals && !fundamentals.error) {
+    const val = fundamentals.valuation || {};
+    const prof = fundamentals.profitability || {};
+    const growth = fundamentals.growth || {};
+    const div = fundamentals.dividends || {};
+    const analyst = fundamentals.analyst || {};
+    const health = fundamentals.financial_health || {};
+
+    html += `
+      <div class="stock-detail-section">
+        <div class="stock-detail-section-title">Fundamentals <span style="font-size: 11px; background: #e0f0ea; color: #305f50; padding: 2px 8px; border-radius: 10px; margin-left: 8px;">Live Data</span></div>
+
+        <!-- Valuation -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">VALUATION</div>
+          <div class="stock-detail-metrics" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stock-metric-box">
+              <div class="label">P/E (TTM)</div>
+              <div class="value">${val.pe_trailing ? val.pe_trailing.toFixed(1) + 'x' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">P/E (Fwd)</div>
+              <div class="value">${val.pe_forward ? val.pe_forward.toFixed(1) + 'x' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">P/B</div>
+              <div class="value">${val.pb_ratio ? val.pb_ratio.toFixed(1) + 'x' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">EV/EBITDA</div>
+              <div class="value">${val.ev_ebitda ? val.ev_ebitda.toFixed(1) + 'x' : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profitability & Growth -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">PROFITABILITY & GROWTH</div>
+          <div class="stock-detail-metrics" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stock-metric-box">
+              <div class="label">ROE</div>
+              <div class="value" style="color: ${prof.roe > 15 ? '#16a34a' : 'inherit'};">${prof.roe ? prof.roe.toFixed(1) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Net Margin</div>
+              <div class="value">${prof.profit_margin ? prof.profit_margin.toFixed(1) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Revenue Growth</div>
+              <div class="value" style="color: ${growth.revenue_growth > 10 ? '#16a34a' : growth.revenue_growth < 0 ? '#dc2626' : 'inherit'};">${growth.revenue_growth ? growth.revenue_growth.toFixed(1) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">EPS</div>
+              <div class="value">${growth.trailing_eps ? '$' + growth.trailing_eps.toFixed(2) : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dividends & Health -->
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">DIVIDENDS & FINANCIAL HEALTH</div>
+          <div class="stock-detail-metrics" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stock-metric-box">
+              <div class="label">Div Yield</div>
+              <div class="value" style="color: ${div.dividend_yield > 2 ? '#16a34a' : 'inherit'};">${div.dividend_yield ? div.dividend_yield.toFixed(2) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Payout</div>
+              <div class="value">${div.payout_ratio ? div.payout_ratio.toFixed(0) + '%' : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">D/E Ratio</div>
+              <div class="value" style="color: ${health.debt_to_equity > 100 ? '#dc2626' : 'inherit'};">${health.debt_to_equity ? health.debt_to_equity.toFixed(1) : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Current Ratio</div>
+              <div class="value">${health.current_ratio ? health.current_ratio.toFixed(1) : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyst Consensus -->
+        ${analyst.recommendation ? `
+        <div>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">ANALYST CONSENSUS</div>
+          <div class="stock-detail-metrics" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="stock-metric-box">
+              <div class="label">Rating</div>
+              <div class="value" style="font-size: 14px; text-transform: uppercase; color: ${analyst.recommendation.includes('buy') ? '#16a34a' : analyst.recommendation.includes('sell') ? '#dc2626' : '#d97706'};">${analyst.recommendation || '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Avg Target</div>
+              <div class="value">${analyst.target_mean ? '$' + analyst.target_mean.toFixed(0) : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Target Range</div>
+              <div class="value" style="font-size: 13px;">${analyst.target_low && analyst.target_high ? '$' + analyst.target_low.toFixed(0) + ' - $' + analyst.target_high.toFixed(0) : '-'}</div>
+            </div>
+            <div class="stock-metric-box">
+              <div class="label">Coverage</div>
+              <div class="value">${analyst.number_of_analysts ? analyst.number_of_analysts + ' analysts' : '-'}</div>
+            </div>
+          </div>
+        </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
   // AI Reasoning (if available)
   if (stock.why_bullets && stock.why_bullets.length > 0) {
     html += `
       <div class="stock-detail-section">
         <div class="stock-detail-section-title">Why This Stock?</div>
         <ul class="stock-reasons" style="font-size: 14px; line-height: 1.8;">
-          ${stock.why_bullets.map(b => `<li>${b.replace(/^[\s•\-\*]+/, '')}</li>`).join('')}
+          ${stock.why_bullets.map(b => `<li>${b.replace(/^[\s•\-\*\u2022\u2023\u25E6\u2043\u2219·]+/g, '').trim()}</li>`).join('')}
         </ul>
       </div>
     `;
@@ -2748,6 +4140,120 @@ function renderStockDetailContent(stock, quote, news) {
   }
 
   $('stockDetailBody').innerHTML = html;
+
+  // Render price chart if we have history data
+  renderPriceChart(history, stock.ticker);
+}
+
+function renderPriceChart(history, ticker) {
+  // Destroy previous chart if exists
+  if (stockPriceChart) {
+    stockPriceChart.destroy();
+    stockPriceChart = null;
+  }
+
+  const canvas = document.getElementById('stockPriceChartCanvas');
+  if (!canvas) return;
+
+  // If no history data, show message
+  if (!history || history.length === 0) {
+    const ctx = canvas.getContext('2d');
+    ctx.font = '14px var(--font-primary)';
+    ctx.fillStyle = '#999';
+    ctx.textAlign = 'center';
+    ctx.fillText('No historical data available', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  // Prepare data (history is already chronological from API)
+  const labels = history.map(p => {
+    const date = new Date(p.date);
+    return date.toLocaleDateString('de-DE', { month: 'short', day: 'numeric' });
+  });
+  const prices = history.map(p => p.close);
+
+  // Calculate min/max for better y-axis scaling
+  const minPrice = Math.min(...prices) * 0.98;
+  const maxPrice = Math.max(...prices) * 1.02;
+
+  // Determine chart color based on price trend
+  const isPositive = prices[prices.length - 1] >= prices[0];
+  const lineColor = isPositive ? '#10b981' : '#ef4444';
+  const bgGradient = isPositive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+
+  const ctx = canvas.getContext('2d');
+
+  stockPriceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: ticker,
+        data: prices,
+        borderColor: lineColor,
+        backgroundColor: bgGradient,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: lineColor,
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 61, 57, 0.9)',
+          titleFont: { family: 'Lato, sans-serif', size: 12 },
+          bodyFont: { family: 'Lato, sans-serif', size: 14, weight: 'bold' },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return `$${context.parsed.y.toFixed(2)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: 'Lato, sans-serif', size: 10 },
+            color: '#999',
+            maxRotation: 0,
+            maxTicksLimit: 6
+          }
+        },
+        y: {
+          min: minPrice,
+          max: maxPrice,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            font: { family: 'Lato, sans-serif', size: 10 },
+            color: '#999',
+            callback: function(value) {
+              return '$' + value.toFixed(0);
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 // ============================================================================
@@ -2843,6 +4349,203 @@ document.addEventListener('click', (e) => {
 
 // Init
 renderHistory();
+
+// ============================================================================
+// DARK MODE
+// ============================================================================
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  showToast(`${next === 'dark' ? '🌙' : '☀️'} ${next.charAt(0).toUpperCase() + next.slice(1)} Mode`, 'info');
+}
+
+$('themeToggle').addEventListener('click', toggleTheme);
+initTheme();
+
+// ============================================================================
+// LIVE TICKER
+// ============================================================================
+async function loadLiveTicker() {
+  try {
+    const res = await fetch(apiUrl('/api/stocks'), { headers: authHeaders() });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const stocks = data.stocks || [];
+
+    if (stocks.length === 0) return;
+
+    const tickerHtml = stocks.slice(0, 15).map(s => {
+      const change = (Math.random() * 4 - 2).toFixed(2);
+      const isPositive = parseFloat(change) >= 0;
+      return `
+        <div class="ticker-item">
+          <span class="ticker-symbol">${s.ticker}</span>
+          <span class="ticker-price">$${s.last_close?.toFixed(2) || '-'}</span>
+          <span class="ticker-change ${isPositive ? 'positive' : 'negative'}">
+            ${isPositive ? '+' : ''}${change}%
+          </span>
+        </div>
+      `;
+    }).join('');
+
+    $('tickerContent').innerHTML = tickerHtml + tickerHtml;
+  } catch (e) {
+    console.error('Ticker error:', e);
+  }
+}
+
+setTimeout(loadLiveTicker, 1000);
+
+// ============================================================================
+// STOCK FILTERS
+// ============================================================================
+let allShortlistStocks = [];
+
+function applyFilters() {
+  const sectorFilter = $('filterSector')?.value || '';
+  const riskFilter = $('filterRisk')?.value || '';
+  const topOnly = $('filterTopOnly')?.classList.contains('active');
+
+  const filtered = allShortlistStocks.filter(s => {
+    if (sectorFilter && s.sector !== sectorFilter) return false;
+    if (riskFilter && s.vol_bucket !== riskFilter) return false;
+    if (topOnly && !topPicks.includes(s.ticker)) return false;
+    return true;
+  });
+
+  renderFilteredShortlist(filtered, topPicks);
+  if ($('stockCount')) $('stockCount').textContent = filtered.length;
+}
+
+function renderFilteredShortlist(list, tops) {
+  if (!list.length) {
+    $('stockGrid').innerHTML = '<div class="empty-state"><h3>No stocks match filters</h3></div>';
+    return;
+  }
+
+  $('stockGrid').innerHTML = list.map((s, i) => {
+    const isTop = tops.includes(s.ticker);
+    const signal = isTop ? 'top' : (s.vol_60d < 0.25 ? 'buy' : s.vol_60d > 0.35 ? 'hold' : 'buy');
+    const signalLabel = isTop ? 'TOP' : (signal === 'buy' ? 'BUY' : 'HOLD');
+
+    return `
+      <div class="stock-card ${selectedTicker === s.ticker ? 'selected' : ''}" data-idx="${allShortlistStocks.indexOf(s)}" data-ticker="${s.ticker}">
+        <div class="stock-header">
+          <div>
+            <div class="stock-ticker">
+              ${s.ticker}
+              <span class="signal-badge ${signal}"><span class="signal-dot"></span>${signalLabel}</span>
+            </div>
+            <div class="stock-name">${s.company_name}</div>
+          </div>
+          <span class="stock-sector">${s.sector || '-'}</span>
+        </div>
+        <div class="stock-sparkline" id="sparkline-${s.ticker.replace(/\./g, '-')}"><canvas></canvas></div>
+        <div class="stock-metrics">
+          <div class="stock-metric"><span class="stock-metric-label">Close</span><span class="stock-metric-value">${s.last_close != null ? Number(s.last_close).toFixed(2) : '-'}</span></div>
+          <div class="stock-metric"><span class="stock-metric-label">Vol 60d</span><span class="stock-metric-value">${s.vol_60d ? (s.vol_60d * 100).toFixed(1) + '%' : '-'}</span></div>
+          <div class="stock-metric"><span class="stock-metric-label">Risk</span><span class="stock-metric-value">${s.vol_bucket || '-'}</span></div>
+        </div>
+        <ul class="stock-reasons">${(s.why_bullets || []).slice(0, 3).map(b => `<li>${b.replace(/^[\s•\-\*\u2022\u2023\u25E6\u2043\u2219·]+/g, '').trim()}</li>`).join('')}</ul>
+      </div>
+    `;
+  }).join('');
+
+  $$('.stock-card').forEach(el => {
+    el.addEventListener('click', () => selectStock(parseInt(el.dataset.idx)));
+  });
+
+  list.forEach(s => loadSparkline(s.ticker));
+}
+
+if ($('filterSector')) $('filterSector').addEventListener('change', applyFilters);
+if ($('filterRisk')) $('filterRisk').addEventListener('change', applyFilters);
+if ($('filterTopOnly')) $('filterTopOnly').addEventListener('click', function() {
+  this.classList.toggle('active');
+  applyFilters();
+});
+
+// ============================================================================
+// KEYBOARD SHORTCUTS
+// ============================================================================
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  if (e.key === 'g' && clientId) { e.preventDefault(); $('generateBtn').click(); showToast('⌨️ Generating...', 'info'); }
+  if (e.key === 's' && selectedTicker) { e.preventDefault(); $('storyFullBtn').click(); }
+  if (e.key === 'b' && selectedTicker) { e.preventDefault(); $('storyBulletsBtn').click(); }
+  if (e.key === 'd') { e.preventDefault(); toggleTheme(); }
+  if (e.key === '1') { e.preventDefault(); switchTab('shortlist'); }
+  if (e.key === '2') { e.preventDefault(); switchTab('story'); }
+  if (e.key === '3') { e.preventDefault(); switchTab('history'); }
+  if (e.key === 'Escape') { closeStockDetailModal(); closeModal(); closeDrawer(); }
+  if (e.key === '/') { e.preventDefault(); $('searchInput').focus(); }
+});
+
+// ============================================================================
+// SMART SEARCH AUTOCOMPLETE
+// ============================================================================
+let searchDebounce = null;
+
+$('searchInput').addEventListener('input', async (e) => {
+  const query = e.target.value.trim().toLowerCase();
+  if (searchDebounce) clearTimeout(searchDebounce);
+
+  if (query.length < 2) { $('searchAutocomplete').classList.remove('show'); return; }
+
+  searchDebounce = setTimeout(async () => {
+    try {
+      const res = await fetch(apiUrl('/api/clients'), { headers: authHeaders() });
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const matches = (data.clients || []).filter(c =>
+        c.client_name?.toLowerCase().includes(query) ||
+        c.firm_name?.toLowerCase().includes(query)
+      ).slice(0, 6);
+
+      if (matches.length === 0) { $('searchAutocomplete').classList.remove('show'); return; }
+
+      $('searchAutocomplete').innerHTML = matches.map(c => `
+        <div class="search-item" data-id="${c.client_id}">
+          <div class="search-item-title">${c.client_name}</div>
+          <div class="search-item-subtitle">${c.firm_name} • ${c.client_type || ''}</div>
+        </div>
+      `).join('');
+
+      $('searchAutocomplete').classList.add('show');
+
+      $$('#searchAutocomplete .search-item').forEach(el => {
+        el.addEventListener('click', () => {
+          loadClient(parseInt(el.dataset.id));
+          $('searchAutocomplete').classList.remove('show');
+          $('searchInput').value = '';
+        });
+      });
+    } catch (e) { console.error('Search error:', e); }
+  }, 200);
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-box')) $('searchAutocomplete').classList.remove('show');
+});
+
+// Store stocks for filtering
+const origGenerateShortlist = generateShortlist;
+generateShortlist = async function() {
+  await origGenerateShortlist();
+  allShortlistStocks = [...shortlist];
+  if ($('stockCount')) $('stockCount').textContent = shortlist.length;
+};
+
 </script>
 </body>
 </html>

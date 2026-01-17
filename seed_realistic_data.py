@@ -16,6 +16,7 @@ Usage:
 
 import sqlite3
 import random
+import json
 from datetime import datetime, timedelta
 import os
 
@@ -254,6 +255,11 @@ def create_database():
 
     # Drop existing tables to ensure clean schema
     conn.executescript("""
+        DROP TABLE IF EXISTS src_client_events;
+        DROP TABLE IF EXISTS src_client_compliance;
+        DROP TABLE IF EXISTS src_client_contact_prefs;
+        DROP TABLE IF EXISTS src_client_email_activity;
+        DROP TABLE IF EXISTS src_client_meetings;
         DROP TABLE IF EXISTS src_positions;
         DROP TABLE IF EXISTS src_portfolio_snapshots;
         DROP TABLE IF EXISTS src_trade_executions;
@@ -393,6 +399,117 @@ def create_database():
             currency TEXT DEFAULT 'EUR',
             FOREIGN KEY (stock_id) REFERENCES src_stocks(stock_id),
             UNIQUE(stock_id, price_date)
+        );
+
+        -- CRM Data: Meetings & Events
+        CREATE TABLE src_client_meetings (
+            meeting_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER NOT NULL,
+            meeting_date TEXT NOT NULL,
+            meeting_type TEXT NOT NULL,  -- 'in_person', 'video_call', 'roadshow', 'conference', 'dinner'
+            location TEXT,
+            duration_minutes INTEGER,
+            attendees TEXT,  -- JSON array of names
+            topics_discussed TEXT,  -- JSON array of topics
+            outcome TEXT,  -- 'positive', 'neutral', 'follow_up_needed'
+            notes TEXT,
+            organizer TEXT,  -- ODDO employee name
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (client_id) REFERENCES src_clients(client_id)
+        );
+
+        -- CRM Data: Email Activity Summary
+        CREATE TABLE src_client_email_activity (
+            activity_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER NOT NULL,
+            month TEXT NOT NULL,  -- '2024-01' format
+            emails_sent INTEGER DEFAULT 0,
+            emails_received INTEGER DEFAULT 0,
+            avg_response_time_hours REAL,  -- Average time to respond
+            emails_opened INTEGER DEFAULT 0,
+            links_clicked INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (client_id) REFERENCES src_clients(client_id),
+            UNIQUE(client_id, month)
+        );
+
+        -- CRM Data: Contact Preferences
+        CREATE TABLE src_client_contact_prefs (
+            pref_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER NOT NULL UNIQUE,
+            preferred_channel TEXT DEFAULT 'phone',  -- 'phone', 'email', 'video', 'in_person'
+            preferred_time TEXT,  -- 'morning', 'afternoon', 'evening'
+            preferred_days TEXT,  -- JSON array: ['Monday', 'Tuesday']
+            preferred_frequency TEXT DEFAULT 'weekly',  -- 'daily', 'weekly', 'bi-weekly', 'monthly'
+            language TEXT DEFAULT 'English',
+            timezone TEXT DEFAULT 'CET',
+            do_not_contact_until TEXT,  -- Date if temporarily unavailable
+            notes TEXT,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (client_id) REFERENCES src_clients(client_id)
+        );
+
+        -- Compliance/KYC Data
+        CREATE TABLE src_client_compliance (
+            compliance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER NOT NULL UNIQUE,
+
+            -- KYC Status
+            kyc_status TEXT DEFAULT 'approved',  -- 'pending', 'approved', 'expired', 'review_needed'
+            kyc_expiry_date TEXT,
+            kyc_last_review TEXT,
+            kyc_risk_rating TEXT DEFAULT 'standard',  -- 'low', 'standard', 'enhanced'
+
+            -- Investor Classification (MiFID II)
+            investor_type TEXT DEFAULT 'professional',  -- 'retail', 'professional', 'eligible_counterparty'
+            mifid_category TEXT,
+
+            -- Investment Mandate
+            mandate_type TEXT,  -- 'discretionary', 'advisory', 'execution_only'
+            aum_declared REAL,  -- AUM in EUR (if disclosed)
+            aum_currency TEXT DEFAULT 'EUR',
+
+            -- Restrictions
+            allowed_instruments TEXT,  -- JSON: ['equities', 'bonds', 'derivatives']
+            restricted_sectors TEXT,  -- JSON: ['defense', 'tobacco']
+            restricted_countries TEXT,  -- JSON: ['Russia', 'Iran']
+            max_single_position_pct REAL,  -- Max % in single position
+            leverage_allowed INTEGER DEFAULT 0,  -- Boolean
+            derivatives_allowed INTEGER DEFAULT 1,  -- Boolean
+            short_selling_allowed INTEGER DEFAULT 0,  -- Boolean
+
+            -- ESG Requirements
+            esg_mandate INTEGER DEFAULT 0,  -- Boolean: must follow ESG
+            esg_min_score REAL,  -- Minimum ESG score required
+            sfdr_classification TEXT,  -- 'article_6', 'article_8', 'article_9'
+            exclusion_list TEXT,  -- JSON: specific exclusions
+
+            -- Regulatory
+            reporting_requirements TEXT,  -- JSON: required reports
+            tax_status TEXT,
+            domicile_country TEXT,
+
+            notes TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (client_id) REFERENCES src_clients(client_id)
+        );
+
+        -- CRM: Conference/Event Attendance
+        CREATE TABLE src_client_events (
+            event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER NOT NULL,
+            event_name TEXT NOT NULL,
+            event_type TEXT,  -- 'conference', 'webinar', 'roadshow', 'company_visit'
+            event_date TEXT NOT NULL,
+            location TEXT,
+            attended INTEGER DEFAULT 1,  -- Boolean
+            registered INTEGER DEFAULT 1,  -- Boolean
+            sessions_attended TEXT,  -- JSON array
+            feedback_score INTEGER,  -- 1-5 rating
+            notes TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (client_id) REFERENCES src_clients(client_id)
         );
     """)
 
@@ -837,6 +954,393 @@ def insert_sample_prices(conn):
     print(f"  Inserted {price_count} price records")
 
 
+# =============================================================================
+# CRM DATA: Meetings, Email Activity, Contact Preferences
+# =============================================================================
+
+ODDO_EMPLOYEES = [
+    "Marc Lefèvre", "Sophie Dubois", "Thomas Müller", "Anna Schmidt",
+    "Pierre Martin", "Claire Bernard", "Hans Weber", "Marie Laurent"
+]
+
+MEETING_TYPES = ["in_person", "video_call", "roadshow", "conference", "dinner"]
+MEETING_LOCATIONS = [
+    "ODDO BHF Paris HQ", "ODDO BHF Frankfurt", "Client Office",
+    "Le Bristol Paris", "Savoy London", "Four Seasons Munich",
+    "Virtual (Teams)", "Virtual (Zoom)", "Davos WEF", "Monaco Investor Day"
+]
+
+MEETING_TOPICS = [
+    "Portfolio Review", "Market Outlook", "Sector Deep-Dive",
+    "New IPO Discussion", "Risk Assessment", "ESG Strategy",
+    "Q4 Earnings Preview", "Rate Environment", "China Exposure",
+    "Tech Sector Rotation", "Energy Transition", "AI Investment Thesis"
+]
+
+ODDO_EVENTS = [
+    {"name": "ODDO BHF Forum Frankfurt", "type": "conference", "location": "Frankfurt"},
+    {"name": "ODDO BHF CEO Conference Paris", "type": "conference", "location": "Paris"},
+    {"name": "European Small & Mid Cap Conference", "type": "conference", "location": "Lyon"},
+    {"name": "German Investment Seminar", "type": "conference", "location": "Munich"},
+    {"name": "ODDO BHF Sustainability Day", "type": "conference", "location": "Paris"},
+    {"name": "Automotive Sector Roadshow", "type": "roadshow", "location": "Stuttgart"},
+    {"name": "Tech Sector Webinar", "type": "webinar", "location": "Virtual"},
+    {"name": "Luxury Goods Company Visit", "type": "company_visit", "location": "Paris"},
+    {"name": "Healthcare Innovation Day", "type": "webinar", "location": "Virtual"},
+    {"name": "Banking Sector Update", "type": "webinar", "location": "Virtual"},
+]
+
+
+def insert_client_meetings(conn):
+    """Insert realistic meeting history."""
+    print("Inserting client meetings...")
+
+    conn.execute("DELETE FROM src_client_meetings")
+
+    cur = conn.execute("SELECT client_id, client_name, firm_name, region FROM src_clients")
+    clients = [dict(row) for row in cur.fetchall()]
+
+    meeting_count = 0
+    today = datetime.now()
+
+    for client in clients:
+        # Each client has 5-15 meetings over the past 2 years
+        num_meetings = random.randint(5, 15)
+
+        for _ in range(num_meetings):
+            # Random date in past 2 years
+            days_ago = random.randint(1, 730)
+            meeting_date = today - timedelta(days=days_ago)
+
+            meeting_type = random.choice(MEETING_TYPES)
+            location = random.choice(MEETING_LOCATIONS)
+
+            # Adjust location based on type
+            if meeting_type == "video_call":
+                location = random.choice(["Virtual (Teams)", "Virtual (Zoom)"])
+            elif meeting_type == "dinner":
+                location = random.choice(["Le Bristol Paris", "Savoy London", "Four Seasons Munich"])
+
+            duration = random.choice([30, 45, 60, 90, 120]) if meeting_type != "dinner" else random.randint(90, 180)
+
+            topics = random.sample(MEETING_TOPICS, random.randint(2, 4))
+            outcome = random.choices(
+                ["positive", "neutral", "follow_up_needed"],
+                weights=[0.5, 0.35, 0.15]
+            )[0]
+
+            organizer = random.choice(ODDO_EMPLOYEES)
+
+            conn.execute("""
+                INSERT INTO src_client_meetings
+                (client_id, meeting_date, meeting_type, location, duration_minutes,
+                 attendees, topics_discussed, outcome, organizer)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                client["client_id"],
+                meeting_date.strftime("%Y-%m-%d %H:%M"),
+                meeting_type,
+                location,
+                duration,
+                json.dumps([client["client_name"], organizer]),
+                json.dumps(topics),
+                outcome,
+                organizer
+            ))
+            meeting_count += 1
+
+    conn.commit()
+    print(f"  Inserted {meeting_count} meetings")
+
+
+def insert_email_activity(conn):
+    """Insert email activity summaries by month."""
+    print("Inserting email activity...")
+
+    conn.execute("DELETE FROM src_client_email_activity")
+
+    cur = conn.execute("SELECT client_id, client_type FROM src_clients")
+    clients = [dict(row) for row in cur.fetchall()]
+
+    activity_count = 0
+
+    # Generate 18 months of email activity
+    for month_offset in range(18):
+        month_date = datetime.now() - timedelta(days=month_offset * 30)
+        month_str = month_date.strftime("%Y-%m")
+
+        for client in clients:
+            # Activity level based on client type
+            if client["client_type"] in ["Hedge Fund", "Asset Manager"]:
+                base_sent = random.randint(15, 40)
+                base_received = random.randint(10, 30)
+            elif client["client_type"] in ["Pension Fund", "Sovereign Wealth"]:
+                base_sent = random.randint(5, 15)
+                base_received = random.randint(3, 10)
+            else:
+                base_sent = random.randint(8, 25)
+                base_received = random.randint(5, 15)
+
+            # Add some randomness
+            emails_sent = max(1, base_sent + random.randint(-5, 5))
+            emails_received = max(1, base_received + random.randint(-3, 3))
+            emails_opened = int(emails_sent * random.uniform(0.6, 0.95))
+            links_clicked = int(emails_opened * random.uniform(0.1, 0.4))
+
+            # Response time (hours) - faster for active clients
+            avg_response = random.uniform(2, 48) if client["client_type"] == "Hedge Fund" else random.uniform(4, 72)
+
+            conn.execute("""
+                INSERT INTO src_client_email_activity
+                (client_id, month, emails_sent, emails_received, avg_response_time_hours,
+                 emails_opened, links_clicked)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                client["client_id"],
+                month_str,
+                emails_sent,
+                emails_received,
+                round(avg_response, 1),
+                emails_opened,
+                links_clicked
+            ))
+            activity_count += 1
+
+    conn.commit()
+    print(f"  Inserted {activity_count} email activity records")
+
+
+def insert_contact_preferences(conn):
+    """Insert contact preferences for each client."""
+    print("Inserting contact preferences...")
+
+    conn.execute("DELETE FROM src_client_contact_prefs")
+
+    cur = conn.execute("SELECT client_id, client_type, region FROM src_clients")
+    clients = [dict(row) for row in cur.fetchall()]
+
+    for client in clients:
+        # Preferences based on client type
+        if client["client_type"] == "Hedge Fund":
+            channel = random.choice(["phone", "phone", "email"])
+            frequency = random.choice(["daily", "weekly"])
+            time = "morning"
+        elif client["client_type"] in ["Pension Fund", "Insurance"]:
+            channel = random.choice(["email", "video", "in_person"])
+            frequency = random.choice(["weekly", "bi-weekly", "monthly"])
+            time = random.choice(["morning", "afternoon"])
+        else:
+            channel = random.choice(["phone", "email", "video"])
+            frequency = random.choice(["weekly", "bi-weekly"])
+            time = random.choice(["morning", "afternoon"])
+
+        # Language based on region
+        if client["region"] in ["DACH"]:
+            language = random.choice(["German", "English"])
+        elif client["region"] in ["France"]:
+            language = random.choice(["French", "English"])
+        else:
+            language = "English"
+
+        # Preferred days
+        days = random.sample(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], random.randint(3, 5))
+
+        conn.execute("""
+            INSERT INTO src_client_contact_prefs
+            (client_id, preferred_channel, preferred_time, preferred_days,
+             preferred_frequency, language, timezone)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            client["client_id"],
+            channel,
+            time,
+            json.dumps(days),
+            frequency,
+            language,
+            "CET" if client["region"] in ["DACH", "France", "Benelux"] else "GMT"
+        ))
+
+    conn.commit()
+    print(f"  Inserted {len(clients)} contact preferences")
+
+
+def insert_client_events(conn):
+    """Insert event attendance history."""
+    print("Inserting event attendance...")
+
+    conn.execute("DELETE FROM src_client_events")
+
+    cur = conn.execute("SELECT client_id, client_type, region FROM src_clients")
+    clients = [dict(row) for row in cur.fetchall()]
+
+    event_count = 0
+    today = datetime.now()
+
+    for client in clients:
+        # Each client attends 2-8 events over 2 years
+        num_events = random.randint(2, 8)
+        attended_events = random.sample(ODDO_EVENTS, min(num_events, len(ODDO_EVENTS)))
+
+        for event in attended_events:
+            # Random date in past 2 years
+            days_ago = random.randint(1, 730)
+            event_date = today - timedelta(days=days_ago)
+
+            # Some registered but didn't attend
+            registered = 1
+            attended = 1 if random.random() > 0.15 else 0
+
+            feedback = random.randint(3, 5) if attended else None
+
+            conn.execute("""
+                INSERT INTO src_client_events
+                (client_id, event_name, event_type, event_date, location,
+                 registered, attended, feedback_score)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                client["client_id"],
+                event["name"],
+                event["type"],
+                event_date.strftime("%Y-%m-%d"),
+                event["location"],
+                registered,
+                attended,
+                feedback
+            ))
+            event_count += 1
+
+    conn.commit()
+    print(f"  Inserted {event_count} event attendance records")
+
+
+# =============================================================================
+# COMPLIANCE / KYC DATA
+# =============================================================================
+
+def insert_compliance_data(conn):
+    """Insert compliance and KYC data for each client."""
+    print("Inserting compliance/KYC data...")
+
+    conn.execute("DELETE FROM src_client_compliance")
+
+    cur = conn.execute("SELECT client_id, client_type, region FROM src_clients")
+    clients = [dict(row) for row in cur.fetchall()]
+
+    for client in clients:
+        # KYC status - most are approved
+        kyc_status = random.choices(
+            ["approved", "approved", "approved", "review_needed", "pending"],
+            weights=[0.7, 0.15, 0.05, 0.07, 0.03]
+        )[0]
+
+        # KYC expiry - within next 2 years
+        kyc_expiry = datetime.now() + timedelta(days=random.randint(30, 730))
+        kyc_last_review = datetime.now() - timedelta(days=random.randint(30, 365))
+
+        # Risk rating based on client type
+        if client["client_type"] == "Hedge Fund":
+            kyc_risk = random.choice(["standard", "enhanced"])
+        elif client["client_type"] in ["Pension Fund", "Insurance", "Sovereign Wealth"]:
+            kyc_risk = "low"
+        else:
+            kyc_risk = random.choice(["low", "standard"])
+
+        # Investor type (MiFID II)
+        if client["client_type"] in ["Pension Fund", "Insurance", "Sovereign Wealth", "Asset Manager"]:
+            investor_type = "professional"
+        elif client["client_type"] == "Hedge Fund":
+            investor_type = random.choice(["professional", "eligible_counterparty"])
+        else:
+            investor_type = random.choice(["professional", "retail"])
+
+        # Mandate type
+        mandate_type = random.choice(["discretionary", "advisory", "execution_only"])
+
+        # AUM (if disclosed)
+        if client["client_type"] == "Sovereign Wealth":
+            aum = random.uniform(50_000_000_000, 500_000_000_000)
+        elif client["client_type"] == "Pension Fund":
+            aum = random.uniform(10_000_000_000, 100_000_000_000)
+        elif client["client_type"] == "Asset Manager":
+            aum = random.uniform(5_000_000_000, 80_000_000_000)
+        elif client["client_type"] == "Hedge Fund":
+            aum = random.uniform(500_000_000, 20_000_000_000)
+        else:
+            aum = random.uniform(100_000_000, 5_000_000_000)
+
+        # Allowed instruments
+        if client["client_type"] == "Pension Fund":
+            allowed = ["equities", "bonds", "etf"]
+        elif client["client_type"] == "Hedge Fund":
+            allowed = ["equities", "bonds", "derivatives", "etf", "fx", "commodities"]
+        else:
+            allowed = random.sample(["equities", "bonds", "derivatives", "etf"], random.randint(2, 4))
+
+        # Restricted sectors (some have ESG restrictions)
+        restricted_sectors = []
+        if random.random() > 0.6:
+            restricted_sectors = random.sample(["defense", "tobacco", "gambling", "fossil_fuels", "nuclear"], random.randint(1, 3))
+
+        # Restricted countries
+        restricted_countries = ["Russia", "North Korea", "Iran"]
+        if random.random() > 0.7:
+            restricted_countries.append("China")
+
+        # ESG mandate
+        has_esg = random.random() > 0.4
+        esg_min_score = random.uniform(50, 70) if has_esg else None
+        sfdr = random.choice(["article_6", "article_8", "article_9"]) if has_esg else "article_6"
+
+        # Trading permissions
+        derivatives_allowed = 1 if client["client_type"] == "Hedge Fund" else random.choice([0, 1])
+        short_selling = 1 if client["client_type"] == "Hedge Fund" else 0
+        leverage = 1 if client["client_type"] == "Hedge Fund" else 0
+        max_position = random.choice([5, 10, 15, 20]) if client["client_type"] != "Hedge Fund" else None
+
+        # Domicile
+        domicile_map = {
+            "DACH": random.choice(["Germany", "Austria", "Switzerland"]),
+            "France": "France",
+            "Benelux": random.choice(["Netherlands", "Belgium", "Luxembourg"]),
+            "UK": "United Kingdom",
+            "Nordics": random.choice(["Norway", "Sweden", "Denmark", "Finland"])
+        }
+        domicile = domicile_map.get(client["region"], "Luxembourg")
+
+        conn.execute("""
+            INSERT INTO src_client_compliance
+            (client_id, kyc_status, kyc_expiry_date, kyc_last_review, kyc_risk_rating,
+             investor_type, mandate_type, aum_declared, allowed_instruments,
+             restricted_sectors, restricted_countries, max_single_position_pct,
+             leverage_allowed, derivatives_allowed, short_selling_allowed,
+             esg_mandate, esg_min_score, sfdr_classification, domicile_country)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            client["client_id"],
+            kyc_status,
+            kyc_expiry.strftime("%Y-%m-%d"),
+            kyc_last_review.strftime("%Y-%m-%d"),
+            kyc_risk,
+            investor_type,
+            mandate_type,
+            aum,
+            json.dumps(allowed),
+            json.dumps(restricted_sectors),
+            json.dumps(restricted_countries),
+            max_position,
+            leverage,
+            derivatives_allowed,
+            short_selling,
+            1 if has_esg else 0,
+            esg_min_score,
+            sfdr,
+            domicile
+        ))
+
+    conn.commit()
+    print(f"  Inserted {len(clients)} compliance records")
+
+
 def main():
     """Main execution."""
     print("=" * 60)
@@ -863,6 +1367,13 @@ def main():
     insert_trades(conn)
     insert_portfolios(conn)
     insert_sample_prices(conn)
+
+    # CRM & Compliance data
+    insert_client_meetings(conn)
+    insert_email_activity(conn)
+    insert_contact_preferences(conn)
+    insert_client_events(conn)
+    insert_compliance_data(conn)
 
     conn.close()
 

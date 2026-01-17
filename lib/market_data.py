@@ -346,15 +346,53 @@ class MarketDataClient:
 
     def _map_to_finnhub(self, symbol: str) -> str:
         """Map ticker to Finnhub format."""
-        # Finnhub uses different formats for international stocks
-        # US stocks work as-is, European stocks need exchange suffix
+        # Finnhub uses exchange:symbol format for European stocks
+        mappings = {
+            # German stocks (XETRA)
+            "SIE.DE": "XETRA:SIE",
+            "DBK.DE": "XETRA:DBK",
+            "ALV.DE": "XETRA:ALV",
+            "MUV2.DE": "XETRA:MUV2",
+            "BAYN.DE": "XETRA:BAYN",
+            "VOW3.DE": "XETRA:VOW3",
+            "BMW.DE": "XETRA:BMW",
+            "MBG.DE": "XETRA:MBG",
+            "P911.DE": "XETRA:P911",
+            "ADS.DE": "XETRA:ADS",
+            "DTE.DE": "XETRA:DTE",
+            "IFNNY": "XETRA:IFX",  # Use German ticker for Infineon
 
-        # Remove existing suffixes and add Finnhub format
-        base_symbol = symbol.split(".")[0]
+            # French stocks (Euronext Paris)
+            "MC.PA": "PA:MC",
+            "RMS.PA": "PA:RMS",
+            "KER.PA": "PA:KER",
+            "OR.PA": "PA:OR",
+            "BNP.PA": "PA:BNP",
+            "GLE.PA": "PA:GLE",
+            "SAN.PA": "PA:SAN",
+            "TTE.PA": "PA:TTE",
+            "AIR.PA": "PA:AIR",
+            "SU.PA": "PA:SU",
+            "DG.PA": "PA:DG",
+            "ENGI.PA": "PA:ENGI",
+            "DSY.PA": "PA:DSY",
 
-        # Most European stocks need to be mapped to US ADRs or direct listings
-        # For simplicity, we'll try the base symbol first
-        return base_symbol
+            # Dutch stocks
+            "INGA.AS": "AS:INGA",
+
+            # Swiss stocks
+            "ROG.SW": "SW:ROG",
+            "NESN.SW": "SW:NESN",
+            "NOVN.SW": "SW:NOVN",
+
+            # Italian stocks
+            "ENEL.MI": "MI:ENEL",
+
+            # Spanish stocks
+            "IBE.MC": "MC:IBE",
+        }
+
+        return mappings.get(symbol, symbol)
 
     def _classify_sentiment(self, headline: str) -> str:
         """Simple sentiment classification based on keywords."""
@@ -371,6 +409,283 @@ class MarketDataClient:
         elif negative_count > positive_count:
             return "negative"
         return "neutral"
+
+    # =========================================================================
+    # Market News Search (by keyword/company name)
+    # =========================================================================
+
+    def search_market_news(self, query: str, days: int = 7) -> List[Dict[str, Any]]:
+        """
+        Search general market news by keyword (e.g., company name).
+
+        Args:
+            query: Search term (company name, topic, etc.)
+            days: Days of news to fetch
+
+        Returns:
+            List of news articles
+        """
+        self._rate_limit_fh()
+
+        today = datetime.now()
+        from_date = (today - timedelta(days=days)).strftime("%Y-%m-%d")
+        to_date = today.strftime("%Y-%m-%d")
+
+        url = "https://finnhub.io/api/v1/news"
+        params = {
+            "category": "general",
+            "token": self.fh_key
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            data = response.json()
+
+            if isinstance(data, list):
+                # Filter by query in headline or summary
+                query_lower = query.lower()
+                filtered = []
+
+                for article in data:
+                    headline = article.get("headline", "").lower()
+                    summary = article.get("summary", "").lower()
+
+                    if query_lower in headline or query_lower in summary:
+                        filtered.append({
+                            "headline": article.get("headline", ""),
+                            "summary": article.get("summary", ""),
+                            "source": article.get("source", ""),
+                            "url": article.get("url", ""),
+                            "datetime": datetime.fromtimestamp(article.get("datetime", 0)).strftime("%Y-%m-%d %H:%M"),
+                            "sentiment": self._classify_sentiment(article.get("headline", "")),
+                        })
+
+                return filtered[:10]
+            return []
+
+        except Exception as e:
+            print(f"Error searching news for {query}: {e}")
+            return []
+
+    # =========================================================================
+    # Technical Indicators (Alpha Vantage)
+    # =========================================================================
+
+    def get_rsi(self, symbol: str, period: int = 14) -> Optional[Dict[str, Any]]:
+        """
+        Get RSI (Relative Strength Index) indicator.
+
+        Args:
+            symbol: Stock ticker
+            period: RSI period (default 14)
+
+        Returns:
+            RSI data or None
+        """
+        self._rate_limit_av()
+
+        av_symbol = self._map_to_alphavantage(symbol)
+
+        url = "https://www.alphavantage.co/query"
+        params = {
+            "function": "RSI",
+            "symbol": av_symbol,
+            "interval": "daily",
+            "time_period": period,
+            "series_type": "close",
+            "apikey": self.av_key
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            data = response.json()
+
+            if "Technical Analysis: RSI" in data:
+                rsi_data = data["Technical Analysis: RSI"]
+                latest_date = list(rsi_data.keys())[0]
+                latest_rsi = float(rsi_data[latest_date]["RSI"])
+
+                # Get historical for trend
+                dates = list(rsi_data.keys())[:30]
+                history = [{"date": d, "rsi": float(rsi_data[d]["RSI"])} for d in dates]
+
+                return {
+                    "symbol": symbol,
+                    "current": latest_rsi,
+                    "date": latest_date,
+                    "signal": "oversold" if latest_rsi < 30 else "overbought" if latest_rsi > 70 else "neutral",
+                    "history": history
+                }
+            return None
+
+        except Exception as e:
+            print(f"Error fetching RSI for {symbol}: {e}")
+            return None
+
+    def get_macd(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """
+        Get MACD (Moving Average Convergence Divergence) indicator.
+
+        Args:
+            symbol: Stock ticker
+
+        Returns:
+            MACD data or None
+        """
+        self._rate_limit_av()
+
+        av_symbol = self._map_to_alphavantage(symbol)
+
+        url = "https://www.alphavantage.co/query"
+        params = {
+            "function": "MACD",
+            "symbol": av_symbol,
+            "interval": "daily",
+            "series_type": "close",
+            "apikey": self.av_key
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            data = response.json()
+
+            if "Technical Analysis: MACD" in data:
+                macd_data = data["Technical Analysis: MACD"]
+                latest_date = list(macd_data.keys())[0]
+                latest = macd_data[latest_date]
+
+                macd_value = float(latest["MACD"])
+                signal_value = float(latest["MACD_Signal"])
+                histogram = float(latest["MACD_Hist"])
+
+                # Determine signal
+                signal = "bullish" if macd_value > signal_value else "bearish"
+
+                return {
+                    "symbol": symbol,
+                    "macd": macd_value,
+                    "signal_line": signal_value,
+                    "histogram": histogram,
+                    "date": latest_date,
+                    "signal": signal
+                }
+            return None
+
+        except Exception as e:
+            print(f"Error fetching MACD for {symbol}: {e}")
+            return None
+
+    def get_sma(self, symbol: str, period: int = 50) -> Optional[Dict[str, Any]]:
+        """
+        Get SMA (Simple Moving Average).
+
+        Args:
+            symbol: Stock ticker
+            period: SMA period (default 50)
+
+        Returns:
+            SMA data or None
+        """
+        self._rate_limit_av()
+
+        av_symbol = self._map_to_alphavantage(symbol)
+
+        url = "https://www.alphavantage.co/query"
+        params = {
+            "function": "SMA",
+            "symbol": av_symbol,
+            "interval": "daily",
+            "time_period": period,
+            "series_type": "close",
+            "apikey": self.av_key
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            data = response.json()
+
+            if f"Technical Analysis: SMA" in data:
+                sma_data = data["Technical Analysis: SMA"]
+                latest_date = list(sma_data.keys())[0]
+                latest_sma = float(sma_data[latest_date]["SMA"])
+
+                return {
+                    "symbol": symbol,
+                    "sma": latest_sma,
+                    "period": period,
+                    "date": latest_date
+                }
+            return None
+
+        except Exception as e:
+            print(f"Error fetching SMA for {symbol}: {e}")
+            return None
+
+    def get_bollinger_bands(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """
+        Get Bollinger Bands indicator.
+
+        Args:
+            symbol: Stock ticker
+
+        Returns:
+            Bollinger Bands data or None
+        """
+        self._rate_limit_av()
+
+        av_symbol = self._map_to_alphavantage(symbol)
+
+        url = "https://www.alphavantage.co/query"
+        params = {
+            "function": "BBANDS",
+            "symbol": av_symbol,
+            "interval": "daily",
+            "time_period": 20,
+            "series_type": "close",
+            "apikey": self.av_key
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            data = response.json()
+
+            if "Technical Analysis: BBANDS" in data:
+                bb_data = data["Technical Analysis: BBANDS"]
+                latest_date = list(bb_data.keys())[0]
+                latest = bb_data[latest_date]
+
+                return {
+                    "symbol": symbol,
+                    "upper_band": float(latest["Real Upper Band"]),
+                    "middle_band": float(latest["Real Middle Band"]),
+                    "lower_band": float(latest["Real Lower Band"]),
+                    "date": latest_date
+                }
+            return None
+
+        except Exception as e:
+            print(f"Error fetching Bollinger Bands for {symbol}: {e}")
+            return None
+
+    def get_all_indicators(self, symbol: str) -> Dict[str, Any]:
+        """
+        Get all technical indicators for a stock.
+
+        Args:
+            symbol: Stock ticker
+
+        Returns:
+            Dict with all indicators
+        """
+        return {
+            "symbol": symbol,
+            "rsi": self.get_rsi(symbol),
+            "macd": self.get_macd(symbol),
+            "sma_50": self.get_sma(symbol, 50),
+            "sma_200": self.get_sma(symbol, 200),
+            "bollinger": self.get_bollinger_bands(symbol),
+            "timestamp": datetime.now().isoformat()
+        }
 
 
 def update_database_prices(symbols: List[str] = None):
