@@ -3257,6 +3257,18 @@ function renderSidebar(data) {
       <div id="contactTimeInfo" class="contact-time-box"></div>
     </div>
 
+    <!-- CRM SUMMARY (loaded async) -->
+    <div class="summary-section" id="crmSummarySection" style="display: none;">
+      <div class="summary-title">CRM Status</div>
+      <div id="crmSummaryInfo"></div>
+    </div>
+
+    <!-- COMPLIANCE SUMMARY (loaded async) -->
+    <div class="summary-section" id="complianceSummarySection" style="display: none;">
+      <div class="summary-title">Compliance</div>
+      <div id="complianceSummaryInfo"></div>
+    </div>
+
     <button class="details-btn" onclick="openDetailsDrawer()">
       Show All Details (Calls, Trades, Reads, Positions...)
     </button>
@@ -3265,6 +3277,8 @@ function renderSidebar(data) {
   // Load async data for client goals and best contact time
   loadClientGoals(data.client?.client_id || clientId);
   loadBestContactTime(data.client?.client_id || clientId);
+  loadCRMSummary(data.client?.client_id || clientId);
+  loadComplianceSummary(data.client?.client_id || clientId);
 }
 
 // ============================================================================
@@ -3316,6 +3330,82 @@ async function loadBestContactTime(cid) {
     $('contactTimeSection').style.display = 'block';
   } catch (e) {
     console.error('Error loading contact time:', e);
+  }
+}
+
+// Load CRM Summary for sidebar
+async function loadCRMSummary(cid) {
+  if (!cid) return;
+  try {
+    const res = await fetch(apiUrl(`/api/client/${cid}/crm`), { headers: authHeaders() });
+    const data = await res.json();
+    if (data.error) return;
+
+    const engagement = data.engagement_summary || {};
+    const prefs = data.contact_preferences || {};
+
+    $('crmSummaryInfo').innerHTML = `
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+        <div style="background: var(--greige); padding: 8px; border-radius: 6px;">
+          <div style="color: var(--text-muted); font-size: 10px;">Meetings (12M)</div>
+          <div style="font-weight: 600;">${engagement.total_meetings_12m || 0}</div>
+        </div>
+        <div style="background: var(--greige); padding: 8px; border-radius: 6px;">
+          <div style="color: var(--text-muted); font-size: 10px;">Success Rate</div>
+          <div style="font-weight: 600;">${engagement.meeting_success_rate || 0}%</div>
+        </div>
+        <div style="background: var(--greige); padding: 8px; border-radius: 6px;">
+          <div style="color: var(--text-muted); font-size: 10px;">Pref. Channel</div>
+          <div style="font-weight: 600; text-transform: capitalize;">${prefs.preferred_channel || '-'}</div>
+        </div>
+        <div style="background: var(--greige); padding: 8px; border-radius: 6px;">
+          <div style="color: var(--text-muted); font-size: 10px;">Response Time</div>
+          <div style="font-weight: 600;">${engagement.avg_email_response_hours ? engagement.avg_email_response_hours + 'h' : '-'}</div>
+        </div>
+      </div>
+    `;
+    $('crmSummarySection').style.display = 'block';
+  } catch (e) {
+    console.error('Error loading CRM summary:', e);
+  }
+}
+
+// Load Compliance Summary for sidebar
+async function loadComplianceSummary(cid) {
+  if (!cid) return;
+  try {
+    const res = await fetch(apiUrl(`/api/client/${cid}/compliance`), { headers: authHeaders() });
+    const data = await res.json();
+    if (data.error || !data.compliance) return;
+
+    const c = data.compliance;
+    const kycColor = c.kyc_status === 'approved' ? '#16a34a' : c.kyc_status === 'pending' ? '#d97706' : '#dc2626';
+    const kycLabel = c.kyc_status === 'approved' ? 'OK' : c.kyc_status === 'pending' ? 'Pending' : 'Review';
+
+    const restrictions = [];
+    if (c.restricted_sectors && c.restricted_sectors.length > 0) {
+      restrictions.push(...c.restricted_sectors.slice(0, 3).map(s => s.charAt(0).toUpperCase() + s.slice(1)));
+    }
+
+    $('complianceSummaryInfo').innerHTML = `
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px;">
+        <div style="background: ${kycColor}22; color: ${kycColor}; padding: 4px 10px; border-radius: 4px; font-weight: 600;">
+          KYC: ${kycLabel}
+        </div>
+        <div style="background: var(--greige); padding: 4px 10px; border-radius: 4px;">
+          ${c.investor_type === 'professional' ? 'Professional' : c.investor_type === 'retail' ? 'Retail' : 'Counterparty'}
+        </div>
+        ${c.esg_mandate ? '<div style="background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 4px;">ESG Mandate</div>' : ''}
+      </div>
+      ${restrictions.length > 0 ? `
+        <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+          Restricted: ${restrictions.join(', ')}
+        </div>
+      ` : ''}
+    `;
+    $('complianceSummarySection').style.display = 'block';
+  } catch (e) {
+    console.error('Error loading compliance summary:', e);
   }
 }
 
@@ -3519,14 +3609,17 @@ async function generateShortlist() {
   }
 }
 
-function renderShortlist(list, topPicks) {
+function renderShortlist(list, topPicksParam) {
+  // Store topPicks globally for filtering
+  topPicks = topPicksParam || [];
+
   if (!list.length) {
     $('stockGrid').innerHTML = '<div class="empty-state"><h3>No Recommendations</h3></div>';
     return;
   }
 
   $('stockGrid').innerHTML = list.map((s, i) => {
-    const isTop = topPicks.includes(s.ticker);
+    const isTop = topPicks && topPicks.includes(s.ticker);
     // Determine signal based on volatility and sector (simplified logic)
     const signal = isTop ? 'top' : (s.vol_60d < 0.25 ? 'buy' : s.vol_60d > 0.35 ? 'hold' : 'buy');
     const signalLabel = isTop ? 'TOP' : (signal === 'buy' ? 'BUY' : signal === 'sell' ? 'SELL' : 'HOLD');
@@ -4460,6 +4553,7 @@ setTimeout(loadFilterOptions, 500);
 // STOCK FILTERS
 // ============================================================================
 let allShortlistStocks = [];
+let topPicks = [];  // Global variable to store top picks from shortlist
 
 function applyFilters() {
   const sectorFilter = $('filterSector')?.value || '';
