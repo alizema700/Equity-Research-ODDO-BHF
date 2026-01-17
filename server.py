@@ -2758,9 +2758,75 @@ async def api_client_analytics(client_id: int):
 @app.get("/api/search")
 async def api_search(q: str = Query(..., min_length=1), limit: int = 20):
     try:
-        return {"results": await search_clients(q, limit=limit)}
+        results = await search_clients(q, limit=limit)
+
+        # If no results, provide suggestions
+        suggestions = []
+        if not results:
+            # Get all unique client types for suggestions
+            types = await fetch_all("SELECT DISTINCT client_type FROM src_clients WHERE client_type IS NOT NULL")
+            suggestions = [{"type": "client_type", "value": t["client_type"]} for t in types if t.get("client_type")]
+
+            # Get some popular clients (by call activity)
+            popular = await fetch_all("""
+                SELECT c.client_id, c.client_name, c.firm_name, COUNT(cl.call_id) as calls
+                FROM src_clients c
+                LEFT JOIN src_call_logs cl ON c.client_id = cl.client_id
+                GROUP BY c.client_id
+                ORDER BY calls DESC
+                LIMIT 5
+            """)
+            suggestions.extend([{"type": "popular", "value": p["firm_name"], "client_id": p["client_id"]} for p in popular])
+
+        return {
+            "results": results,
+            "suggestions": suggestions,
+            "query": q,
+            "total_results": len(results)
+        }
     except Exception as e:
-        return JSONResponse(status_code=200, content={"error": str(e), "results": []})
+        return JSONResponse(status_code=200, content={"error": str(e), "results": [], "suggestions": []})
+
+
+@app.get("/api/clients/all")
+async def api_clients_all():
+    """Get all clients for a complete list view."""
+    try:
+        clients = await fetch_all("""
+            SELECT
+                c.client_id,
+                c.client_name,
+                c.firm_name,
+                c.client_type,
+                c.region,
+                c.aum_eur,
+                c.risk_profile,
+                COUNT(DISTINCT cl.call_id) as total_calls,
+                COUNT(DISTINCT CASE WHEN cl.call_timestamp >= date('now', '-30 days') THEN cl.call_id END) as calls_30d
+            FROM src_clients c
+            LEFT JOIN src_call_logs cl ON c.client_id = cl.client_id
+            GROUP BY c.client_id
+            ORDER BY c.firm_name
+        """)
+
+        # Format AUM nicely
+        for client in clients:
+            aum = client.get("aum_eur")
+            if aum:
+                if aum >= 1e12:
+                    client["aum_formatted"] = f"{aum/1e12:.1f}T"
+                elif aum >= 1e9:
+                    client["aum_formatted"] = f"{aum/1e9:.0f}B"
+                elif aum >= 1e6:
+                    client["aum_formatted"] = f"{aum/1e6:.0f}M"
+                else:
+                    client["aum_formatted"] = f"{aum:,.0f}"
+            else:
+                client["aum_formatted"] = "-"
+
+        return {"clients": clients, "total": len(clients)}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/client/{client_id}")
 async def api_client(client_id: int):

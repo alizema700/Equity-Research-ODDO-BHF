@@ -286,6 +286,31 @@
       color: var(--text-muted);
     }
 
+    .search-section-header {
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--greige);
+    }
+
+    .search-suggestion {
+      background: var(--greige);
+    }
+
+    .search-suggestion:hover {
+      background: var(--border);
+    }
+
+    .search-empty {
+      padding: 16px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
     /* Theme Toggle */
     .theme-toggle {
       width: 44px;
@@ -4518,43 +4543,72 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ============================================================================
-// SMART SEARCH AUTOCOMPLETE
+// SMART SEARCH AUTOCOMPLETE WITH SUGGESTIONS
 // ============================================================================
 let searchDebounce = null;
 
 $('searchInput').addEventListener('input', async (e) => {
-  const query = e.target.value.trim().toLowerCase();
+  const query = e.target.value.trim();
   if (searchDebounce) clearTimeout(searchDebounce);
 
   if (query.length < 2) { $('searchAutocomplete').classList.remove('show'); return; }
 
   searchDebounce = setTimeout(async () => {
     try {
-      const res = await fetch(apiUrl('/api/clients'), { headers: authHeaders() });
+      // Use the enhanced search endpoint
+      const res = await fetch(apiUrl(`/api/search?q=${encodeURIComponent(query)}&limit=8`), { headers: authHeaders() });
       if (!res.ok) return;
 
       const data = await res.json();
-      const matches = (data.clients || []).filter(c =>
-        c.client_name?.toLowerCase().includes(query) ||
-        c.firm_name?.toLowerCase().includes(query)
-      ).slice(0, 6);
+      const matches = data.results || [];
+      const suggestions = data.suggestions || [];
 
-      if (matches.length === 0) { $('searchAutocomplete').classList.remove('show'); return; }
+      let html = '';
 
-      $('searchAutocomplete').innerHTML = matches.map(c => `
-        <div class="search-item" data-id="${c.client_id}">
-          <div class="search-item-title">${c.client_name}</div>
-          <div class="search-item-subtitle">${c.firm_name} • ${c.client_type || ''}</div>
-        </div>
-      `).join('');
+      // Show matches
+      if (matches.length > 0) {
+        html = matches.map(c => `
+          <div class="search-item" data-id="${c.client_id}">
+            <div class="search-item-title">${c.client_name || c.primary_contact_name || 'Unknown'}</div>
+            <div class="search-item-subtitle">${c.firm_name || ''} | ${c.client_type || ''} | ${c.region || ''}</div>
+          </div>
+        `).join('');
+      } else if (suggestions.length > 0) {
+        // Show suggestions when no matches
+        html = '<div class="search-section-header">Keine Treffer. Vorschlaege:</div>';
+        html += suggestions.map(s => {
+          if (s.type === 'popular') {
+            return `<div class="search-item search-suggestion" data-id="${s.client_id}">
+              <div class="search-item-title">${s.value}</div>
+              <div class="search-item-subtitle">Aktiver Kunde</div>
+            </div>`;
+          } else if (s.type === 'client_type') {
+            return `<div class="search-item search-suggestion" data-type="${s.value}">
+              <div class="search-item-title">Suche nach: ${s.value}</div>
+              <div class="search-item-subtitle">Kundentyp</div>
+            </div>`;
+          }
+          return '';
+        }).join('');
+      } else {
+        html = '<div class="search-empty">Keine Ergebnisse gefunden</div>';
+      }
 
+      $('searchAutocomplete').innerHTML = html;
       $('searchAutocomplete').classList.add('show');
 
+      // Handle clicks on search results
       $$('#searchAutocomplete .search-item').forEach(el => {
         el.addEventListener('click', () => {
-          loadClient(parseInt(el.dataset.id));
-          $('searchAutocomplete').classList.remove('show');
-          $('searchInput').value = '';
+          if (el.dataset.id) {
+            loadClient(parseInt(el.dataset.id));
+            $('searchAutocomplete').classList.remove('show');
+            $('searchInput').value = '';
+          } else if (el.dataset.type) {
+            // Search by type
+            $('searchInput').value = el.dataset.type;
+            $('searchInput').dispatchEvent(new Event('input'));
+          }
         });
       });
     } catch (e) { console.error('Search error:', e); }
