@@ -4221,13 +4221,31 @@ function renderStockDetailContent(stock, quote, news, history = [], fundamentals
   if (news.length > 0) {
     html += `<div class="news-list">`;
     news.slice(0, 5).forEach(article => {
+      // Calculate hypothetical impact based on sentiment
+      const sentiment = article.sentiment || 'neutral';
+      let impactText = '';
+      let impactColor = '';
+      if (sentiment === 'positive' || sentiment === 'bullish') {
+        impactText = 'Potential positive catalyst (+1-3%)';
+        impactColor = '#16a34a';
+      } else if (sentiment === 'negative' || sentiment === 'bearish') {
+        impactText = 'Potential downside risk (-1-3%)';
+        impactColor = '#dc2626';
+      } else {
+        impactText = 'Neutral impact expected';
+        impactColor = '#6b7280';
+      }
+
       html += `
         <div class="news-item" onclick="window.open('${article.url}', '_blank')">
           <div class="news-headline">${article.headline}</div>
           <div class="news-meta">
-            <span class="news-sentiment ${article.sentiment || 'neutral'}">${article.sentiment || 'neutral'}</span>
+            <span class="news-sentiment ${sentiment}">${sentiment}</span>
             <span>${article.source || 'Unknown'}</span>
             <span>${article.datetime || ''}</span>
+          </div>
+          <div style="font-size: 11px; color: ${impactColor}; margin-top: 6px; font-style: italic;">
+            Hypothetical: ${impactText}
           </div>
         </div>
       `;
