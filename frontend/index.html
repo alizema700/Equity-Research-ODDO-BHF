@@ -3501,23 +3501,23 @@ function renderCRMPanel(data) {
     <!-- Recent Meetings -->
     <div class="crm-section">
       <h4 style="margin: 0 0 12px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Letzte Meetings
+        Recent Meetings
       </h4>
       ${meetings.length > 0 ? `
         <table class="detail-table">
           <thead>
-            <tr><th>Datum</th><th>Typ</th><th>Ort</th><th>Dauer</th><th>Themen</th><th>Ergebnis</th></tr>
+            <tr><th>Date</th><th>Type</th><th>Location</th><th>Duration</th><th>Topics</th><th>Outcome</th></tr>
           </thead>
           <tbody>
             ${meetings.slice(0, 10).map(m => `
               <tr>
-                <td class="date">${m.meeting_date ? new Date(m.meeting_date).toLocaleDateString('de-DE') : '-'}</td>
+                <td class="date">${m.meeting_date ? new Date(m.meeting_date).toLocaleDateString('en-US') : '-'}</td>
                 <td>
                   <span class="tag neutral" style="text-transform: capitalize;">
-                    ${m.meeting_type === 'in_person' ? 'Persönlich' :
+                    ${m.meeting_type === 'in_person' ? 'In Person' :
                       m.meeting_type === 'video_call' ? 'Video' :
                       m.meeting_type === 'roadshow' ? 'Roadshow' :
-                      m.meeting_type === 'conference' ? 'Konferenz' :
+                      m.meeting_type === 'conference' ? 'Conference' :
                       m.meeting_type === 'dinner' ? 'Dinner' : m.meeting_type || '-'}
                   </span>
                 </td>
@@ -3528,7 +3528,7 @@ function renderCRMPanel(data) {
                 </td>
                 <td>
                   <span class="tag ${m.outcome === 'positive' ? 'buy' : m.outcome === 'follow_up_needed' ? 'sell' : 'neutral'}">
-                    ${m.outcome === 'positive' ? 'Positiv' :
+                    ${m.outcome === 'positive' ? 'Positive' :
                       m.outcome === 'follow_up_needed' ? 'Follow-up' : 'Neutral'}
                   </span>
                 </td>
@@ -3536,20 +3536,20 @@ function renderCRMPanel(data) {
             `).join('')}
           </tbody>
         </table>
-      ` : '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Keine Meetings vorhanden</div>'}
+      ` : '<div style="color: var(--text-muted); text-align: center; padding: 20px;">No meetings available</div>'}
     </div>
 
     <!-- Events Attended -->
     ${events.length > 0 ? `
     <div class="crm-section" style="margin-top: 24px;">
       <h4 style="margin: 0 0 12px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Event-Teilnahme
+        Event Attendance
       </h4>
       <div style="display: flex; flex-wrap: wrap; gap: 8px;">
         ${events.slice(0, 6).map(e => `
           <div style="background: var(--greige); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
             <span style="font-weight: 600;">${e.event_name}</span>
-            <span style="color: var(--text-muted); margin-left: 8px;">${e.event_date ? new Date(e.event_date).toLocaleDateString('de-DE') : ''}</span>
+            <span style="color: var(--text-muted); margin-left: 8px;">${e.event_date ? new Date(e.event_date).toLocaleDateString('en-US') : ''}</span>
             ${e.feedback_score ? `<span style="margin-left: 8px;">${e.feedback_score}/5</span>` : ''}
           </div>
         `).join('')}
@@ -3573,13 +3573,13 @@ async function loadComplianceData(clientId) {
     complianceDataLoaded = true;
   } catch (e) {
     console.error('Error loading compliance data:', e);
-    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Fehler beim Laden der Compliance-Daten</div>`;
+    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Error loading compliance data</div>`;
   }
 }
 
 function renderCompliancePanel(compliance) {
   if (!compliance) {
-    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Keine Compliance-Daten vorhanden</div>`;
+    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">No compliance data available</div>`;
     return;
   }
 
@@ -3747,7 +3747,7 @@ function renderCompliancePanel(compliance) {
         </div>
         ` : `
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center; grid-column: span 2;">
-          <div style="color: var(--text-muted); font-size: 13px;">Keine ESG-Anforderungen definiert</div>
+          <div style="color: var(--text-muted); font-size: 13px;">No ESG requirements defined</div>
         </div>
         `}
       </div>
@@ -5382,23 +5382,23 @@ $('searchInput').addEventListener('input', async (e) => {
         `).join('');
       } else if (suggestions.length > 0) {
         // Show suggestions when no matches
-        html = '<div class="search-section-header">Keine Treffer. Vorschlaege:</div>';
+        html = '<div class="search-section-header">No matches. Suggestions:</div>';
         html += suggestions.map(s => {
           if (s.type === 'popular') {
             return `<div class="search-item search-suggestion" data-id="${s.client_id}">
               <div class="search-item-title">${s.value}</div>
-              <div class="search-item-subtitle">Aktiver Kunde</div>
+              <div class="search-item-subtitle">Active Client</div>
             </div>`;
           } else if (s.type === 'client_type') {
             return `<div class="search-item search-suggestion" data-type="${s.value}">
-              <div class="search-item-title">Suche nach: ${s.value}</div>
-              <div class="search-item-subtitle">Kundentyp</div>
+              <div class="search-item-title">Search for: ${s.value}</div>
+              <div class="search-item-subtitle">Client Type</div>
             </div>`;
           }
           return '';
         }).join('');
       } else {
-        html = '<div class="search-empty">Keine Ergebnisse gefunden</div>';
+        html = '<div class="search-empty">No results found</div>';
       }
 
       $('searchAutocomplete').innerHTML = html;
