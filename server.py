@@ -4076,3 +4076,16 @@ async def api_market_summary():
         "sectors": sectors,
         "last_updated": stocks[0]["price_date"] if stocks else None,
     }
+
+if __name__ == "__main__":
+    import argparse
+    import uvicorn
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--host", type=str, default="0.0.0.0")
+    parser.add_argument("--with-api", action="store_true", help="Enable external API calls")
+    args = parser.parse_args()
+    
+    uvicorn.run(app, host=args.host, port=args.port)
+
