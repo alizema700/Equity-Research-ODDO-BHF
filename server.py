@@ -1672,6 +1672,111 @@ async def build_avoid_tickers(client_id: int) -> List[str]:
 
     return sorted(avoid)
 
+
+async def get_client_compliance_restrictions(client_id: int) -> Dict[str, Any]:
+    """
+    Get compliance restrictions for a client.
+    Returns restricted sectors, volatility limits, ESG requirements.
+    """
+    # Get from compliance table
+    compliance = await fetch_one("""
+        SELECT restricted_sectors, esg_mandate, esg_min_score, sfdr_classification,
+               max_single_position_pct, derivatives_allowed, short_selling_allowed
+        FROM src_client_compliance
+        WHERE client_id = :cid
+    """, {"cid": client_id})
+
+    # Also get from client table (new fields)
+    client_info = await fetch_one("""
+        SELECT client_type, risk_profile, restricted_sectors as client_restricted_sectors,
+               preferred_sectors, esg_mandate as client_esg_mandate
+        FROM src_clients
+        WHERE client_id = :cid
+    """, {"cid": client_id})
+
+    restrictions = {
+        "restricted_sectors": [],
+        "volatility_limit": None,  # 'low', 'medium', or None for no limit
+        "esg_required": False,
+        "client_type": None,
+        "risk_profile": "moderate",
+    }
+
+    if client_info:
+        restrictions["client_type"] = client_info.get("client_type")
+        restrictions["risk_profile"] = client_info.get("risk_profile") or "moderate"
+
+        # Parse client-level restricted sectors
+        client_sectors = client_info.get("client_restricted_sectors")
+        if client_sectors:
+            try:
+                parsed = json.loads(client_sectors) if isinstance(client_sectors, str) else client_sectors
+                if isinstance(parsed, list):
+                    restrictions["restricted_sectors"].extend(parsed)
+            except:
+                pass
+
+        restrictions["esg_required"] = bool(client_info.get("client_esg_mandate"))
+
+    if compliance:
+        # Parse compliance-level restricted sectors
+        comp_sectors = compliance.get("restricted_sectors")
+        if comp_sectors:
+            try:
+                parsed = json.loads(comp_sectors) if isinstance(comp_sectors, str) else comp_sectors
+                if isinstance(parsed, list):
+                    restrictions["restricted_sectors"].extend(parsed)
+            except:
+                pass
+
+        restrictions["esg_required"] = restrictions["esg_required"] or bool(compliance.get("esg_mandate"))
+
+    # Apply automatic restrictions based on client type
+    client_type = restrictions["client_type"]
+    if client_type in ["Pension Fund", "Insurance"]:
+        # Pension funds typically can't invest in high-volatility defense stocks
+        restrictions["volatility_limit"] = "medium"
+        if "defense" not in restrictions["restricted_sectors"]:
+            restrictions["restricted_sectors"].append("defense")
+        if "Defense" not in restrictions["restricted_sectors"]:
+            restrictions["restricted_sectors"].append("Defense")
+
+    if restrictions["risk_profile"] == "conservative":
+        restrictions["volatility_limit"] = "medium"
+
+    # Remove duplicates
+    restrictions["restricted_sectors"] = list(set(restrictions["restricted_sectors"]))
+
+    return restrictions
+
+
+async def filter_stocks_by_compliance(stocks: List[Dict[str, Any]], restrictions: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Filter stocks based on compliance restrictions.
+    """
+    filtered = []
+    restricted_sectors = [s.lower() for s in restrictions.get("restricted_sectors", [])]
+    volatility_limit = restrictions.get("volatility_limit")
+
+    for stock in stocks:
+        sector = (stock.get("sector") or "").lower()
+
+        # Check sector restrictions
+        if any(rs in sector for rs in restricted_sectors):
+            continue
+
+        # Check volatility restrictions
+        vol = stock.get("volatility", "medium")
+        if volatility_limit:
+            if volatility_limit == "low" and vol in ["medium", "high"]:
+                continue
+            if volatility_limit == "medium" and vol == "high":
+                continue
+
+        filtered.append(stock)
+
+    return filtered
+
 async def build_candidate_universe(client_id: int, max_candidates: int = 120) -> List[Dict[str, Any]]:
     """
     Build a reasonable candidate set from src_stocks using client signals:
@@ -1680,10 +1785,14 @@ async def build_candidate_universe(client_id: int, max_candidates: int = 120) ->
       - call-linked stock_id (src_call_logs.stock_id)
       - portfolio top_sector/top_theme (int_client_portfolio_summary)
       - plus diversifiers (other sectors)
+      - COMPLIANCE FILTERING: removes stocks from restricted sectors/volatility
     Returns list of stock rows from src_stocks.
     """
     prof = await get_client_profile(client_id)
     psum = await get_client_portfolio_summary(client_id)
+
+    # Get compliance restrictions for this client
+    compliance_restrictions = await get_client_compliance_restrictions(client_id)
 
     top_sector = (psum.get("top_sector") or "").strip()
     top_theme = (psum.get("top_theme") or "").strip()
@@ -1729,6 +1838,9 @@ async def build_candidate_universe(client_id: int, max_candidates: int = 120) ->
                 region,
                 market_cap_bucket,
                 theme_tag,
+                volatility,
+                dividend_yield,
+                beta,
                 created_at
             FROM src_stocks
             WHERE ticker IN ({placeholders})
@@ -1756,6 +1868,9 @@ async def build_candidate_universe(client_id: int, max_candidates: int = 120) ->
                 region,
                 market_cap_bucket,
                 theme_tag,
+                volatility,
+                dividend_yield,
+                beta,
                 created_at
             FROM src_stocks
             WHERE stock_id IN ({placeholders})
@@ -1789,6 +1904,9 @@ async def build_candidate_universe(client_id: int, max_candidates: int = 120) ->
                 region,
                 market_cap_bucket,
                 theme_tag,
+                volatility,
+                dividend_yield,
+                beta,
                 created_at
             FROM src_stocks
             WHERE ({where})
@@ -1810,6 +1928,9 @@ async def build_candidate_universe(client_id: int, max_candidates: int = 120) ->
                 region,
                 market_cap_bucket,
                 theme_tag,
+                volatility,
+                dividend_yield,
+                beta,
                 created_at
             FROM src_stocks
             WHERE sector != :top_sector
@@ -1828,6 +1949,9 @@ async def build_candidate_universe(client_id: int, max_candidates: int = 120) ->
                 region,
                 market_cap_bucket,
                 theme_tag,
+                volatility,
+                dividend_yield,
+                beta,
                 created_at
             FROM src_stocks
             LIMIT 120
@@ -1843,8 +1967,12 @@ async def build_candidate_universe(client_id: int, max_candidates: int = 120) ->
                 continue
             merged[sid] = s
 
+    # Apply compliance filtering (restricted sectors, volatility limits)
+    all_stocks = list(merged.values())
+    compliant_stocks = await filter_stocks_by_compliance(all_stocks, compliance_restrictions)
+
     # trim
-    out = list(merged.values())[:max_candidates]
+    out = compliant_stocks[:max_candidates]
     return out
 
 async def build_client_context(client_id: int) -> Dict[str, Any]:
@@ -2066,6 +2194,18 @@ RULES
 - top_picks must be EXACTLY 2 tickers and must be in shortlist
 - vol_bucket: decide using vol_60d only if present; else "unknown"
 - Do NOT output markdown. Do NOT output extra keys. JSON only.
+
+WHY_BULLETS FORMAT REQUIREMENTS:
+Each bullet MUST include a specific data source reference. Examples:
+- "Matches client's {sector} sector focus (portfolio top_sector: {value})"
+- "Discussed in recent call on {date} - client expressed interest in {topic}"
+- "Client read {report_count} reports on similar stocks in last 30 days (reading_focus_sector)"
+- "Aligns with {theme} theme preference (dominant_theme from profile)"
+- "Suitable for {risk_appetite} risk profile - volatility {vol_60d}%"
+- "Diversifies away from current top_sector exposure"
+- "Low volatility ({vol_60d}%) matches conservative mandate"
+- "Mentioned in position_hints from call notes"
+Do NOT use generic bullets like "Good investment" - always cite specific data!
 
 ANALYST INSTRUCTION:
 {instruction}
@@ -2500,6 +2640,60 @@ async def api_analytics():
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
+@app.get("/api/filters")
+async def api_get_filters():
+    """
+    Get available filter options (sectors, volatility levels) for the shortlist UI.
+    """
+    try:
+        # Get all unique sectors from stocks
+        sectors = await fetch_all("""
+            SELECT DISTINCT sector
+            FROM src_stocks
+            WHERE sector IS NOT NULL AND sector != ''
+            ORDER BY sector
+        """)
+
+        # Get all unique volatility levels
+        volatilities = await fetch_all("""
+            SELECT DISTINCT volatility
+            FROM src_stocks
+            WHERE volatility IS NOT NULL AND volatility != ''
+            ORDER BY
+                CASE volatility
+                    WHEN 'low' THEN 1
+                    WHEN 'medium' THEN 2
+                    WHEN 'high' THEN 3
+                    ELSE 4
+                END
+        """)
+
+        # Get all unique themes
+        themes = await fetch_all("""
+            SELECT DISTINCT theme_tag
+            FROM src_stocks
+            WHERE theme_tag IS NOT NULL AND theme_tag != ''
+            ORDER BY theme_tag
+        """)
+
+        # Get all unique regions
+        regions = await fetch_all("""
+            SELECT DISTINCT region
+            FROM src_stocks
+            WHERE region IS NOT NULL AND region != ''
+            ORDER BY region
+        """)
+
+        return {
+            "sectors": [s["sector"] for s in sectors] if sectors else [],
+            "volatilities": [v["volatility"] for v in volatilities] if volatilities else ["low", "medium", "high"],
+            "themes": [t["theme_tag"] for t in themes] if themes else [],
+            "regions": [r["region"] for r in regions] if regions else [],
+        }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
 @app.get("/api/analytics/client/{client_id}")
 async def api_client_analytics(client_id: int):
     """
@@ -2576,9 +2770,75 @@ async def api_client_analytics(client_id: int):
 @app.get("/api/search")
 async def api_search(q: str = Query(..., min_length=1), limit: int = 20):
     try:
-        return {"results": await search_clients(q, limit=limit)}
+        results = await search_clients(q, limit=limit)
+
+        # If no results, provide suggestions
+        suggestions = []
+        if not results:
+            # Get all unique client types for suggestions
+            types = await fetch_all("SELECT DISTINCT client_type FROM src_clients WHERE client_type IS NOT NULL")
+            suggestions = [{"type": "client_type", "value": t["client_type"]} for t in types if t.get("client_type")]
+
+            # Get some popular clients (by call activity)
+            popular = await fetch_all("""
+                SELECT c.client_id, c.client_name, c.firm_name, COUNT(cl.call_id) as calls
+                FROM src_clients c
+                LEFT JOIN src_call_logs cl ON c.client_id = cl.client_id
+                GROUP BY c.client_id
+                ORDER BY calls DESC
+                LIMIT 5
+            """)
+            suggestions.extend([{"type": "popular", "value": p["firm_name"], "client_id": p["client_id"]} for p in popular])
+
+        return {
+            "results": results,
+            "suggestions": suggestions,
+            "query": q,
+            "total_results": len(results)
+        }
     except Exception as e:
-        return JSONResponse(status_code=200, content={"error": str(e), "results": []})
+        return JSONResponse(status_code=200, content={"error": str(e), "results": [], "suggestions": []})
+
+
+@app.get("/api/clients/all")
+async def api_clients_all():
+    """Get all clients for a complete list view."""
+    try:
+        clients = await fetch_all("""
+            SELECT
+                c.client_id,
+                c.client_name,
+                c.firm_name,
+                c.client_type,
+                c.region,
+                c.aum_eur,
+                c.risk_profile,
+                COUNT(DISTINCT cl.call_id) as total_calls,
+                COUNT(DISTINCT CASE WHEN cl.call_timestamp >= date('now', '-30 days') THEN cl.call_id END) as calls_30d
+            FROM src_clients c
+            LEFT JOIN src_call_logs cl ON c.client_id = cl.client_id
+            GROUP BY c.client_id
+            ORDER BY c.firm_name
+        """)
+
+        # Format AUM nicely
+        for client in clients:
+            aum = client.get("aum_eur")
+            if aum:
+                if aum >= 1e12:
+                    client["aum_formatted"] = f"{aum/1e12:.1f}T"
+                elif aum >= 1e9:
+                    client["aum_formatted"] = f"{aum/1e9:.0f}B"
+                elif aum >= 1e6:
+                    client["aum_formatted"] = f"{aum/1e6:.0f}M"
+                else:
+                    client["aum_formatted"] = f"{aum:,.0f}"
+            else:
+                client["aum_formatted"] = "-"
+
+        return {"clients": clients, "total": len(clients)}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/client/{client_id}")
 async def api_client(client_id: int):
@@ -2904,37 +3164,35 @@ async def api_client_preferences(client_id: int):
         # If we have real preferences, use them
         if real_prefs:
             if real_prefs.get("prefers_dividends"):
-                goals.append({"goal": "Dividend Income", "icon": "💰", "description": "Focus on dividend-paying stocks", "source": "stated"})
+                goals.append({"goal": "Dividend Income", "icon": "", "description": "Focus on dividend-paying stocks", "source": "stated"})
             if real_prefs.get("prefers_growth"):
-                goals.append({"goal": "Growth Stocks", "icon": "📈", "description": "Focus on capital appreciation", "source": "stated"})
+                goals.append({"goal": "Growth Stocks", "icon": "", "description": "Focus on capital appreciation", "source": "stated"})
             if real_prefs.get("prefers_esg"):
-                goals.append({"goal": "ESG Focus", "icon": "🌱", "description": "Environmental, Social, Governance criteria", "source": "stated"})
+                goals.append({"goal": "ESG Focus", "icon": "", "description": "Environmental, Social, Governance criteria", "source": "stated"})
             if real_prefs.get("prefers_value"):
-                goals.append({"goal": "Value Investing", "icon": "💎", "description": "Undervalued stocks with margin of safety", "source": "stated"})
+                goals.append({"goal": "Value Investing", "icon": "", "description": "Undervalued stocks with margin of safety", "source": "stated"})
             if real_prefs.get("prefers_momentum"):
-                goals.append({"goal": "Momentum Strategy", "icon": "🚀", "description": "Following market trends", "source": "stated"})
+                goals.append({"goal": "Momentum Strategy", "icon": "", "description": "Following market trends", "source": "stated"})
 
             # Sector preferences
             if real_prefs.get("preferred_sectors"):
                 sectors = real_prefs["preferred_sectors"].split(",")[:3]
-                goals.append({"goal": f"Sectors: {', '.join(sectors)}", "icon": "🏢", "description": "Preferred sector exposure", "source": "stated"})
+                goals.append({"goal": f"Sectors: {', '.join(sectors)}", "icon": "", "description": "Preferred sector exposure", "source": "stated"})
 
             # Theme preferences
             if real_prefs.get("preferred_themes"):
                 themes = real_prefs["preferred_themes"].split(",")[:2]
-                theme_icons = {"ESG": "🌱", "AI": "🤖", "Tech": "💻", "Dividends": "💰", "Automation": "🤖"}
                 for theme in themes:
-                    icon = theme_icons.get(theme.strip(), "📊")
-                    goals.append({"goal": f"{theme.strip()} Theme", "icon": icon, "description": "Thematic focus", "source": "stated"})
+                    goals.append({"goal": f"{theme.strip()} Theme", "icon": "", "description": "Thematic focus", "source": "stated"})
 
             # Risk constraints
             if real_prefs.get("max_volatility"):
                 vol_pct = int(real_prefs["max_volatility"] * 100)
-                goals.append({"goal": f"Max Vol: {vol_pct}%", "icon": "🛡️", "description": f"Volatility limit: {vol_pct}%", "source": "stated"})
+                goals.append({"goal": f"Max Vol: {vol_pct}%", "icon": "", "description": f"Volatility limit: {vol_pct}%", "source": "stated"})
 
             if real_prefs.get("min_dividend_yield"):
                 yield_pct = real_prefs["min_dividend_yield"] * 100
-                goals.append({"goal": f"Min Yield: {yield_pct:.1f}%", "icon": "💵", "description": f"Minimum dividend yield requirement", "source": "stated"})
+                goals.append({"goal": f"Min Yield: {yield_pct:.1f}%", "icon": "", "description": f"Minimum dividend yield requirement", "source": "stated"})
 
             return {
                 "client_id": client_id,
@@ -2951,23 +3209,21 @@ async def api_client_preferences(client_id: int):
         # Fall back to INFERRED preferences if no real data
         risk_appetite = profile.get("risk_appetite", "Moderate")
         if risk_appetite == "Aggressive":
-            goals.append({"goal": "Alpha Generation", "icon": "🎯", "description": "Seeking high returns (inferred)", "source": "inferred"})
-            goals.append({"goal": "Growth Stocks", "icon": "📈", "description": "Focus on capital appreciation (inferred)", "source": "inferred"})
+            goals.append({"goal": "Alpha Generation", "icon": "", "description": "Seeking high returns (inferred)", "source": "inferred"})
+            goals.append({"goal": "Growth Stocks", "icon": "", "description": "Focus on capital appreciation (inferred)", "source": "inferred"})
         elif risk_appetite == "Conservative":
-            goals.append({"goal": "Capital Preservation", "icon": "🛡️", "description": "Prioritizing stability (inferred)", "source": "inferred"})
-            goals.append({"goal": "Dividend Income", "icon": "💰", "description": "Seeking income streams (inferred)", "source": "inferred"})
+            goals.append({"goal": "Capital Preservation", "icon": "", "description": "Prioritizing stability (inferred)", "source": "inferred"})
+            goals.append({"goal": "Dividend Income", "icon": "", "description": "Seeking income streams (inferred)", "source": "inferred"})
         else:
-            goals.append({"goal": "Balanced Growth", "icon": "⚖️", "description": "Mix of growth and income (inferred)", "source": "inferred"})
+            goals.append({"goal": "Balanced Growth", "icon": "", "description": "Mix of growth and income (inferred)", "source": "inferred"})
 
         top_sector = psum.get("top_sector", "")
         if top_sector:
-            goals.append({"goal": f"{top_sector} Focus", "icon": "🏢", "description": f"Primary sector exposure (inferred)", "source": "inferred"})
+            goals.append({"goal": f"{top_sector} Focus", "icon": "", "description": f"Primary sector exposure (inferred)", "source": "inferred"})
 
         top_theme = psum.get("top_theme", "")
         if top_theme and top_theme.lower() not in ["none", "null", ""]:
-            theme_icons = {"ESG": "🌱", "AI": "🤖", "Tech": "💻", "Healthcare": "🏥", "Energy": "⚡"}
-            icon = theme_icons.get(top_theme, "📊")
-            goals.append({"goal": f"{top_theme} Theme", "icon": icon, "description": "Thematic focus (inferred)", "source": "inferred"})
+            goals.append({"goal": f"{top_theme} Theme", "icon": "", "description": "Thematic focus (inferred)", "source": "inferred"})
 
         return {
             "client_id": client_id,
@@ -3820,3 +4076,16 @@ async def api_market_summary():
         "sectors": sectors,
         "last_updated": stocks[0]["price_date"] if stocks else None,
     }
+
+if __name__ == "__main__":
+    import argparse
+    import uvicorn
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--host", type=str, default="0.0.0.0")
+    parser.add_argument("--with-api", action="store_true", help="Enable external API calls")
+    args = parser.parse_args()
+    
+    uvicorn.run(app, host=args.host, port=args.port)
+

@@ -3,10 +3,11 @@ Realistic Seed Data for ODDO BHF Client Intelligence Platform
 =============================================================
 
 This script replaces synthetic data with realistic:
-- Real European stocks (ODDO BHF coverage universe)
-- Realistic institutional clients
+- Real European stocks (ODDO BHF coverage universe) - 174+ stocks
+- Realistic institutional clients - 46+ diverse clients
 - Call history referencing actual market events (2023/2024)
 - Realistic research reports
+- CRM and Compliance/KYC data
 
 Usage:
     python seed_realistic_data.py [--with-api]
@@ -19,6 +20,20 @@ import random
 import json
 from datetime import datetime, timedelta
 import os
+import sys
+
+# Add data directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "data"))
+
+# Import expanded data
+try:
+    from expanded_stocks import EXPANDED_STOCKS
+    from expanded_clients import EXPANDED_CLIENTS
+    print("Using expanded stock and client data")
+except ImportError:
+    EXPANDED_STOCKS = None
+    EXPANDED_CLIENTS = None
+    print("Warning: Expanded data not found, using default data")
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data.db")
 
@@ -282,6 +297,9 @@ def create_database():
             region TEXT,
             market_cap_bucket TEXT,
             theme_tag TEXT,
+            volatility TEXT DEFAULT 'medium',  -- low, medium, high
+            dividend_yield REAL DEFAULT 0,
+            beta REAL DEFAULT 1.0,
             is_active INTEGER DEFAULT 1,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -296,6 +314,12 @@ def create_database():
             primary_contact_role TEXT,
             email TEXT,
             phone TEXT,
+            aum_eur REAL,  -- Assets under management in EUR
+            risk_profile TEXT DEFAULT 'moderate',  -- conservative, moderate, aggressive
+            investment_horizon TEXT DEFAULT 'medium',  -- short, medium, long
+            preferred_sectors TEXT,  -- JSON array
+            restricted_sectors TEXT,  -- JSON array
+            esg_mandate INTEGER DEFAULT 0,  -- Boolean
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -518,39 +542,68 @@ def create_database():
 
 
 def insert_stocks(conn):
-    """Insert real stocks."""
+    """Insert real stocks with extended metadata."""
     print("Inserting real stocks...")
 
     # Clear existing
     conn.execute("DELETE FROM src_stocks")
 
-    for stock in REAL_STOCKS:
+    # Use expanded data if available, otherwise fall back to REAL_STOCKS
+    stocks_to_insert = EXPANDED_STOCKS if EXPANDED_STOCKS else REAL_STOCKS
+
+    for stock in stocks_to_insert:
         conn.execute("""
-            INSERT INTO src_stocks (ticker, company_name, sector, region, market_cap_bucket, theme_tag)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (stock["ticker"], stock["company_name"], stock["sector"],
-              stock["region"], stock["market_cap_bucket"], stock["theme_tag"]))
+            INSERT INTO src_stocks (ticker, company_name, sector, region, market_cap_bucket, theme_tag,
+                                   volatility, dividend_yield, beta)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            stock["ticker"],
+            stock["company_name"],
+            stock["sector"],
+            stock["region"],
+            stock["market_cap_bucket"],
+            stock["theme_tag"],
+            stock.get("volatility", "medium"),
+            stock.get("dividend_yield", 0),
+            stock.get("beta", 1.0)
+        ))
 
     conn.commit()
-    print(f"  Inserted {len(REAL_STOCKS)} stocks")
+    print(f"  Inserted {len(stocks_to_insert)} stocks")
 
 
 def insert_clients(conn):
-    """Insert realistic clients."""
+    """Insert realistic clients with extended profiles."""
     print("Inserting realistic clients...")
 
     # Clear existing
     conn.execute("DELETE FROM src_clients")
 
-    for client in REAL_CLIENTS:
+    # Use expanded data if available, otherwise fall back to REAL_CLIENTS
+    clients_to_insert = EXPANDED_CLIENTS if EXPANDED_CLIENTS else REAL_CLIENTS
+
+    for client in clients_to_insert:
         conn.execute("""
-            INSERT INTO src_clients (client_name, firm_name, client_type, region, email)
-            VALUES (?, ?, ?, ?, ?)
-        """, (client["client_name"], client["firm_name"], client["client_type"],
-              client["region"], client["email"]))
+            INSERT INTO src_clients (client_name, firm_name, client_type, region, email,
+                                    aum_eur, risk_profile, investment_horizon,
+                                    preferred_sectors, restricted_sectors, esg_mandate)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            client["client_name"],
+            client["firm_name"],
+            client["client_type"],
+            client["region"],
+            client["email"],
+            client.get("aum_eur"),
+            client.get("risk_profile", "moderate"),
+            client.get("investment_horizon", "medium"),
+            json.dumps(client.get("preferred_sectors", [])),
+            json.dumps(client.get("restricted_sectors", [])),
+            1 if client.get("esg_mandate", False) else 0
+        ))
 
     conn.commit()
-    print(f"  Inserted {len(REAL_CLIENTS)} clients")
+    print(f"  Inserted {len(clients_to_insert)} clients")
 
 
 def get_stock_id(conn, ticker):
@@ -561,7 +614,7 @@ def get_stock_id(conn, ticker):
 
 
 def insert_call_logs(conn):
-    """Insert realistic call logs based on market events."""
+    """Insert realistic call logs with per-client activity variation based on client type."""
     print("Inserting realistic call logs...")
 
     # Clear existing
@@ -571,61 +624,93 @@ def insert_call_logs(conn):
     cur = conn.execute("SELECT client_id, client_name, firm_name, client_type FROM src_clients")
     clients = [dict(row) for row in cur.fetchall()]
 
+    # Get all stocks
+    cur = conn.execute("SELECT stock_id, ticker, company_name, sector FROM src_stocks")
+    stocks = [dict(row) for row in cur.fetchall()]
+
+    # Define activity levels by client type (total calls over 2 years)
+    activity_levels = {
+        "Hedge Fund": (60, 120),      # Very active: 60-120 calls total
+        "Asset Manager": (30, 70),    # Active: 30-70 calls total
+        "Family Office": (15, 40),    # Moderate: 15-40 calls total
+        "Private Bank": (25, 55),     # Moderate-active: 25-55 calls total
+        "Pension Fund": (10, 25),     # Conservative: 10-25 calls total
+        "Insurance": (8, 20),         # Conservative: 8-20 calls total
+        "Sovereign Wealth": (15, 35), # Selective: 15-35 calls total
+    }
+
     call_count = 0
+    today = datetime.now()
 
-    for event in MARKET_EVENTS_2023_2024:
-        period = event["period"]
-        year, month = period.split("-")
+    for client in clients:
+        client_type = client.get("client_type", "Asset Manager")
+        min_calls, max_calls = activity_levels.get(client_type, (20, 50))
+        total_calls = random.randint(min_calls, max_calls)
 
-        # Generate calls for this period
-        for _ in range(random.randint(15, 30)):
-            client = random.choice(clients)
-            ticker = random.choice(event["stocks"])
-            stock_id = get_stock_id(conn, ticker)
+        # Generate calls spread over 2 years
+        for _ in range(total_calls):
+            # Random date in past 2 years
+            days_ago = random.randint(1, 730)
+            call_date = today - timedelta(days=days_ago)
 
-            if not stock_id:
-                continue
+            # Skip weekends
+            while call_date.weekday() >= 5:
+                call_date -= timedelta(days=1)
 
-            # Random day in the month
-            day = random.randint(1, 28)
             hour = random.randint(8, 17)
             minute = random.choice([0, 15, 30, 45])
+            call_timestamp = call_date.strftime(f"%Y-%m-%d {hour:02d}:{minute:02d}:00")
 
-            call_timestamp = f"{year}-{month}-{day:02d} {hour:02d}:{minute:02d}:00"
+            # Pick a random stock
+            stock = random.choice(stocks)
 
-            # Get company name
-            cur = conn.execute("SELECT company_name, sector FROM src_stocks WHERE stock_id = ?", (stock_id,))
-            stock_info = cur.fetchone()
-            company_name = stock_info[0] if stock_info else ticker
-            sector = stock_info[1] if stock_info else "Unknown"
+            # Create client-type specific notes
+            notes_templates = {
+                "Hedge Fund": [
+                    f"Discussed {stock['company_name']} catalysts. Client interested in short-term positioning.",
+                    f"Call about {stock['company_name']} options strategy. Client seeking alpha opportunities.",
+                    f"Client analyzing {stock['company_name']} for event-driven trade. Wants detailed catalyst timeline.",
+                ],
+                "Pension Fund": [
+                    f"Long-term outlook discussion on {stock['company_name']}. Client focused on dividend sustainability.",
+                    f"Review of {stock['company_name']} ESG profile and governance. Client has strict mandate requirements.",
+                    f"Discussed {stock['company_name']} position sizing within portfolio constraints.",
+                ],
+                "Asset Manager": [
+                    f"Fundamental review of {stock['company_name']}. Discussed valuation vs peers.",
+                    f"Quarterly update on {stock['company_name']} thesis. Reviewing position sizing.",
+                    f"Client inquiring about {stock['company_name']} sector dynamics and competitive positioning.",
+                ],
+                "Insurance": [
+                    f"Solvency II impact analysis for {stock['company_name']} position.",
+                    f"Risk-adjusted return discussion on {stock['company_name']}. Duration considerations.",
+                    f"Reviewed {stock['company_name']} credit exposure and capital implications.",
+                ],
+                "Family Office": [
+                    f"Long-term wealth preservation discussion. {stock['company_name']} as core holding candidate.",
+                    f"Generational wealth planning. Discussed {stock['company_name']} growth trajectory.",
+                    f"Tax-efficient positioning for {stock['company_name']}. Client considering timing.",
+                ],
+            }
 
-            # Create realistic note
-            topic = random.choice(event["call_topics"])
-            theme = random.choice(event["themes"])
-
-            # Make notes more specific to the client type
-            client_context = ""
-            if client["client_type"] == "Pension Fund":
-                client_context = " Client emphasizes long-term view and dividend sustainability."
-            elif client["client_type"] == "Hedge Fund":
-                client_context = " Client interested in short-term catalysts and entry points."
-            elif client["client_type"] == "Family Office":
-                client_context = " Client focused on capital preservation with selective growth."
-            elif client["client_type"] == "Insurance":
-                client_context = " Client needs to consider Solvency II implications."
-
-            notes = f"{topic} Theme: {theme}.{client_context} Follow-up scheduled."
+            notes_list = notes_templates.get(client_type, notes_templates["Asset Manager"])
+            notes = random.choice(notes_list)
 
             conn.execute("""
                 INSERT INTO src_call_logs
                 (client_id, stock_id, call_timestamp, direction, duration_minutes,
                  discussed_company, discussed_sector, notes_raw)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (client["client_id"], stock_id, call_timestamp,
-                  random.choice(["Outbound", "Inbound"]),
-                  random.randint(10, 45),
-                  company_name, sector, notes))
-
+            """, (
+                client["client_id"],
+                stock["stock_id"],
+                call_timestamp,
+                random.choice(["Outbound", "Inbound"]),
+                random.randint(10, 45),
+                stock["company_name"],
+                stock["sector"],
+                notes
+            ))
             call_count += 1
 
     # Add some NVIDIA-specific calls in early 2023 (before the big move)
