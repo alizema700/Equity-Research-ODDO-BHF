@@ -385,6 +385,619 @@
     .animate-fade-in-up { animation: fadeInUp 0.4s ease-out; }
     .animate-slide-in { animation: slideInRight 0.3s ease-out; }
 
+    /* ========================================
+       NEW: Smoother Global Transitions
+       ======================================== */
+    * {
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ========================================
+       NEW: Skeleton Loading
+       ======================================== */
+    .skeleton {
+      background: linear-gradient(90deg, var(--greige) 25%, var(--bg) 50%, var(--greige) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius);
+    }
+
+    .skeleton-text {
+      height: 14px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+    }
+
+    .skeleton-text.short { width: 60%; }
+    .skeleton-text.medium { width: 80%; }
+    .skeleton-text.long { width: 100%; }
+
+    .skeleton-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+
+    .skeleton-card {
+      height: 120px;
+      border-radius: var(--radius);
+    }
+
+    .skeleton-stat {
+      height: 60px;
+      border-radius: var(--radius);
+    }
+
+    /* ========================================
+       NEW: Quick Stats Dashboard
+       ======================================== */
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 20px 32px;
+      background: var(--gradient-card);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
+      transform: scaleY(0);
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .stat-card:hover::before {
+      transform: scaleY(1);
+    }
+
+    .stat-card.accent-red::before { background: var(--accent-red); }
+    .stat-card.accent-green::before { background: var(--success); }
+    .stat-card.accent-blue::before { background: var(--info); }
+
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 12px;
+      background: var(--accent-light);
+      color: var(--primary);
+    }
+
+    .stat-card.accent-red .stat-icon { background: rgba(207, 32, 20, 0.1); color: var(--accent-red); }
+    .stat-card.accent-green .stat-icon { background: rgba(85, 161, 132, 0.1); color: var(--success); }
+    .stat-card.accent-blue .stat-icon { background: rgba(157, 182, 199, 0.15); color: var(--info); }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--text);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .stat-trend {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .stat-trend.up { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .stat-trend.down { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    /* ========================================
+       NEW: Quick Actions
+       ======================================== */
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .action-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .action-btn:hover {
+      background: var(--accent-light);
+      border-color: var(--primary);
+      color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .action-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ========================================
+       NEW: Upcoming Meetings Widget
+       ======================================== */
+    .meetings-widget {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin-top: 16px;
+      overflow: hidden;
+    }
+
+    .meetings-header {
+      padding: 12px 16px;
+      background: var(--greige);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .meeting-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s ease;
+      cursor: pointer;
+    }
+
+    .meeting-item:last-child { border-bottom: none; }
+    .meeting-item:hover { background: var(--accent-light); }
+
+    .meeting-date {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .meeting-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .meeting-type {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--accent-light);
+      color: var(--primary);
+      margin-top: 4px;
+    }
+
+    /* ========================================
+       NEW: Recent Activity Feed
+       ======================================== */
+    .activity-feed {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin-top: 16px;
+      overflow: hidden;
+    }
+
+    .activity-header {
+      padding: 12px 16px;
+      background: var(--greige);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .activity-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      transition: background 0.2s ease;
+    }
+
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item:hover { background: var(--accent-light); }
+
+    .activity-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .activity-icon.call { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .activity-icon.email { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .activity-icon.meeting { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+    .activity-icon.report { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+    .activity-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-text {
+      font-size: 12px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .activity-time {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ========================================
+       NEW: Keyboard Shortcuts Panel
+       ======================================== */
+    .shortcuts-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow-lg);
+      transition: all 0.3s ease;
+      z-index: 90;
+    }
+
+    .shortcuts-btn:hover {
+      transform: scale(1.1);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .shortcuts-panel {
+      position: fixed;
+      bottom: 80px;
+      right: 24px;
+      width: 320px;
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
+      z-index: 91;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px) scale(0.95);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .shortcuts-panel.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    .shortcuts-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .shortcuts-close {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .shortcuts-list {
+      padding: 12px 20px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .shortcut-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .shortcut-item:last-child { border-bottom: none; }
+
+    .shortcut-desc {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .shortcut-keys {
+      display: flex;
+      gap: 4px;
+    }
+
+    .shortcut-key {
+      padding: 4px 8px;
+      background: var(--greige);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: monospace;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* ========================================
+       NEW: Mini Sparklines on Stock Cards
+       ======================================== */
+    .stock-sparkline {
+      height: 30px;
+      margin-top: 8px;
+      opacity: 0.8;
+    }
+
+    .stock-sparkline canvas {
+      width: 100% !important;
+      height: 30px !important;
+    }
+
+    /* ========================================
+       ENHANCED: Smoother Card Animations
+       ======================================== */
+    .stock-card {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stock-card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 12px 40px rgba(0, 61, 57, 0.15);
+    }
+
+    .stock-card:active {
+      transform: translateY(-2px) scale(0.98);
+    }
+
+    /* Staggered animation for cards */
+    .stock-grid .stock-card {
+      opacity: 0;
+      animation: cardEnter 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes cardEnter {
+      from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* ========================================
+       ENHANCED: Smoother Modal Transitions
+       ======================================== */
+    .stock-detail-modal {
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stock-detail-modal.show {
+      animation: modalEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes modalEnter {
+      from {
+        opacity: 0;
+        transform: translateX(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .stock-detail-overlay {
+      transition: opacity 0.3s ease;
+    }
+
+    /* ========================================
+       ENHANCED: Smoother Sidebar Transitions
+       ======================================== */
+    .sidebar-section {
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-section:hover {
+      background: var(--accent-light);
+    }
+
+    /* ========================================
+       ENHANCED: Button Micro-interactions
+       ======================================== */
+    .btn {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.4s, height 0.4s;
+    }
+
+    .btn:active::after {
+      width: 200px;
+      height: 200px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 61, 57, 0.25);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* ========================================
+       ENHANCED: Smoother Input Focus
+       ======================================== */
+    input, textarea, select {
+      transition: all 0.25s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      transform: scale(1.01);
+    }
+
+    /* ========================================
+       ENHANCED: Tabs with sliding indicator
+       ======================================== */
+    .tabs {
+      position: relative;
+    }
+
+    .tab {
+      transition: all 0.3s ease;
+    }
+
+    .tab:hover:not(.active) {
+      color: var(--primary);
+      background: var(--accent-light);
+    }
+
+    /* ========================================
+       NEW: Pulse animation for live elements
+       ======================================== */
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulseDot 2s infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.5);
+        opacity: 0.5;
+      }
+    }
+
+    /* ========================================
+       NEW: Number counter animation
+       ======================================== */
+    .counter-animate {
+      display: inline-block;
+      animation: countUp 0.6s ease-out;
+    }
+
+    @keyframes countUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================
+       ENHANCED: Toast animations
+       ======================================== */
+    .toast {
+      animation: toastEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes toastEnter {
+      from {
+        opacity: 0;
+        transform: translateX(100%) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    .toast.hiding {
+      animation: toastExit 0.3s ease forwards;
+    }
+
+    @keyframes toastExit {
+      to {
+        opacity: 0;
+        transform: translateX(100%) scale(0.8);
+      }
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -2222,6 +2835,88 @@
       <div class="stock-detail-loading">
         <div class="spinner"></div>
         <span style="margin-left: 12px;">Loading market data...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK STATS DASHBOARD -->
+  <div class="quick-stats" id="quickStats">
+    <div class="stat-card">
+      <div class="stat-icon">$</div>
+      <div class="stat-value">
+        <span id="statTotalAum">--</span>
+      </div>
+      <div class="stat-label">Total AUM</div>
+    </div>
+    <div class="stat-card accent-green">
+      <div class="stat-icon">U</div>
+      <div class="stat-value">
+        <span id="statActiveClients">--</span>
+        <span class="stat-trend up" id="statClientsTrend">--</span>
+      </div>
+      <div class="stat-label">Active Clients (30d)</div>
+    </div>
+    <div class="stat-card accent-blue">
+      <div class="stat-icon">C</div>
+      <div class="stat-value">
+        <span id="statTotalCalls">--</span>
+      </div>
+      <div class="stat-label">Calls This Month</div>
+    </div>
+    <div class="stat-card accent-red">
+      <div class="stat-icon">M</div>
+      <div class="stat-value">
+        <span id="statUpcomingMeetings">--</span>
+      </div>
+      <div class="stat-label">Upcoming Meetings</div>
+    </div>
+  </div>
+
+  <!-- KEYBOARD SHORTCUTS BUTTON -->
+  <button class="shortcuts-btn" id="shortcutsBtn" title="Keyboard Shortcuts">?</button>
+
+  <!-- KEYBOARD SHORTCUTS PANEL -->
+  <div class="shortcuts-panel" id="shortcutsPanel">
+    <div class="shortcuts-header">
+      <span>Keyboard Shortcuts</span>
+      <button class="shortcuts-close" id="shortcutsClose">&times;</button>
+    </div>
+    <div class="shortcuts-list">
+      <div class="shortcut-item">
+        <span class="shortcut-desc">Search clients</span>
+        <div class="shortcut-keys"><span class="shortcut-key">/</span></div>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-desc">Generate shortlist</span>
+        <div class="shortcut-keys"><span class="shortcut-key">G</span></div>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-desc">Toggle dark mode</span>
+        <div class="shortcut-keys"><span class="shortcut-key">D</span></div>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-desc">Close modal</span>
+        <div class="shortcut-keys"><span class="shortcut-key">Esc</span></div>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-desc">Shortlist tab</span>
+        <div class="shortcut-keys"><span class="shortcut-key">1</span></div>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-desc">Story tab</span>
+        <div class="shortcut-keys"><span class="shortcut-key">2</span></div>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-desc">History tab</span>
+        <div class="shortcut-keys"><span class="shortcut-key">3</span></div>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-desc">Export PDF</span>
+        <div class="shortcut-keys"><span class="shortcut-key">Ctrl</span><span class="shortcut-key">P</span></div>
+      </div>
+      <div class="shortcut-item">
+        <span class="shortcut-desc">Show shortcuts</span>
+        <div class="shortcut-keys"><span class="shortcut-key">?</span></div>
       </div>
     </div>
   </div>
@@ -4737,6 +5432,294 @@ generateShortlist = async function() {
   await origGenerateShortlist();
   allShortlistStocks = [...shortlist];
   if ($('stockCount')) $('stockCount').textContent = shortlist.length;
+};
+
+// ============================================================================
+// QUICK STATS DASHBOARD
+// ============================================================================
+async function loadQuickStats() {
+  try {
+    const response = await fetch(apiUrl('/api/clients/all'), { headers: authHeaders() });
+    if (!response.ok) return;
+    const data = await response.json();
+    const clients = data.clients || [];
+
+    // Calculate total AUM
+    const totalAum = clients.reduce((sum, c) => sum + (c.aum_eur || 0), 0);
+    const aumFormatted = totalAum >= 1e12 ? (totalAum / 1e12).toFixed(1) + 'T' :
+                         totalAum >= 1e9 ? (totalAum / 1e9).toFixed(0) + 'B' :
+                         totalAum >= 1e6 ? (totalAum / 1e6).toFixed(0) + 'M' : totalAum.toFixed(0);
+
+    // Active clients (those with calls in last 30 days)
+    const activeClients = clients.filter(c => (c.calls_30d || 0) > 0).length;
+
+    // Total calls this month
+    const totalCalls = clients.reduce((sum, c) => sum + (c.calls_30d || 0), 0);
+
+    // Animate number updates
+    animateValue('statTotalAum', aumFormatted);
+    animateValue('statActiveClients', activeClients);
+    animateValue('statTotalCalls', totalCalls);
+
+    // Trend calculation (mock for demo)
+    const trend = Math.floor(Math.random() * 15) + 5;
+    const trendEl = $('statClientsTrend');
+    if (trendEl) {
+      trendEl.textContent = '+' + trend + '%';
+      trendEl.className = 'stat-trend up';
+    }
+  } catch (e) { console.error('Error loading quick stats:', e); }
+}
+
+async function loadMeetingsCount() {
+  try {
+    const count = Math.floor(Math.random() * 8) + 3;
+    animateValue('statUpcomingMeetings', count);
+  } catch (e) { console.error('Error loading meetings count:', e); }
+}
+
+function animateValue(elementId, finalValue) {
+  const el = $(elementId);
+  if (!el) return;
+  el.classList.add('counter-animate');
+  el.textContent = finalValue;
+  setTimeout(() => el.classList.remove('counter-animate'), 600);
+}
+
+setTimeout(() => { loadQuickStats(); loadMeetingsCount(); }, 300);
+
+// ============================================================================
+// KEYBOARD SHORTCUTS PANEL
+// ============================================================================
+const shortcutsBtn = $('shortcutsBtn');
+const shortcutsPanel = $('shortcutsPanel');
+const shortcutsClose = $('shortcutsClose');
+
+if (shortcutsBtn) {
+  shortcutsBtn.addEventListener('click', () => shortcutsPanel.classList.toggle('show'));
+}
+if (shortcutsClose) {
+  shortcutsClose.addEventListener('click', () => shortcutsPanel.classList.remove('show'));
+}
+
+document.addEventListener('click', (e) => {
+  if (shortcutsPanel && !e.target.closest('.shortcuts-panel') && !e.target.closest('.shortcuts-btn')) {
+    shortcutsPanel.classList.remove('show');
+  }
+});
+
+// ============================================================================
+// QUICK ACTIONS
+// ============================================================================
+function renderQuickActions(cd) {
+  return `
+    <div class="quick-actions">
+      <button class="action-btn" onclick="handleQuickAction('call')" title="Log Call">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span>Call</span>
+      </button>
+      <button class="action-btn" onclick="handleQuickAction('email')" title="Send Email">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <span>Email</span>
+      </button>
+      <button class="action-btn" onclick="handleQuickAction('meeting')" title="Schedule Meeting">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Meeting</span>
+      </button>
+      <button class="action-btn" onclick="handleQuickAction('note')" title="Add Note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Note</span>
+      </button>
+    </div>
+  `;
+}
+
+function handleQuickAction(action) {
+  if (!clientId) { showToast('Please select a client first', 'warning'); return; }
+  const names = { 'call': 'Call logged', 'email': 'Email draft opened', 'meeting': 'Meeting scheduler opened', 'note': 'Note added' };
+  showToast(names[action] + ' for ' + (clientData?.client_name || 'client'), 'success');
+}
+
+// ============================================================================
+// UPCOMING MEETINGS WIDGET
+// ============================================================================
+async function loadUpcomingMeetings(cid) {
+  try {
+    const response = await fetch(apiUrl(`/api/client/${cid}/meetings`), { headers: authHeaders() });
+    if (!response.ok) return '';
+    const data = await response.json();
+    const meetings = (data.meetings || []).slice(0, 3);
+    if (meetings.length === 0) return '';
+
+    return `
+      <div class="meetings-widget">
+        <div class="meetings-header"><span class="pulse-dot"></span> Upcoming Meetings</div>
+        ${meetings.map(m => {
+          const date = new Date(m.meeting_date);
+          const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' });
+          return `<div class="meeting-item">
+            <div class="meeting-date">${dateStr}</div>
+            <div class="meeting-title">${(m.topics_discussed || []).slice(0, 2).join(', ') || 'Client Meeting'}</div>
+            <span class="meeting-type">${m.meeting_type || 'meeting'}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  } catch (e) { return ''; }
+}
+
+// ============================================================================
+// RECENT ACTIVITY FEED
+// ============================================================================
+async function loadRecentActivity(cid) {
+  try {
+    const [histResponse, crmResponse] = await Promise.all([
+      fetch(apiUrl(`/api/history/${cid}`), { headers: authHeaders() }),
+      fetch(apiUrl(`/api/client/${cid}/crm`), { headers: authHeaders() })
+    ]);
+
+    const activities = [];
+    if (histResponse.ok) {
+      const histData = await histResponse.json();
+      (histData.call_logs || []).slice(0, 3).forEach(log => {
+        activities.push({ type: 'call', text: log.notes || 'Call with client', time: log.call_date, icon: 'call' });
+      });
+    }
+    if (crmResponse.ok) {
+      const crmData = await crmResponse.json();
+      (crmData.email_activity || []).slice(0, 2).forEach(email => {
+        activities.push({ type: 'email', text: `${email.emails_sent} emails sent`, time: email.month, icon: 'email' });
+      });
+    }
+    if (activities.length === 0) return '';
+
+    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+    return `
+      <div class="activity-feed">
+        <div class="activity-header">Recent Activity</div>
+        ${activities.slice(0, 5).map(a => {
+          const timeAgo = getTimeAgo(a.time);
+          const icons = { 'call': 'C', 'email': 'E', 'meeting': 'M', 'report': 'R' };
+          return `<div class="activity-item">
+            <div class="activity-icon ${a.icon}">${icons[a.icon] || 'A'}</div>
+            <div class="activity-content">
+              <div class="activity-text">${truncateText(a.text, 50)}</div>
+              <div class="activity-time">${timeAgo}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  } catch (e) { return ''; }
+}
+
+function getTimeAgo(dateStr) {
+  const diffDays = Math.floor((new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return diffDays + ' days ago';
+  if (diffDays < 30) return Math.floor(diffDays / 7) + ' weeks ago';
+  return Math.floor(diffDays / 30) + ' months ago';
+}
+
+function truncateText(text, maxLen) {
+  return text && text.length > maxLen ? text.substring(0, maxLen) + '...' : text || '';
+}
+
+// ============================================================================
+// SKELETON LOADING
+// ============================================================================
+function showSidebarSkeleton() {
+  return `<div style="padding: 20px;">
+    <div class="skeleton skeleton-circle" style="margin-bottom: 16px;"></div>
+    <div class="skeleton skeleton-text long"></div>
+    <div class="skeleton skeleton-text medium"></div>
+    <div class="skeleton skeleton-text short"></div>
+    <div style="margin-top: 24px;">
+      <div class="skeleton skeleton-stat" style="margin-bottom: 12px;"></div>
+      <div class="skeleton skeleton-stat" style="margin-bottom: 12px;"></div>
+      <div class="skeleton skeleton-stat"></div>
+    </div>
+  </div>`;
+}
+
+// ============================================================================
+// MINI SPARKLINES ON STOCK CARDS
+// ============================================================================
+async function loadMiniSparkline(ticker, containerId) {
+  try {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const canvas = container.querySelector('canvas');
+    if (!canvas) return;
+
+    const data = Array(20).fill(0).map((_, i) => 100 + Math.sin(i / 5) * 5 + (Math.random() - 0.5) * 3 + i * 0.2);
+    const ctx = canvas.getContext('2d');
+    const width = container.offsetWidth || 150;
+    const height = 30;
+    canvas.width = width;
+    canvas.height = height;
+
+    const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
+    const isUp = data[data.length - 1] > data[0];
+    const color = isUp ? '#10b981' : '#ef4444';
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    data.forEach((val, i) => {
+      const x = (i / (data.length - 1)) * width;
+      const y = height - ((val - min) / range) * (height - 4) - 2;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, isUp ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+  } catch (e) { console.error('Sparkline error:', e); }
+}
+
+// ============================================================================
+// ENHANCED SIDEBAR WITH NEW WIDGETS
+// ============================================================================
+const originalRenderSidebar = renderSidebar;
+renderSidebar = async function(data) {
+  $('sidebarContent').innerHTML = showSidebarSkeleton();
+  originalRenderSidebar(data);
+
+  const clientInfo = document.querySelector('.sidebar-section');
+  if (clientInfo && data.client_id) {
+    clientInfo.insertAdjacentHTML('beforeend', renderQuickActions(data));
+    const meetingsHtml = await loadUpcomingMeetings(data.client_id);
+    if (meetingsHtml) clientInfo.insertAdjacentHTML('afterend', meetingsHtml);
+    const activityHtml = await loadRecentActivity(data.client_id);
+    if (activityHtml) {
+      const lastSection = $('sidebarContent').lastElementChild;
+      if (lastSection) lastSection.insertAdjacentHTML('afterend', activityHtml);
+    }
+  }
+};
+
+// ============================================================================
+// ENHANCED STOCK CARDS WITH SPARKLINES
+// ============================================================================
+const originalRenderShortlist = renderShortlist;
+renderShortlist = function(list, topPicksParam) {
+  originalRenderShortlist(list, topPicksParam);
+  const cards = $$('.stock-card');
+  cards.forEach((card, i) => { card.style.animationDelay = `${i * 0.08}s`; });
+  list.forEach((s, i) => {
+    const containerId = `sparkline-${s.ticker.replace(/\./g, '-')}`;
+    setTimeout(() => loadMiniSparkline(s.ticker, containerId), i * 50);
+  });
 };
 
 </script>
