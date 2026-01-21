@@ -3438,7 +3438,7 @@ function renderDrawerContent(data) {
     <div class="drawer-panel" id="drawer-crm">
       <div class="crm-loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
         <div class="spinner"></div>
-        <p style="margin-top: 12px;">Lade CRM-Daten...</p>
+        <p style="margin-top: 12px;">Loading CRM data...</p>
       </div>
     </div>
   `;
@@ -3448,7 +3448,7 @@ function renderDrawerContent(data) {
     <div class="drawer-panel" id="drawer-compliance">
       <div class="compliance-loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
         <div class="spinner"></div>
-        <p style="margin-top: 12px;">Lade Compliance-Daten...</p>
+        <p style="margin-top: 12px;">Loading Compliance data...</p>
       </div>
     </div>
   `;
@@ -3500,7 +3500,7 @@ async function loadCRMData(clientId) {
     crmDataLoaded = true;
   } catch (e) {
     console.error('Error loading CRM data:', e);
-    $('drawer-crm').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Fehler beim Laden der CRM-Daten</div>`;
+    $('drawer-crm').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Error loading CRM data</div>`;
   }
 }
 
@@ -3514,45 +3514,45 @@ function renderCRMPanel(data) {
     <!-- Contact Preferences -->
     <div class="crm-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Kontakt-Präferenzen
+        Contact Preferences
       </h4>
       <div class="crm-prefs-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Bevorzugter Kanal</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Preferred Channel</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
-            ${prefs.preferred_channel === 'phone' ? 'Telefon' :
-              prefs.preferred_channel === 'email' ? 'E-Mail' :
+            ${prefs.preferred_channel === 'phone' ? 'Phone' :
+              prefs.preferred_channel === 'email' ? 'Email' :
               prefs.preferred_channel === 'video' ? 'Video' :
-              prefs.preferred_channel === 'in_person' ? 'Persoenlich' : prefs.preferred_channel || '-'}
+              prefs.preferred_channel === 'in_person' ? 'In Person' : prefs.preferred_channel || '-'}
           </div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Beste Zeit</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Best Time</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
-            ${prefs.preferred_time === 'morning' ? 'Morgens (08-12h)' :
-              prefs.preferred_time === 'afternoon' ? 'Nachmittags (12-18h)' :
-              prefs.preferred_time === 'evening' ? 'Abends (18-21h)' : prefs.preferred_time || '-'}
+            ${prefs.preferred_time === 'morning' ? 'Morning (08-12h)' :
+              prefs.preferred_time === 'afternoon' ? 'Afternoon (12-18h)' :
+              prefs.preferred_time === 'evening' ? 'Evening (18-21h)' : prefs.preferred_time || '-'}
           </div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Frequenz</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Frequency</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
-            ${prefs.preferred_frequency === 'daily' ? 'Täglich' :
-              prefs.preferred_frequency === 'weekly' ? 'Wöchentlich' :
-              prefs.preferred_frequency === 'bi-weekly' ? 'Alle 2 Wochen' :
-              prefs.preferred_frequency === 'monthly' ? 'Monatlich' : prefs.preferred_frequency || '-'}
+            ${prefs.preferred_frequency === 'daily' ? 'Daily' :
+              prefs.preferred_frequency === 'weekly' ? 'Weekly' :
+              prefs.preferred_frequency === 'bi-weekly' ? 'Bi-Weekly' :
+              prefs.preferred_frequency === 'monthly' ? 'Monthly' : prefs.preferred_frequency || '-'}
           </div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Sprache</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Language</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text);">${prefs.language || '-'}</div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Zeitzone</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Timezone</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text);">${prefs.timezone || '-'}</div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Bevorzugte Tage</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Preferred Days</div>
           <div style="font-size: 12px; font-weight: 600; color: var(--text);">
             ${Array.isArray(prefs.preferred_days) ? prefs.preferred_days.slice(0, 3).map(d => d.substring(0, 2)).join(', ') : '-'}
           </div>
@@ -3563,7 +3563,7 @@ function renderCRMPanel(data) {
     <!-- Engagement Summary -->
     <div class="crm-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Engagement Übersicht (12 Monate)
+        Engagement Summary (12 Months)
       </h4>
       <div class="crm-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
         <div class="crm-stat-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 10px; color: white;">
@@ -3572,15 +3572,15 @@ function renderCRMPanel(data) {
         </div>
         <div class="crm-stat-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 16px; border-radius: 10px; color: white;">
           <div style="font-size: 24px; font-weight: 700;">${engagement.meeting_success_rate ? engagement.meeting_success_rate + '%' : '-'}</div>
-          <div style="font-size: 11px; opacity: 0.85;">Erfolgsrate</div>
+          <div style="font-size: 11px; opacity: 0.85;">Success Rate</div>
         </div>
         <div class="crm-stat-box" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); padding: 16px; border-radius: 10px; color: white;">
           <div style="font-size: 24px; font-weight: 700;">${engagement.avg_email_response_hours ? engagement.avg_email_response_hours + 'h' : '-'}</div>
-          <div style="font-size: 11px; opacity: 0.85;">Ø Antwortzeit</div>
+          <div style="font-size: 11px; opacity: 0.85;">Avg Response</div>
         </div>
         <div class="crm-stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 16px; border-radius: 10px; color: white;">
           <div style="font-size: 24px; font-weight: 700;">${engagement.events_attended || 0}</div>
-          <div style="font-size: 11px; opacity: 0.85;">Events besucht</div>
+          <div style="font-size: 11px; opacity: 0.85;">Events Attended</div>
         </div>
       </div>
     </div>
@@ -3698,27 +3698,27 @@ function renderCompliancePanel(compliance) {
           </div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Risiko-Rating</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Risk Rating</div>
           <div style="font-size: 14px; font-weight: 700; text-transform: capitalize; color: ${
             compliance.kyc_risk_rating === 'enhanced' ? '#dc2626' :
             compliance.kyc_risk_rating === 'standard' ? '#d97706' : '#16a34a'
           };">
-            ${compliance.kyc_risk_rating === 'low' ? 'Niedrig' :
+            ${compliance.kyc_risk_rating === 'low' ? 'Low' :
               compliance.kyc_risk_rating === 'standard' ? 'Standard' :
-              compliance.kyc_risk_rating === 'enhanced' ? 'Erhöht' : compliance.kyc_risk_rating || '-'}
+              compliance.kyc_risk_rating === 'enhanced' ? 'Enhanced' : compliance.kyc_risk_rating || '-'}
           </div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Ablaufdatum</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Expiry Date</div>
           <div style="font-size: 14px; font-weight: 700; color: ${compliance.kyc_expiring_soon ? '#dc2626' : 'inherit'};">
-            ${compliance.kyc_expiry_date ? new Date(compliance.kyc_expiry_date).toLocaleDateString('de-DE') : '-'}
+            ${compliance.kyc_expiry_date ? new Date(compliance.kyc_expiry_date).toLocaleDateString('en-US') : '-'}
           </div>
-          ${compliance.kyc_expiring_soon ? '<div style="font-size: 10px; color: #dc2626; margin-top: 4px;">Laeuft bald ab!</div>' : ''}
+          ${compliance.kyc_expiring_soon ? '<div style="font-size: 10px; color: #dc2626; margin-top: 4px;">Expiring soon!</div>' : ''}
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Letztes Review</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Last Review</div>
           <div style="font-size: 14px; font-weight: 700;">
-            ${compliance.kyc_last_review ? new Date(compliance.kyc_last_review).toLocaleDateString('de-DE') : '-'}
+            ${compliance.kyc_last_review ? new Date(compliance.kyc_last_review).toLocaleDateString('en-US') : '-'}
           </div>
         </div>
       </div>
@@ -3727,31 +3727,31 @@ function renderCompliancePanel(compliance) {
     <!-- Investor Classification -->
     <div class="compliance-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Anleger-Klassifizierung (MiFID II)
+        Investor Classification (MiFID II)
       </h4>
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Investortyp</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Investor Type</div>
           <div style="font-size: 14px; font-weight: 700; text-transform: capitalize;">
-            ${compliance.investor_type === 'professional' ? 'Professionell' :
+            ${compliance.investor_type === 'professional' ? 'Professional' :
               compliance.investor_type === 'retail' ? 'Retail' :
-              compliance.investor_type === 'eligible_counterparty' ? 'Geeignete Gegenpartei' : compliance.investor_type || '-'}
+              compliance.investor_type === 'eligible_counterparty' ? 'Eligible Counterparty' : compliance.investor_type || '-'}
           </div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Mandatstyp</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Mandate Type</div>
           <div style="font-size: 14px; font-weight: 700; text-transform: capitalize;">
-            ${compliance.mandate_type === 'discretionary' ? 'Diskretionär' :
-              compliance.mandate_type === 'advisory' ? 'Beratung' :
+            ${compliance.mandate_type === 'discretionary' ? 'Discretionary' :
+              compliance.mandate_type === 'advisory' ? 'Advisory' :
               compliance.mandate_type === 'execution_only' ? 'Execution Only' : compliance.mandate_type || '-'}
           </div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">AUM (deklariert)</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">AUM (declared)</div>
           <div style="font-size: 14px; font-weight: 700;">${compliance.aum_formatted || '-'}</div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Domizil</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Domicile</div>
           <div style="font-size: 14px; font-weight: 700;">${compliance.domicile_country || '-'}</div>
         </div>
       </div>
@@ -3760,21 +3760,21 @@ function renderCompliancePanel(compliance) {
     <!-- Trading Permissions -->
     <div class="compliance-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Handels-Berechtigungen
+        Trading Permissions
       </h4>
       <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
         ${Array.isArray(compliance.allowed_instruments) ? compliance.allowed_instruments.map(inst => `
           <span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-            ${inst === 'equities' ? 'Aktien' :
-                inst === 'bonds' ? 'Anleihen' :
-                inst === 'derivatives' ? 'Derivate' :
+            ${inst === 'equities' ? 'Equities' :
+                inst === 'bonds' ? 'Bonds' :
+                inst === 'derivatives' ? 'Derivatives' :
                 inst === 'etf' ? 'ETFs' :
-                inst === 'fx' ? 'Devisen' :
-                inst === 'commodities' ? 'Rohstoffe' : inst}
+                inst === 'fx' ? 'FX' :
+                inst === 'commodities' ? 'Commodities' : inst}
           </span>
         `).join('') : ''}
-        ${compliance.short_selling_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Short Selling erlaubt</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Kein Short Selling</span>'}
-        ${compliance.leverage_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Leverage erlaubt</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Kein Leverage</span>'}
+        ${compliance.short_selling_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Short Selling Allowed</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">No Short Selling</span>'}
+        ${compliance.leverage_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Leverage Allowed</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">No Leverage</span>'}
         ${compliance.max_single_position_pct ? `<span style="background: var(--greige); color: var(--text); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Max. Position: ${compliance.max_single_position_pct}%</span>` : ''}
       </div>
     </div>
@@ -3783,21 +3783,21 @@ function renderCompliancePanel(compliance) {
     ${(compliance.restricted_sectors && compliance.restricted_sectors.length > 0) || (compliance.restricted_countries && compliance.restricted_countries.length > 0) ? `
     <div class="compliance-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Einschränkungen
+        Restrictions
       </h4>
       <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
         ${Array.isArray(compliance.restricted_sectors) ? compliance.restricted_sectors.map(s => `
           <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-            Sektor: ${s === 'defense' ? 'Ruestung' :
-                s === 'tobacco' ? 'Tabak' :
-                s === 'gambling' ? 'Gluecksspiel' :
-                s === 'fossil_fuels' ? 'Fossile Brennstoffe' :
-                s === 'nuclear' ? 'Nuklear' : s}
+            Sector: ${s === 'defense' ? 'Defense' :
+                s === 'tobacco' ? 'Tobacco' :
+                s === 'gambling' ? 'Gambling' :
+                s === 'fossil_fuels' ? 'Fossil Fuels' :
+                s === 'nuclear' ? 'Nuclear' : s}
           </span>
         `).join('') : ''}
         ${Array.isArray(compliance.restricted_countries) ? compliance.restricted_countries.map(c => `
           <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-            Land: ${c}
+            Country: ${c}
           </span>
         `).join('') : ''}
       </div>
@@ -3807,22 +3807,22 @@ function renderCompliancePanel(compliance) {
     <!-- ESG Requirements -->
     <div class="compliance-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        ESG-Anforderungen
+        ESG Requirements
       </h4>
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
         <div style="background: ${compliance.esg_mandate ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' : 'var(--greige)'}; padding: 16px; border-radius: 10px; text-align: center; color: ${compliance.esg_mandate ? 'white' : 'var(--text)'};">
-          <div style="font-size: 11px; ${compliance.esg_mandate ? 'opacity: 0.85' : 'color: var(--text-muted)'}; margin-bottom: 8px;">ESG-Mandat</div>
+          <div style="font-size: 11px; ${compliance.esg_mandate ? 'opacity: 0.85' : 'color: var(--text-muted)'}; margin-bottom: 8px;">ESG Mandate</div>
           <div style="font-size: 18px; font-weight: 700;">
-            ${compliance.esg_mandate ? 'Ja' : 'Nein'}
+            ${compliance.esg_mandate ? 'Yes' : 'No'}
           </div>
         </div>
         ${compliance.esg_mandate ? `
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Min. ESG-Score</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Min. ESG Score</div>
           <div style="font-size: 18px; font-weight: 700;">${compliance.esg_min_score ? compliance.esg_min_score.toFixed(0) : '-'}</div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">SFDR-Klassifizierung</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">SFDR Classification</div>
           <div style="font-size: 18px; font-weight: 700; color: ${
             compliance.sfdr_classification === 'article_9' ? '#16a34a' :
             compliance.sfdr_classification === 'article_8' ? '#d97706' : 'inherit'
@@ -4259,7 +4259,7 @@ function selectManualStock(stock) {
 async function search(query) {
   if (!query || query.length < 2) return;
 
-  setStatus('Suche...', 'default');
+  setStatus('Searching...', 'default');
 
   try {
     const res = await fetch(apiUrl(`/api/search?q=${encodeURIComponent(query)}&limit=50`), {
@@ -4298,7 +4298,7 @@ async function search(query) {
 // ============================================================================
 async function loadClient(id) {
   hideModal();
-  setStatus('Lade...', 'default');
+  setStatus('Loading...', 'default');
 
   try {
     const res = await fetch(apiUrl(`/api/client/${id}`), { headers: authHeaders() });
@@ -4367,7 +4367,7 @@ async function generateShortlist() {
     const data = await res.json();
 
     if (data.error) {
-      $('stockGrid').innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${data.error}</p></div>`;
+      $('stockGrid').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${data.error}</p></div>`;
       setStatus('Error', 'default');
       $('generateBtn').disabled = false;
       return;
@@ -4384,7 +4384,7 @@ async function generateShortlist() {
     await loadHistory();
 
   } catch (e) {
-    $('stockGrid').innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${e.message}</p></div>`;
+    $('stockGrid').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${e.message}</p></div>`;
     setStatus('Error', 'default');
     $('generateBtn').disabled = false;
     console.error(e);
@@ -4571,7 +4571,7 @@ function selectStock(idx) {
 async function generateStory(mode) {
   if (!clientId || !selectedTicker) return;
 
-  setStatus('Generiere Story...', 'default');
+  setStatus('Generating Story...', 'default');
   $('outputPanel').style.display = 'block';
   $('outputText').textContent = 'Generiere...';
 
@@ -4593,7 +4593,7 @@ async function generateStory(mode) {
     const data = await res.json();
 
     if (data.error) {
-      $('outputText').textContent = 'Fehler: ' + data.error;
+      $('outputText').textContent = 'Error: ' + data.error;
       setStatus('Error', 'default');
       return;
     }
@@ -4608,7 +4608,7 @@ async function generateStory(mode) {
     await loadHistory();
 
   } catch (e) {
-    $('outputText').textContent = 'Fehler: ' + e.message;
+    $('outputText').textContent = 'Error: ' + e.message;
     setStatus('Error', 'default');
     console.error(e);
   }
@@ -5175,15 +5175,15 @@ function renderPriceChart(history, ticker) {
 function copyOutput() {
   const text = $('outputText').textContent;
   navigator.clipboard.writeText(text);
-  setStatus('Kopiert!', 'active');
-  setTimeout(() => setStatus('Story bereit', 'active'), 1000);
+  setStatus('Copied!', 'active');
+  setTimeout(() => setStatus('Story ready', 'active'), 1000);
 }
 
 // ============================================================================
 // HEALTH CHECK
 // ============================================================================
 async function healthCheck() {
-  setStatus('Prüfe...', 'default');
+  setStatus('Checking...', 'default');
   try {
     const res = await fetch(apiUrl('/api/health'), { headers: authHeaders() });
     const data = await res.json();
