@@ -67,7 +67,7 @@
       --gradient-card: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(247,244,242,0.5) 100%);
     }
 
-    /* Dark Mode - Enhanced Premium Look */
+    /* Dark Mode - Enhanced Premium Look (No White) */
     [data-theme="dark"] {
       --bg: #0f172a;
       --bg-dark: #0c1222;
@@ -76,8 +76,9 @@
       --card-hover: #273548;
       --border: #334155;
       --border-light: #475569;
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
+      --text: #cbd5e1;
+      --text-muted: #64748b;
+      --light: #1e293b;
       --primary: #10b981;
       --primary-light: rgba(16, 185, 129, 0.15);
       --accent-light: rgba(16, 185, 129, 0.1);
@@ -153,7 +154,7 @@
     [data-theme="dark"] .tabs { background: var(--bg-darker); border: 1px solid var(--border); }
     [data-theme="dark"] .tab { color: var(--text-muted); }
     [data-theme="dark"] .tab:hover { background: var(--card); color: var(--text); }
-    [data-theme="dark"] .tab.active { background: var(--primary); color: white; }
+    [data-theme="dark"] .tab.active { background: var(--primary); color: #0f172a; }
 
     [data-theme="dark"] .summary-card,
     [data-theme="dark"] .sidebar-section { background: var(--card); border: 1px solid var(--border); }
@@ -191,7 +192,19 @@
     [data-theme="dark"] .toast { background: var(--card); border: 1px solid var(--border); }
     [data-theme="dark"] .skeleton { background: linear-gradient(90deg, var(--card) 25%, var(--card-hover) 50%, var(--card) 75%); }
 
-    [data-theme="dark"] ::selection { background: var(--primary); color: white; }
+    [data-theme="dark"] ::selection { background: var(--primary); color: #0f172a; }
+
+    /* Dark mode - remove white from buttons and badges */
+    [data-theme="dark"] .btn-primary { color: #0f172a; }
+    [data-theme="dark"] .badge-buy, [data-theme="dark"] .badge-high { color: #0f172a; }
+    [data-theme="dark"] .ticker-item { color: #0f172a; }
+    [data-theme="dark"] .live-ticker-container { color: #0f172a; }
+    [data-theme="dark"] .crm-stat-box { color: #0f172a !important; }
+    [data-theme="dark"] .pulse-dot { background: var(--primary); }
+    [data-theme="dark"] .stock-detail-close { background: rgba(100, 116, 139, 0.3); color: var(--text); }
+    [data-theme="dark"] .stock-detail-close:hover { background: rgba(100, 116, 139, 0.5); }
+    [data-theme="dark"] .price-range-marker { border-color: #0f172a; }
+    [data-theme="dark"] .avatar-img { border-color: var(--border) !important; }
     [data-theme="dark"] ::-webkit-scrollbar { width: 8px; height: 8px; }
     [data-theme="dark"] ::-webkit-scrollbar-track { background: var(--bg-darker); }
     [data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
@@ -435,6 +448,8 @@
     [data-theme="dark"] .theme-toggle::after {
       content: 'D';
       transform: translateX(20px);
+      background: #0f172a;
+      color: var(--primary);
     }
 
     /* Keyframe Animations */
@@ -3214,9 +3229,9 @@ function renderPortfolioPieChart() {
       datasets: [{
         data: data,
         backgroundColor: labels.map((_, i) => getPieColor(i)),
-        borderColor: 'rgba(255,255,255,0.2)',
+        borderColor: document.documentElement.dataset.theme === 'dark' ? 'rgba(15,23,42,0.3)' : 'rgba(255,255,255,0.2)',
         borderWidth: 2,
-        hoverBorderColor: '#fff',
+        hoverBorderColor: document.documentElement.dataset.theme === 'dark' ? '#10b981' : '#fff',
         hoverBorderWidth: 3
       }]
     },
@@ -5111,7 +5126,7 @@ function renderPriceChart(history, ticker) {
         pointRadius: 0,
         pointHoverRadius: 5,
         pointHoverBackgroundColor: lineColor,
-        pointHoverBorderColor: '#fff',
+        pointHoverBorderColor: document.documentElement.dataset.theme === 'dark' ? '#10b981' : '#fff',
         pointHoverBorderWidth: 2,
       }]
     },
