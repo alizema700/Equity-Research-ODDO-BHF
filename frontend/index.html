@@ -5139,8 +5139,8 @@ function renderStockDetailContent(stock, quote, news, history = [], fundamentals
       }
 
       html += `
-        <div class="news-item" onclick="window.open('${article.link}', '_blank')">
-          <div class="news-headline">${article.title}</div>
+        <div class="news-item" ${article.link ? `onclick="window.open('${article.link}', '_blank')"` : ''} style="${article.link ? 'cursor: pointer;' : ''}">
+          <div class="news-headline">${article.title || 'No title'}</div>
           <div class="news-meta">
             <span class="news-sentiment ${sentiment}">${sentiment}</span>
             <span>${article.publisher || 'Unknown'}</span>
