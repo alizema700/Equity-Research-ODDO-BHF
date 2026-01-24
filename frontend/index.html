@@ -4407,7 +4407,8 @@ async function generateShortlist() {
 }
 
 function renderShortlist(list, topPicksParam) {
-  // Store topPicks globally for filtering
+  // Store globally for live price updates and filtering
+  window._shortlist = list;
   topPicks = topPicksParam || [];
 
   if (!list.length) {
@@ -4441,8 +4442,8 @@ function renderShortlist(list, topPicksParam) {
         </div>
         <div class="stock-metrics">
           <div class="stock-metric">
-            <span class="stock-metric-label">Close</span>
-            <span class="stock-metric-value">${s.last_close != null ? Number(s.last_close).toFixed(2) : '-'}</span>
+            <span class="stock-metric-label">Price</span>
+            <span class="stock-metric-value" id="price-${s.ticker.replace(/\./g, '-')}">${s.last_close != null ? Number(s.last_close).toFixed(2) : '-'}</span>
           </div>
           <div class="stock-metric">
             <span class="stock-metric-label">Vol 60d</span>
@@ -4464,10 +4465,45 @@ function renderShortlist(list, topPicksParam) {
     el.addEventListener('click', () => selectStock(parseInt(el.dataset.idx)));
   });
 
-  // Load sparklines for each stock
+  // Load sparklines and live prices for each stock
   list.forEach(s => {
     loadSparkline(s.ticker);
+    loadLivePrice(s.ticker);
   });
+}
+
+// Fetch and display live prices from yfinance
+async function loadLivePrice(ticker) {
+  const priceEl = document.getElementById(`price-${ticker.replace(/\./g, '-')}`);
+  if (!priceEl) return;
+
+  try {
+    const res = await fetch(apiUrl(`/api/stock/${ticker}/quote`), { headers: authHeaders() });
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    if (data.price) {
+      const price = Number(data.price).toFixed(2);
+      const change = data.change_percent || 0;
+      const changeClass = change >= 0 ? 'positive' : 'negative';
+      const changeSign = change >= 0 ? '+' : '';
+
+      priceEl.innerHTML = `$${price} <span class="${changeClass}" style="font-size: 10px; margin-left: 4px;">${changeSign}${Number(change).toFixed(1)}%</span>`;
+
+      // Update stored data for when card is clicked
+      if (window._shortlist) {
+        const stock = window._shortlist.find(s => s.ticker === ticker);
+        if (stock) {
+          stock.last_close = data.price;
+          stock.live_price = data.price;
+          stock.change_percent = change;
+        }
+      }
+    }
+  } catch (e) {
+    console.log(`Could not load live price for ${ticker}`);
+  }
 }
 
 // Sparkline mini-charts for stock cards
