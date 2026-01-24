@@ -67,39 +67,74 @@
       --gradient-card: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(247,244,242,0.5) 100%);
     }
 
-    /* Dark Mode */
+    /* Dark Mode - Enhanced Premium Look (No White) */
     [data-theme="dark"] {
-      --bg: #1a1a2e;
-      --bg-dark: #16213e;
-      --bg-darker: #0f0f1a;
-      --card: #1f1f3a;
-      --border: #2d2d4a;
-      --text: #e8e8f0;
-      --text-muted: #9090a8;
-      --accent-light: rgba(85, 161, 132, 0.15);
-      --soft-greige: #252540;
-      --glass-bg: rgba(31, 31, 58, 0.9);
-      --glass-border: rgba(45, 45, 74, 0.6);
-      --gradient-card: linear-gradient(180deg, rgba(31,31,58,1) 0%, rgba(26,26,46,0.8) 100%);
-      --shadow: 0 1px 3px rgba(0,0,0,0.3);
-      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-      --shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
-      --shadow-glow: 0 0 40px rgba(85, 161, 132, 0.2);
+      --bg: #0f172a;
+      --bg-dark: #0c1222;
+      --bg-darker: #080d18;
+      --card: #1e293b;
+      --card-hover: #273548;
+      --border: #334155;
+      --border-light: #475569;
+      --text: #cbd5e1;
+      --text-muted: #64748b;
+      --light: #1e293b;
+      --primary: #10b981;
+      --primary-light: rgba(16, 185, 129, 0.15);
+      --accent-light: rgba(16, 185, 129, 0.1);
+      --accent-red: #f87171;
+      --success: #34d399;
+      --info: #60a5fa;
+      --soft-greige: #1e293b;
+      --greige: #1e293b;
+      --glass-bg: rgba(15, 23, 42, 0.95);
+      --glass-border: rgba(51, 65, 85, 0.5);
+      --gradient-card: linear-gradient(180deg, rgba(30,41,59,1) 0%, rgba(15,23,42,0.9) 100%);
+      --gradient-primary: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --shadow: 0 1px 3px rgba(0,0,0,0.4);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.6);
+      --shadow-glow: 0 0 40px rgba(16, 185, 129, 0.25);
     }
 
+    [data-theme="dark"] body { background: var(--bg); }
+
     [data-theme="dark"] .header {
+      background: linear-gradient(180deg, var(--card) 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    [data-theme="dark"] .sidebar {
       background: var(--card);
-      border-bottom-color: var(--border);
+      border-right: 1px solid var(--border);
     }
 
     [data-theme="dark"] .stock-card {
-      background: var(--gradient-card);
+      background: var(--card);
+      border: 1px solid var(--border);
+    }
+
+    [data-theme="dark"] .stock-card:hover {
+      background: var(--card-hover);
+      border-color: var(--primary);
+      box-shadow: var(--shadow-glow);
+    }
+
+    [data-theme="dark"] .btn-primary {
+      background: var(--gradient-primary);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
     }
 
     [data-theme="dark"] .btn-secondary {
       background: var(--card);
       color: var(--text);
-      border-color: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    [data-theme="dark"] .btn-secondary:hover {
+      background: var(--card-hover);
+      border-color: var(--primary);
     }
 
     [data-theme="dark"] input,
@@ -107,8 +142,73 @@
     [data-theme="dark"] select {
       background: var(--bg-darker);
       color: var(--text);
-      border-color: var(--border);
+      border: 1px solid var(--border);
     }
+
+    [data-theme="dark"] input:focus,
+    [data-theme="dark"] textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    [data-theme="dark"] .tabs { background: var(--bg-darker); border: 1px solid var(--border); }
+    [data-theme="dark"] .tab { color: var(--text-muted); }
+    [data-theme="dark"] .tab:hover { background: var(--card); color: var(--text); }
+    [data-theme="dark"] .tab.active { background: var(--primary); color: #0f172a; }
+
+    [data-theme="dark"] .summary-card,
+    [data-theme="dark"] .sidebar-section { background: var(--card); border: 1px solid var(--border); }
+    [data-theme="dark"] .sidebar-section:hover { background: var(--card-hover); }
+
+    [data-theme="dark"] .stock-detail-modal { background: var(--bg); box-shadow: -10px 0 40px rgba(0,0,0,0.5); }
+    [data-theme="dark"] .modal-header { background: linear-gradient(180deg, var(--card) 0%, var(--bg) 100%); border-bottom: 1px solid var(--border); }
+    [data-theme="dark"] .detail-table th { background: var(--bg-darker); color: var(--text-muted); }
+    [data-theme="dark"] .detail-table td { border-color: var(--border); }
+
+    [data-theme="dark"] .tag { background: var(--card); border: 1px solid var(--border); }
+    [data-theme="dark"] .tag.buy { background: rgba(16, 185, 129, 0.2); color: var(--success); border-color: var(--success); }
+    [data-theme="dark"] .tag.sell { background: rgba(248, 113, 113, 0.2); color: var(--accent-red); border-color: var(--accent-red); }
+
+    [data-theme="dark"] .quick-stats { background: linear-gradient(180deg, var(--card) 0%, var(--bg) 100%); border-bottom: 1px solid var(--border); }
+    [data-theme="dark"] .stat-card { background: var(--card); border: 1px solid var(--border); }
+    [data-theme="dark"] .stat-card:hover { background: var(--card-hover); box-shadow: var(--shadow-glow); }
+
+    [data-theme="dark"] .meetings-widget,
+    [data-theme="dark"] .activity-feed { background: var(--card); border: 1px solid var(--border); }
+    [data-theme="dark"] .meetings-header,
+    [data-theme="dark"] .activity-header { background: var(--bg-darker); border-bottom: 1px solid var(--border); }
+    [data-theme="dark"] .meeting-item:hover,
+    [data-theme="dark"] .activity-item:hover { background: var(--card-hover); }
+
+    [data-theme="dark"] .shortcuts-panel { background: var(--card); border: 1px solid var(--border); }
+    [data-theme="dark"] .shortcut-key { background: var(--bg-darker); border: 1px solid var(--border); }
+    [data-theme="dark"] .action-btn { background: var(--bg-darker); border: 1px solid var(--border); }
+    [data-theme="dark"] .action-btn:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+
+    [data-theme="dark"] .live-ticker-container { background: linear-gradient(135deg, var(--card) 0%, var(--bg-darker) 100%); }
+    [data-theme="dark"] .search-autocomplete { background: var(--card); border: 1px solid var(--border); }
+    [data-theme="dark"] .search-item:hover { background: var(--card-hover); }
+    [data-theme="dark"] .drawer-panel { background: var(--card); border: 1px solid var(--border); }
+    [data-theme="dark"] .toast { background: var(--card); border: 1px solid var(--border); }
+    [data-theme="dark"] .skeleton { background: linear-gradient(90deg, var(--card) 25%, var(--card-hover) 50%, var(--card) 75%); }
+
+    [data-theme="dark"] ::selection { background: var(--primary); color: #0f172a; }
+
+    /* Dark mode - remove white from buttons and badges */
+    [data-theme="dark"] .btn-primary { color: #0f172a; }
+    [data-theme="dark"] .badge-buy, [data-theme="dark"] .badge-high { color: #0f172a; }
+    [data-theme="dark"] .ticker-item { color: #0f172a; }
+    [data-theme="dark"] .live-ticker-container { color: #0f172a; }
+    [data-theme="dark"] .crm-stat-box { color: #0f172a !important; }
+    [data-theme="dark"] .pulse-dot { background: var(--primary); }
+    [data-theme="dark"] .stock-detail-close { background: rgba(100, 116, 139, 0.3); color: var(--text); }
+    [data-theme="dark"] .stock-detail-close:hover { background: rgba(100, 116, 139, 0.5); }
+    [data-theme="dark"] .price-range-marker { border-color: #0f172a; }
+    [data-theme="dark"] .avatar-img { border-color: var(--border) !important; }
+    [data-theme="dark"] ::-webkit-scrollbar { width: 8px; height: 8px; }
+    [data-theme="dark"] ::-webkit-scrollbar-track { background: var(--bg-darker); }
+    [data-theme="dark"] ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
 
     /* Live Ticker */
     @keyframes tickerScroll {
@@ -348,6 +448,8 @@
     [data-theme="dark"] .theme-toggle::after {
       content: 'D';
       transform: translateX(20px);
+      background: #0f172a;
+      color: var(--primary);
     }
 
     /* Keyframe Animations */
@@ -2759,6 +2861,276 @@
         grid-template-columns: repeat(2, 1fr);
       }
     }
+
+    /* === COMMUNICATION PANEL === */
+    .comm-panel {
+      position: fixed;
+      right: -450px;
+      top: 0;
+      width: 450px;
+      height: 100vh;
+      background: var(--card);
+      box-shadow: -10px 0 40px rgba(0,0,0,0.2);
+      z-index: 500;
+      transition: right 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .comm-panel.open { right: 0; }
+
+    .comm-panel-header {
+      padding: 20px 24px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent-dark) 100%);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .comm-panel-title { font-size: 18px; font-weight: 700; font-family: var(--font-serif); }
+    .comm-panel-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+    [data-theme="dark"] .comm-panel-close { background: rgba(0,0,0,0.3); }
+
+    .comm-panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+    .comm-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .comm-tab {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .comm-tab:hover { background: var(--soft-greige); }
+    .comm-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+    [data-theme="dark"] .comm-tab.active { color: #0f172a; }
+
+    .comm-tab-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+
+    .comm-content { display: none; }
+    .comm-content.active { display: block; }
+
+    .comm-section { margin-bottom: 20px; }
+    .comm-section-title { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .comm-textarea {
+      width: 100%;
+      min-height: 150px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--font-primary);
+      font-size: 14px;
+      resize: vertical;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .comm-textarea:focus { outline: none; border-color: var(--primary); }
+
+    .comm-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .comm-checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .comm-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--soft-greige);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    .comm-checkbox:hover { background: var(--greige); }
+    .comm-checkbox.selected { background: var(--primary); color: white; }
+    [data-theme="dark"] .comm-checkbox.selected { color: #0f172a; }
+
+    .comm-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--gradient-primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    [data-theme="dark"] .comm-btn { color: #0f172a; }
+    .comm-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+    .comm-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .comm-btn-secondary {
+      background: var(--soft-greige);
+      color: var(--text);
+      margin-top: 10px;
+    }
+    .comm-btn-secondary:hover { background: var(--greige); box-shadow: none; }
+
+    .email-preview {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    /* === NOTIFICATION OVERLAY === */
+    .notification-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 600;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 380px;
+    }
+
+    .notification {
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      animation: slideInRight 0.3s ease;
+      border-left: 4px solid var(--primary);
+    }
+    .notification.urgent { border-left-color: #dc2626; }
+    .notification.positive { border-left-color: #16a34a; }
+    .notification.negative { border-left-color: #dc2626; }
+
+    .notification-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .notification.urgent .notification-icon { background: #fef2f2; }
+
+    .notification-content { flex: 1; }
+    .notification-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .notification-text { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .notification-time { font-size: 10px; color: var(--text-muted); margin-top: 6px; }
+
+    .notification-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      font-size: 16px;
+    }
+    .notification-close:hover { color: var(--text); }
+
+    .notification-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .notification-action {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .notification-action.primary { background: var(--primary); color: white; }
+    [data-theme="dark"] .notification-action.primary { color: #0f172a; }
+    .notification-action.secondary { background: var(--soft-greige); color: var(--text); }
+
+    /* === FLOATING ACTION BUTTON === */
+    .fab-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .fab-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(20px);
+      pointer-events: none;
+      transition: all 0.2s;
+    }
+    .fab-container.open .fab-menu { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+    .fab-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: var(--card);
+      border-radius: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .fab-item:hover { transform: translateX(-5px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+    .fab-item-icon { font-size: 18px; }
+    .fab-item-label { font-size: 13px; font-weight: 500; }
+
+    .fab-main {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--gradient-primary);
+      color: white;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s;
+    }
+    [data-theme="dark"] .fab-main { color: #0f172a; }
+    .fab-main:hover { transform: scale(1.05); }
+    .fab-container.open .fab-main { transform: rotate(45deg); }
+
+    /* === NEWS ALERT BADGE === */
+    .news-alert-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #dc2626;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -2919,6 +3291,157 @@
         <div class="shortcut-keys"><span class="shortcut-key">?</span></div>
       </div>
     </div>
+  </div>
+
+  <!-- COMMUNICATION PANEL -->
+  <div class="comm-panel" id="commPanel">
+    <div class="comm-panel-header">
+      <span class="comm-panel-title">Client Communication</span>
+      <button class="comm-panel-close" id="commPanelClose">&times;</button>
+    </div>
+    <div class="comm-panel-body">
+      <div class="comm-tabs">
+        <div class="comm-tab active" data-comm="email">
+          <span class="comm-tab-icon">&#9993;</span>
+          Email
+        </div>
+        <div class="comm-tab" data-comm="meeting">
+          <span class="comm-tab-icon">&#128197;</span>
+          Meeting
+        </div>
+        <div class="comm-tab" data-comm="notes">
+          <span class="comm-tab-icon">&#128221;</span>
+          Notes
+        </div>
+      </div>
+
+      <!-- EMAIL TAB -->
+      <div class="comm-content active" id="comm-email">
+        <div class="comm-section">
+          <div class="comm-section-title">Email Type</div>
+          <div class="comm-checkbox-group" id="emailTypeGroup">
+            <div class="comm-checkbox selected" data-type="pitch">Investment Pitch</div>
+            <div class="comm-checkbox" data-type="followup">Follow-up</div>
+            <div class="comm-checkbox" data-type="news">News Alert</div>
+            <div class="comm-checkbox" data-type="meeting">Meeting Request</div>
+          </div>
+        </div>
+
+        <div class="comm-section">
+          <div class="comm-section-title">Include in Email</div>
+          <div class="comm-checkbox-group" id="emailIncludeGroup">
+            <div class="comm-checkbox selected" data-include="storyline">Storyline</div>
+            <div class="comm-checkbox selected" data-include="news">Recent News</div>
+            <div class="comm-checkbox" data-include="fundamentals">Key Metrics</div>
+            <div class="comm-checkbox" data-include="recommendation">Buy Rating</div>
+          </div>
+        </div>
+
+        <div class="comm-section">
+          <div class="comm-section-title">Additional Notes</div>
+          <textarea class="comm-textarea" id="emailNotes" placeholder="Add personal touch or specific points to mention..."></textarea>
+        </div>
+
+        <button class="comm-btn" id="generateEmailBtn">Generate Smart Email</button>
+
+        <div id="emailPreviewContainer" style="display: none;">
+          <div class="comm-section" style="margin-top: 20px;">
+            <div class="comm-section-title">Generated Email</div>
+            <div class="email-preview" id="emailPreview"></div>
+          </div>
+          <button class="comm-btn" id="copyEmailBtn">Copy to Clipboard</button>
+          <button class="comm-btn comm-btn-secondary" id="openMailClientBtn">Open in Mail Client</button>
+        </div>
+      </div>
+
+      <!-- MEETING TAB -->
+      <div class="comm-content" id="comm-meeting">
+        <div class="comm-section">
+          <div class="comm-section-title">Meeting Type</div>
+          <div class="comm-checkbox-group" id="meetingTypeGroup">
+            <div class="comm-checkbox selected" data-type="video">Video Call</div>
+            <div class="comm-checkbox" data-type="phone">Phone Call</div>
+            <div class="comm-checkbox" data-type="in_person">In Person</div>
+            <div class="comm-checkbox" data-type="lunch">Business Lunch</div>
+          </div>
+        </div>
+
+        <div class="comm-section">
+          <div class="comm-section-title">Date & Time</div>
+          <input type="datetime-local" class="comm-input" id="meetingDateTime">
+        </div>
+
+        <div class="comm-section">
+          <div class="comm-section-title">Duration</div>
+          <div class="comm-checkbox-group" id="meetingDurationGroup">
+            <div class="comm-checkbox" data-duration="15">15 min</div>
+            <div class="comm-checkbox selected" data-duration="30">30 min</div>
+            <div class="comm-checkbox" data-duration="60">1 hour</div>
+          </div>
+        </div>
+
+        <div class="comm-section">
+          <div class="comm-section-title">Agenda / Topics</div>
+          <textarea class="comm-textarea" id="meetingAgenda" placeholder="Portfolio review, discuss recent market movements, new investment opportunities..."></textarea>
+        </div>
+
+        <button class="comm-btn" id="scheduleMeetingBtn">Generate Calendar Invite</button>
+
+        <div id="meetingPreviewContainer" style="display: none; margin-top: 20px;">
+          <div class="email-preview" id="meetingPreview"></div>
+          <button class="comm-btn" id="downloadIcsBtn">Download .ics File</button>
+        </div>
+      </div>
+
+      <!-- NOTES TAB -->
+      <div class="comm-content" id="comm-notes">
+        <div class="comm-section">
+          <div class="comm-section-title">Quick Note Type</div>
+          <div class="comm-checkbox-group" id="noteTypeGroup">
+            <div class="comm-checkbox selected" data-type="call">Call Log</div>
+            <div class="comm-checkbox" data-type="meeting">Meeting Summary</div>
+            <div class="comm-checkbox" data-type="insight">Client Insight</div>
+            <div class="comm-checkbox" data-type="action">Action Item</div>
+          </div>
+        </div>
+
+        <div class="comm-section">
+          <div class="comm-section-title">Note Content</div>
+          <textarea class="comm-textarea" id="noteContent" placeholder="Enter your notes here..." style="min-height: 200px;"></textarea>
+        </div>
+
+        <button class="comm-btn" id="saveNoteBtn">Save Note to CRM</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION CONTAINER -->
+  <div class="notification-container" id="notificationContainer"></div>
+
+  <!-- FLOATING ACTION BUTTON -->
+  <div class="fab-container" id="fabContainer">
+    <div class="fab-menu">
+      <div class="fab-item" onclick="openCommPanel('email')">
+        <span class="fab-item-icon">&#9993;</span>
+        <span class="fab-item-label">Draft Email</span>
+      </div>
+      <div class="fab-item" onclick="openCommPanel('meeting')">
+        <span class="fab-item-icon">&#128197;</span>
+        <span class="fab-item-label">Schedule Meeting</span>
+      </div>
+      <div class="fab-item" onclick="openCommPanel('notes')">
+        <span class="fab-item-icon">&#128221;</span>
+        <span class="fab-item-label">Add Note</span>
+      </div>
+      <div class="fab-item" onclick="checkNewsAlerts()">
+        <span class="fab-item-icon" style="position: relative;">
+          &#128276;
+          <span class="news-alert-badge" id="newsAlertBadge" style="display: none;">0</span>
+        </span>
+        <span class="fab-item-label">News Alerts</span>
+      </div>
+    </div>
+    <button class="fab-main" id="fabMain">+</button>
   </div>
 
   <!-- MAIN LAYOUT -->
@@ -3127,9 +3650,9 @@ function renderPortfolioPieChart() {
       datasets: [{
         data: data,
         backgroundColor: labels.map((_, i) => getPieColor(i)),
-        borderColor: 'rgba(255,255,255,0.2)',
+        borderColor: document.documentElement.dataset.theme === 'dark' ? 'rgba(15,23,42,0.3)' : 'rgba(255,255,255,0.2)',
         borderWidth: 2,
-        hoverBorderColor: '#fff',
+        hoverBorderColor: document.documentElement.dataset.theme === 'dark' ? '#10b981' : '#fff',
         hoverBorderWidth: 3
       }]
     },
@@ -3351,7 +3874,7 @@ function renderDrawerContent(data) {
     <div class="drawer-panel" id="drawer-crm">
       <div class="crm-loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
         <div class="spinner"></div>
-        <p style="margin-top: 12px;">Lade CRM-Daten...</p>
+        <p style="margin-top: 12px;">Loading CRM data...</p>
       </div>
     </div>
   `;
@@ -3361,7 +3884,7 @@ function renderDrawerContent(data) {
     <div class="drawer-panel" id="drawer-compliance">
       <div class="compliance-loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
         <div class="spinner"></div>
-        <p style="margin-top: 12px;">Lade Compliance-Daten...</p>
+        <p style="margin-top: 12px;">Loading Compliance data...</p>
       </div>
     </div>
   `;
@@ -3413,7 +3936,7 @@ async function loadCRMData(clientId) {
     crmDataLoaded = true;
   } catch (e) {
     console.error('Error loading CRM data:', e);
-    $('drawer-crm').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Fehler beim Laden der CRM-Daten</div>`;
+    $('drawer-crm').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Error loading CRM data</div>`;
   }
 }
 
@@ -3427,45 +3950,45 @@ function renderCRMPanel(data) {
     <!-- Contact Preferences -->
     <div class="crm-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Kontakt-Präferenzen
+        Contact Preferences
       </h4>
       <div class="crm-prefs-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Bevorzugter Kanal</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Preferred Channel</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
-            ${prefs.preferred_channel === 'phone' ? 'Telefon' :
-              prefs.preferred_channel === 'email' ? 'E-Mail' :
+            ${prefs.preferred_channel === 'phone' ? 'Phone' :
+              prefs.preferred_channel === 'email' ? 'Email' :
               prefs.preferred_channel === 'video' ? 'Video' :
-              prefs.preferred_channel === 'in_person' ? 'Persoenlich' : prefs.preferred_channel || '-'}
+              prefs.preferred_channel === 'in_person' ? 'In Person' : prefs.preferred_channel || '-'}
           </div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Beste Zeit</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Best Time</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
-            ${prefs.preferred_time === 'morning' ? 'Morgens (08-12h)' :
-              prefs.preferred_time === 'afternoon' ? 'Nachmittags (12-18h)' :
-              prefs.preferred_time === 'evening' ? 'Abends (18-21h)' : prefs.preferred_time || '-'}
+            ${prefs.preferred_time === 'morning' ? 'Morning (08-12h)' :
+              prefs.preferred_time === 'afternoon' ? 'Afternoon (12-18h)' :
+              prefs.preferred_time === 'evening' ? 'Evening (18-21h)' : prefs.preferred_time || '-'}
           </div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Frequenz</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Frequency</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text); text-transform: capitalize;">
-            ${prefs.preferred_frequency === 'daily' ? 'Täglich' :
-              prefs.preferred_frequency === 'weekly' ? 'Wöchentlich' :
-              prefs.preferred_frequency === 'bi-weekly' ? 'Alle 2 Wochen' :
-              prefs.preferred_frequency === 'monthly' ? 'Monatlich' : prefs.preferred_frequency || '-'}
+            ${prefs.preferred_frequency === 'daily' ? 'Daily' :
+              prefs.preferred_frequency === 'weekly' ? 'Weekly' :
+              prefs.preferred_frequency === 'bi-weekly' ? 'Bi-Weekly' :
+              prefs.preferred_frequency === 'monthly' ? 'Monthly' : prefs.preferred_frequency || '-'}
           </div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Sprache</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Language</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text);">${prefs.language || '-'}</div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Zeitzone</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Timezone</div>
           <div style="font-size: 14px; font-weight: 600; color: var(--text);">${prefs.timezone || '-'}</div>
         </div>
         <div class="crm-pref-box" style="background: var(--greige); padding: 12px 16px; border-radius: 8px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Bevorzugte Tage</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Preferred Days</div>
           <div style="font-size: 12px; font-weight: 600; color: var(--text);">
             ${Array.isArray(prefs.preferred_days) ? prefs.preferred_days.slice(0, 3).map(d => d.substring(0, 2)).join(', ') : '-'}
           </div>
@@ -3476,7 +3999,7 @@ function renderCRMPanel(data) {
     <!-- Engagement Summary -->
     <div class="crm-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Engagement Übersicht (12 Monate)
+        Engagement Summary (12 Months)
       </h4>
       <div class="crm-stats-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
         <div class="crm-stat-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: 10px; color: white;">
@@ -3485,15 +4008,15 @@ function renderCRMPanel(data) {
         </div>
         <div class="crm-stat-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 16px; border-radius: 10px; color: white;">
           <div style="font-size: 24px; font-weight: 700;">${engagement.meeting_success_rate ? engagement.meeting_success_rate + '%' : '-'}</div>
-          <div style="font-size: 11px; opacity: 0.85;">Erfolgsrate</div>
+          <div style="font-size: 11px; opacity: 0.85;">Success Rate</div>
         </div>
         <div class="crm-stat-box" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); padding: 16px; border-radius: 10px; color: white;">
           <div style="font-size: 24px; font-weight: 700;">${engagement.avg_email_response_hours ? engagement.avg_email_response_hours + 'h' : '-'}</div>
-          <div style="font-size: 11px; opacity: 0.85;">Ø Antwortzeit</div>
+          <div style="font-size: 11px; opacity: 0.85;">Avg Response</div>
         </div>
         <div class="crm-stat-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 16px; border-radius: 10px; color: white;">
           <div style="font-size: 24px; font-weight: 700;">${engagement.events_attended || 0}</div>
-          <div style="font-size: 11px; opacity: 0.85;">Events besucht</div>
+          <div style="font-size: 11px; opacity: 0.85;">Events Attended</div>
         </div>
       </div>
     </div>
@@ -3501,23 +4024,23 @@ function renderCRMPanel(data) {
     <!-- Recent Meetings -->
     <div class="crm-section">
       <h4 style="margin: 0 0 12px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Letzte Meetings
+        Recent Meetings
       </h4>
       ${meetings.length > 0 ? `
         <table class="detail-table">
           <thead>
-            <tr><th>Datum</th><th>Typ</th><th>Ort</th><th>Dauer</th><th>Themen</th><th>Ergebnis</th></tr>
+            <tr><th>Date</th><th>Type</th><th>Location</th><th>Duration</th><th>Topics</th><th>Outcome</th></tr>
           </thead>
           <tbody>
             ${meetings.slice(0, 10).map(m => `
               <tr>
-                <td class="date">${m.meeting_date ? new Date(m.meeting_date).toLocaleDateString('de-DE') : '-'}</td>
+                <td class="date">${m.meeting_date ? new Date(m.meeting_date).toLocaleDateString('en-US') : '-'}</td>
                 <td>
                   <span class="tag neutral" style="text-transform: capitalize;">
-                    ${m.meeting_type === 'in_person' ? 'Persönlich' :
+                    ${m.meeting_type === 'in_person' ? 'In Person' :
                       m.meeting_type === 'video_call' ? 'Video' :
                       m.meeting_type === 'roadshow' ? 'Roadshow' :
-                      m.meeting_type === 'conference' ? 'Konferenz' :
+                      m.meeting_type === 'conference' ? 'Conference' :
                       m.meeting_type === 'dinner' ? 'Dinner' : m.meeting_type || '-'}
                   </span>
                 </td>
@@ -3528,7 +4051,7 @@ function renderCRMPanel(data) {
                 </td>
                 <td>
                   <span class="tag ${m.outcome === 'positive' ? 'buy' : m.outcome === 'follow_up_needed' ? 'sell' : 'neutral'}">
-                    ${m.outcome === 'positive' ? 'Positiv' :
+                    ${m.outcome === 'positive' ? 'Positive' :
                       m.outcome === 'follow_up_needed' ? 'Follow-up' : 'Neutral'}
                   </span>
                 </td>
@@ -3536,20 +4059,20 @@ function renderCRMPanel(data) {
             `).join('')}
           </tbody>
         </table>
-      ` : '<div style="color: var(--text-muted); text-align: center; padding: 20px;">Keine Meetings vorhanden</div>'}
+      ` : '<div style="color: var(--text-muted); text-align: center; padding: 20px;">No meetings available</div>'}
     </div>
 
     <!-- Events Attended -->
     ${events.length > 0 ? `
     <div class="crm-section" style="margin-top: 24px;">
       <h4 style="margin: 0 0 12px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Event-Teilnahme
+        Event Attendance
       </h4>
       <div style="display: flex; flex-wrap: wrap; gap: 8px;">
         ${events.slice(0, 6).map(e => `
           <div style="background: var(--greige); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
             <span style="font-weight: 600;">${e.event_name}</span>
-            <span style="color: var(--text-muted); margin-left: 8px;">${e.event_date ? new Date(e.event_date).toLocaleDateString('de-DE') : ''}</span>
+            <span style="color: var(--text-muted); margin-left: 8px;">${e.event_date ? new Date(e.event_date).toLocaleDateString('en-US') : ''}</span>
             ${e.feedback_score ? `<span style="margin-left: 8px;">${e.feedback_score}/5</span>` : ''}
           </div>
         `).join('')}
@@ -3573,13 +4096,13 @@ async function loadComplianceData(clientId) {
     complianceDataLoaded = true;
   } catch (e) {
     console.error('Error loading compliance data:', e);
-    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Fehler beim Laden der Compliance-Daten</div>`;
+    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Error loading compliance data</div>`;
   }
 }
 
 function renderCompliancePanel(compliance) {
   if (!compliance) {
-    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">Keine Compliance-Daten vorhanden</div>`;
+    $('drawer-compliance').innerHTML = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">No compliance data available</div>`;
     return;
   }
 
@@ -3611,27 +4134,27 @@ function renderCompliancePanel(compliance) {
           </div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Risiko-Rating</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Risk Rating</div>
           <div style="font-size: 14px; font-weight: 700; text-transform: capitalize; color: ${
             compliance.kyc_risk_rating === 'enhanced' ? '#dc2626' :
             compliance.kyc_risk_rating === 'standard' ? '#d97706' : '#16a34a'
           };">
-            ${compliance.kyc_risk_rating === 'low' ? 'Niedrig' :
+            ${compliance.kyc_risk_rating === 'low' ? 'Low' :
               compliance.kyc_risk_rating === 'standard' ? 'Standard' :
-              compliance.kyc_risk_rating === 'enhanced' ? 'Erhöht' : compliance.kyc_risk_rating || '-'}
+              compliance.kyc_risk_rating === 'enhanced' ? 'Enhanced' : compliance.kyc_risk_rating || '-'}
           </div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Ablaufdatum</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Expiry Date</div>
           <div style="font-size: 14px; font-weight: 700; color: ${compliance.kyc_expiring_soon ? '#dc2626' : 'inherit'};">
-            ${compliance.kyc_expiry_date ? new Date(compliance.kyc_expiry_date).toLocaleDateString('de-DE') : '-'}
+            ${compliance.kyc_expiry_date ? new Date(compliance.kyc_expiry_date).toLocaleDateString('en-US') : '-'}
           </div>
-          ${compliance.kyc_expiring_soon ? '<div style="font-size: 10px; color: #dc2626; margin-top: 4px;">Laeuft bald ab!</div>' : ''}
+          ${compliance.kyc_expiring_soon ? '<div style="font-size: 10px; color: #dc2626; margin-top: 4px;">Expiring soon!</div>' : ''}
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Letztes Review</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Last Review</div>
           <div style="font-size: 14px; font-weight: 700;">
-            ${compliance.kyc_last_review ? new Date(compliance.kyc_last_review).toLocaleDateString('de-DE') : '-'}
+            ${compliance.kyc_last_review ? new Date(compliance.kyc_last_review).toLocaleDateString('en-US') : '-'}
           </div>
         </div>
       </div>
@@ -3640,31 +4163,31 @@ function renderCompliancePanel(compliance) {
     <!-- Investor Classification -->
     <div class="compliance-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Anleger-Klassifizierung (MiFID II)
+        Investor Classification (MiFID II)
       </h4>
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Investortyp</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Investor Type</div>
           <div style="font-size: 14px; font-weight: 700; text-transform: capitalize;">
-            ${compliance.investor_type === 'professional' ? 'Professionell' :
+            ${compliance.investor_type === 'professional' ? 'Professional' :
               compliance.investor_type === 'retail' ? 'Retail' :
-              compliance.investor_type === 'eligible_counterparty' ? 'Geeignete Gegenpartei' : compliance.investor_type || '-'}
+              compliance.investor_type === 'eligible_counterparty' ? 'Eligible Counterparty' : compliance.investor_type || '-'}
           </div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Mandatstyp</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Mandate Type</div>
           <div style="font-size: 14px; font-weight: 700; text-transform: capitalize;">
-            ${compliance.mandate_type === 'discretionary' ? 'Diskretionär' :
-              compliance.mandate_type === 'advisory' ? 'Beratung' :
+            ${compliance.mandate_type === 'discretionary' ? 'Discretionary' :
+              compliance.mandate_type === 'advisory' ? 'Advisory' :
               compliance.mandate_type === 'execution_only' ? 'Execution Only' : compliance.mandate_type || '-'}
           </div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">AUM (deklariert)</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">AUM (declared)</div>
           <div style="font-size: 14px; font-weight: 700;">${compliance.aum_formatted || '-'}</div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Domizil</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Domicile</div>
           <div style="font-size: 14px; font-weight: 700;">${compliance.domicile_country || '-'}</div>
         </div>
       </div>
@@ -3673,21 +4196,21 @@ function renderCompliancePanel(compliance) {
     <!-- Trading Permissions -->
     <div class="compliance-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Handels-Berechtigungen
+        Trading Permissions
       </h4>
       <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
         ${Array.isArray(compliance.allowed_instruments) ? compliance.allowed_instruments.map(inst => `
           <span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-            ${inst === 'equities' ? 'Aktien' :
-                inst === 'bonds' ? 'Anleihen' :
-                inst === 'derivatives' ? 'Derivate' :
+            ${inst === 'equities' ? 'Equities' :
+                inst === 'bonds' ? 'Bonds' :
+                inst === 'derivatives' ? 'Derivatives' :
                 inst === 'etf' ? 'ETFs' :
-                inst === 'fx' ? 'Devisen' :
-                inst === 'commodities' ? 'Rohstoffe' : inst}
+                inst === 'fx' ? 'FX' :
+                inst === 'commodities' ? 'Commodities' : inst}
           </span>
         `).join('') : ''}
-        ${compliance.short_selling_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Short Selling erlaubt</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Kein Short Selling</span>'}
-        ${compliance.leverage_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Leverage erlaubt</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Kein Leverage</span>'}
+        ${compliance.short_selling_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Short Selling Allowed</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">No Short Selling</span>'}
+        ${compliance.leverage_allowed ? '<span style="background: #e0f0ea; color: #305f50; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Leverage Allowed</span>' : '<span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">No Leverage</span>'}
         ${compliance.max_single_position_pct ? `<span style="background: var(--greige); color: var(--text); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Max. Position: ${compliance.max_single_position_pct}%</span>` : ''}
       </div>
     </div>
@@ -3696,21 +4219,21 @@ function renderCompliancePanel(compliance) {
     ${(compliance.restricted_sectors && compliance.restricted_sectors.length > 0) || (compliance.restricted_countries && compliance.restricted_countries.length > 0) ? `
     <div class="compliance-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        Einschränkungen
+        Restrictions
       </h4>
       <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
         ${Array.isArray(compliance.restricted_sectors) ? compliance.restricted_sectors.map(s => `
           <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-            Sektor: ${s === 'defense' ? 'Ruestung' :
-                s === 'tobacco' ? 'Tabak' :
-                s === 'gambling' ? 'Gluecksspiel' :
-                s === 'fossil_fuels' ? 'Fossile Brennstoffe' :
-                s === 'nuclear' ? 'Nuklear' : s}
+            Sector: ${s === 'defense' ? 'Defense' :
+                s === 'tobacco' ? 'Tobacco' :
+                s === 'gambling' ? 'Gambling' :
+                s === 'fossil_fuels' ? 'Fossil Fuels' :
+                s === 'nuclear' ? 'Nuclear' : s}
           </span>
         `).join('') : ''}
         ${Array.isArray(compliance.restricted_countries) ? compliance.restricted_countries.map(c => `
           <span style="background: #fef2f2; color: #dc2626; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
-            Land: ${c}
+            Country: ${c}
           </span>
         `).join('') : ''}
       </div>
@@ -3720,22 +4243,22 @@ function renderCompliancePanel(compliance) {
     <!-- ESG Requirements -->
     <div class="compliance-section">
       <h4 style="margin: 0 0 16px 0; font-size: 15px; font-family: var(--font-serif); color: var(--text);">
-        ESG-Anforderungen
+        ESG Requirements
       </h4>
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
         <div style="background: ${compliance.esg_mandate ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' : 'var(--greige)'}; padding: 16px; border-radius: 10px; text-align: center; color: ${compliance.esg_mandate ? 'white' : 'var(--text)'};">
-          <div style="font-size: 11px; ${compliance.esg_mandate ? 'opacity: 0.85' : 'color: var(--text-muted)'}; margin-bottom: 8px;">ESG-Mandat</div>
+          <div style="font-size: 11px; ${compliance.esg_mandate ? 'opacity: 0.85' : 'color: var(--text-muted)'}; margin-bottom: 8px;">ESG Mandate</div>
           <div style="font-size: 18px; font-weight: 700;">
-            ${compliance.esg_mandate ? 'Ja' : 'Nein'}
+            ${compliance.esg_mandate ? 'Yes' : 'No'}
           </div>
         </div>
         ${compliance.esg_mandate ? `
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Min. ESG-Score</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Min. ESG Score</div>
           <div style="font-size: 18px; font-weight: 700;">${compliance.esg_min_score ? compliance.esg_min_score.toFixed(0) : '-'}</div>
         </div>
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">SFDR-Klassifizierung</div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">SFDR Classification</div>
           <div style="font-size: 18px; font-weight: 700; color: ${
             compliance.sfdr_classification === 'article_9' ? '#16a34a' :
             compliance.sfdr_classification === 'article_8' ? '#d97706' : 'inherit'
@@ -3747,7 +4270,7 @@ function renderCompliancePanel(compliance) {
         </div>
         ` : `
         <div style="background: var(--greige); padding: 16px; border-radius: 10px; text-align: center; grid-column: span 2;">
-          <div style="color: var(--text-muted); font-size: 13px;">Keine ESG-Anforderungen definiert</div>
+          <div style="color: var(--text-muted); font-size: 13px;">No ESG requirements defined</div>
         </div>
         `}
       </div>
@@ -4172,7 +4695,7 @@ function selectManualStock(stock) {
 async function search(query) {
   if (!query || query.length < 2) return;
 
-  setStatus('Suche...', 'default');
+  setStatus('Searching...', 'default');
 
   try {
     const res = await fetch(apiUrl(`/api/search?q=${encodeURIComponent(query)}&limit=50`), {
@@ -4211,7 +4734,7 @@ async function search(query) {
 // ============================================================================
 async function loadClient(id) {
   hideModal();
-  setStatus('Lade...', 'default');
+  setStatus('Loading...', 'default');
 
   try {
     const res = await fetch(apiUrl(`/api/client/${id}`), { headers: authHeaders() });
@@ -4280,7 +4803,7 @@ async function generateShortlist() {
     const data = await res.json();
 
     if (data.error) {
-      $('stockGrid').innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${data.error}</p></div>`;
+      $('stockGrid').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${data.error}</p></div>`;
       setStatus('Error', 'default');
       $('generateBtn').disabled = false;
       return;
@@ -4297,7 +4820,7 @@ async function generateShortlist() {
     await loadHistory();
 
   } catch (e) {
-    $('stockGrid').innerHTML = `<div class="empty-state"><h3>Fehler</h3><p>${e.message}</p></div>`;
+    $('stockGrid').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${e.message}</p></div>`;
     setStatus('Error', 'default');
     $('generateBtn').disabled = false;
     console.error(e);
@@ -4305,7 +4828,8 @@ async function generateShortlist() {
 }
 
 function renderShortlist(list, topPicksParam) {
-  // Store topPicks globally for filtering
+  // Store globally for live price updates and filtering
+  window._shortlist = list;
   topPicks = topPicksParam || [];
 
   if (!list.length) {
@@ -4339,8 +4863,8 @@ function renderShortlist(list, topPicksParam) {
         </div>
         <div class="stock-metrics">
           <div class="stock-metric">
-            <span class="stock-metric-label">Close</span>
-            <span class="stock-metric-value">${s.last_close != null ? Number(s.last_close).toFixed(2) : '-'}</span>
+            <span class="stock-metric-label">Price</span>
+            <span class="stock-metric-value" id="price-${s.ticker.replace(/\./g, '-')}">${s.last_close != null ? Number(s.last_close).toFixed(2) : '-'}</span>
           </div>
           <div class="stock-metric">
             <span class="stock-metric-label">Vol 60d</span>
@@ -4362,10 +4886,45 @@ function renderShortlist(list, topPicksParam) {
     el.addEventListener('click', () => selectStock(parseInt(el.dataset.idx)));
   });
 
-  // Load sparklines for each stock
+  // Load sparklines and live prices for each stock
   list.forEach(s => {
     loadSparkline(s.ticker);
+    loadLivePrice(s.ticker);
   });
+}
+
+// Fetch and display live prices from yfinance
+async function loadLivePrice(ticker) {
+  const priceEl = document.getElementById(`price-${ticker.replace(/\./g, '-')}`);
+  if (!priceEl) return;
+
+  try {
+    const res = await fetch(apiUrl(`/api/stock/${ticker}/quote`), { headers: authHeaders() });
+    if (!res.ok) return;
+
+    const data = await res.json();
+
+    if (data.price) {
+      const price = Number(data.price).toFixed(2);
+      const change = data.change_percent || 0;
+      const changeClass = change >= 0 ? 'positive' : 'negative';
+      const changeSign = change >= 0 ? '+' : '';
+
+      priceEl.innerHTML = `$${price} <span class="${changeClass}" style="font-size: 10px; margin-left: 4px;">${changeSign}${Number(change).toFixed(1)}%</span>`;
+
+      // Update stored data for when card is clicked
+      if (window._shortlist) {
+        const stock = window._shortlist.find(s => s.ticker === ticker);
+        if (stock) {
+          stock.last_close = data.price;
+          stock.live_price = data.price;
+          stock.change_percent = change;
+        }
+      }
+    }
+  } catch (e) {
+    console.log(`Could not load live price for ${ticker}`);
+  }
 }
 
 // Sparkline mini-charts for stock cards
@@ -4484,7 +5043,7 @@ function selectStock(idx) {
 async function generateStory(mode) {
   if (!clientId || !selectedTicker) return;
 
-  setStatus('Generiere Story...', 'default');
+  setStatus('Generating Story...', 'default');
   $('outputPanel').style.display = 'block';
   $('outputText').textContent = 'Generiere...';
 
@@ -4506,7 +5065,7 @@ async function generateStory(mode) {
     const data = await res.json();
 
     if (data.error) {
-      $('outputText').textContent = 'Fehler: ' + data.error;
+      $('outputText').textContent = 'Error: ' + data.error;
       setStatus('Error', 'default');
       return;
     }
@@ -4521,10 +5080,63 @@ async function generateStory(mode) {
     await loadHistory();
 
   } catch (e) {
-    $('outputText').textContent = 'Fehler: ' + e.message;
+    $('outputText').textContent = 'Error: ' + e.message;
     setStatus('Error', 'default');
     console.error(e);
   }
+}
+
+// ============================================================================
+// STOCK STORYLINE (from modal)
+// ============================================================================
+async function generateStockStoryline(ticker, companyName, sector) {
+  if (!clientId) {
+    alert('Please select a client first');
+    return;
+  }
+
+  const outputDiv = document.getElementById('stockStorylineOutput');
+  const textDiv = document.getElementById('stockStorylineText');
+
+  outputDiv.style.display = 'block';
+  textDiv.textContent = 'Generating storyline...';
+
+  try {
+    const res = await fetch(apiUrl('/api/story_for_stock'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({
+        client_id: clientId,
+        selected_ticker: ticker,
+        mode: 'STORY',
+        instruction: `Focus on ${companyName} (${ticker}) in the ${sector} sector. Create a compelling sales narrative.`,
+        max_words: 300
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      textDiv.textContent = 'Error: ' + data.error;
+      return;
+    }
+
+    textDiv.textContent = data.story || '(No output generated)';
+
+  } catch (e) {
+    textDiv.textContent = 'Error: ' + e.message;
+    console.error(e);
+  }
+}
+
+function copyStockStoryline() {
+  const text = document.getElementById('stockStorylineText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target.closest('button');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span style="margin-right: 6px;">&#10003;</span> Copied!';
+    setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+  });
 }
 
 // ============================================================================
@@ -4904,6 +5516,22 @@ function renderStockDetailContent(stock, quote, news, history = [], fundamentals
     `;
   }
 
+  // Generate Storyline Button
+  html += `
+    <div class="stock-detail-section" style="text-align: center;">
+      <button class="btn-primary" onclick="generateStockStoryline('${stock.ticker}', '${(stock.company_name || '').replace(/'/g, "\\'")}', '${stock.sector || ''}')" style="width: 100%; padding: 14px 24px; font-size: 15px;">
+        <span style="margin-right: 8px;">&#9998;</span> Generate Sales Storyline
+      </button>
+      <div id="stockStorylineOutput" style="margin-top: 16px; text-align: left; display: none;">
+        <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">GENERATED STORYLINE</div>
+        <div id="stockStorylineText" style="background: var(--greige); padding: 16px; border-radius: 10px; font-size: 14px; line-height: 1.7; white-space: pre-wrap;"></div>
+        <button class="btn-secondary" onclick="copyStockStoryline()" style="margin-top: 12px; width: 100%;">
+          <span style="margin-right: 6px;">&#128203;</span> Copy to Clipboard
+        </button>
+      </div>
+    </div>
+  `;
+
   // News Section
   html += `
     <div class="stock-detail-section">
@@ -4932,12 +5560,12 @@ function renderStockDetailContent(stock, quote, news, history = [], fundamentals
       }
 
       html += `
-        <div class="news-item" onclick="window.open('${article.url}', '_blank')">
-          <div class="news-headline">${article.headline}</div>
+        <div class="news-item" ${article.link ? `onclick="window.open('${article.link}', '_blank')"` : ''} style="${article.link ? 'cursor: pointer;' : ''}">
+          <div class="news-headline">${article.title || 'No title'}</div>
           <div class="news-meta">
             <span class="news-sentiment ${sentiment}">${sentiment}</span>
-            <span>${article.source || 'Unknown'}</span>
-            <span>${article.datetime || ''}</span>
+            <span>${article.publisher || 'Unknown'}</span>
+            <span>${article.published || ''}</span>
           </div>
           <div style="font-size: 11px; color: ${impactColor}; margin-top: 6px; font-style: italic;">
             Hypothetical: ${impactText}
@@ -5024,7 +5652,7 @@ function renderPriceChart(history, ticker) {
         pointRadius: 0,
         pointHoverRadius: 5,
         pointHoverBackgroundColor: lineColor,
-        pointHoverBorderColor: '#fff',
+        pointHoverBorderColor: document.documentElement.dataset.theme === 'dark' ? '#10b981' : '#fff',
         pointHoverBorderWidth: 2,
       }]
     },
@@ -5088,15 +5716,15 @@ function renderPriceChart(history, ticker) {
 function copyOutput() {
   const text = $('outputText').textContent;
   navigator.clipboard.writeText(text);
-  setStatus('Kopiert!', 'active');
-  setTimeout(() => setStatus('Story bereit', 'active'), 1000);
+  setStatus('Copied!', 'active');
+  setTimeout(() => setStatus('Story ready', 'active'), 1000);
 }
 
 // ============================================================================
 // HEALTH CHECK
 // ============================================================================
 async function healthCheck() {
-  setStatus('Prüfe...', 'default');
+  setStatus('Checking...', 'default');
   try {
     const res = await fetch(apiUrl('/api/health'), { headers: authHeaders() });
     const data = await res.json();
@@ -5382,23 +6010,23 @@ $('searchInput').addEventListener('input', async (e) => {
         `).join('');
       } else if (suggestions.length > 0) {
         // Show suggestions when no matches
-        html = '<div class="search-section-header">Keine Treffer. Vorschlaege:</div>';
+        html = '<div class="search-section-header">No matches. Suggestions:</div>';
         html += suggestions.map(s => {
           if (s.type === 'popular') {
             return `<div class="search-item search-suggestion" data-id="${s.client_id}">
               <div class="search-item-title">${s.value}</div>
-              <div class="search-item-subtitle">Aktiver Kunde</div>
+              <div class="search-item-subtitle">Active Client</div>
             </div>`;
           } else if (s.type === 'client_type') {
             return `<div class="search-item search-suggestion" data-type="${s.value}">
-              <div class="search-item-title">Suche nach: ${s.value}</div>
-              <div class="search-item-subtitle">Kundentyp</div>
+              <div class="search-item-title">Search for: ${s.value}</div>
+              <div class="search-item-subtitle">Client Type</div>
             </div>`;
           }
           return '';
         }).join('');
       } else {
-        html = '<div class="search-empty">Keine Ergebnisse gefunden</div>';
+        html = '<div class="search-empty">No results found</div>';
       }
 
       $('searchAutocomplete').innerHTML = html;
@@ -5720,6 +6348,474 @@ renderShortlist = function(list, topPicksParam) {
     const containerId = `sparkline-${s.ticker.replace(/\./g, '-')}`;
     setTimeout(() => loadMiniSparkline(s.ticker, containerId), i * 50);
   });
+};
+
+// ============================================================================
+// COMMUNICATION PANEL
+// ============================================================================
+const commPanel = $('commPanel');
+const fabContainer = $('fabContainer');
+const fabMain = $('fabMain');
+
+// FAB toggle
+fabMain?.addEventListener('click', () => fabContainer.classList.toggle('open'));
+
+// Close comm panel
+$('commPanelClose')?.addEventListener('click', () => commPanel.classList.remove('open'));
+
+// Open comm panel with specific tab
+function openCommPanel(tab = 'email') {
+  commPanel.classList.add('open');
+  fabContainer.classList.remove('open');
+
+  // Switch to the right tab
+  $$('.comm-tab').forEach(t => t.classList.remove('active'));
+  $$('.comm-content').forEach(c => c.classList.remove('active'));
+
+  const targetTab = document.querySelector(`.comm-tab[data-comm="${tab}"]`);
+  const targetContent = $(`comm-${tab}`);
+
+  if (targetTab) targetTab.classList.add('active');
+  if (targetContent) targetContent.classList.add('active');
+}
+
+// Comm tab switching
+$$('.comm-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    $$('.comm-tab').forEach(t => t.classList.remove('active'));
+    $$('.comm-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    $(`comm-${tab.dataset.comm}`).classList.add('active');
+  });
+});
+
+// Checkbox group selection
+document.querySelectorAll('.comm-checkbox-group').forEach(group => {
+  group.querySelectorAll('.comm-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('click', () => {
+      // For single select groups (type groups)
+      if (group.id.includes('Type') || group.id.includes('Duration')) {
+        group.querySelectorAll('.comm-checkbox').forEach(c => c.classList.remove('selected'));
+        checkbox.classList.add('selected');
+      } else {
+        // For multi-select groups (include groups)
+        checkbox.classList.toggle('selected');
+      }
+    });
+  });
+});
+
+// ============================================================================
+// SMART EMAIL GENERATOR
+// ============================================================================
+$('generateEmailBtn')?.addEventListener('click', generateSmartEmail);
+
+async function generateSmartEmail() {
+  if (!clientId) {
+    showNotification('Please select a client first', 'warning');
+    return;
+  }
+
+  const btn = $('generateEmailBtn');
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+
+  try {
+    // Get selected options
+    const emailType = document.querySelector('#emailTypeGroup .comm-checkbox.selected')?.dataset.type || 'pitch';
+    const includeStoryline = document.querySelector('#emailIncludeGroup .comm-checkbox[data-include="storyline"]')?.classList.contains('selected');
+    const includeNews = document.querySelector('#emailIncludeGroup .comm-checkbox[data-include="news"]')?.classList.contains('selected');
+    const includeFundamentals = document.querySelector('#emailIncludeGroup .comm-checkbox[data-include="fundamentals"]')?.classList.contains('selected');
+    const includeRecommendation = document.querySelector('#emailIncludeGroup .comm-checkbox[data-include="recommendation"]')?.classList.contains('selected');
+    const additionalNotes = $('emailNotes')?.value || '';
+
+    // Get client data
+    const clientData = window._currentClientData || {};
+    const clientName = clientData.client?.client_name || 'Valued Client';
+
+    // Get selected stock info
+    const stock = selectedTicker && window._shortlist ? window._shortlist.find(s => s.ticker === selectedTicker) : null;
+    const stockInfo = stock ? `${stock.company_name} (${stock.ticker})` : 'our recommended investments';
+
+    // Fetch storyline if needed
+    let storylineText = '';
+    if (includeStoryline && selectedTicker && clientId) {
+      try {
+        const storyRes = await fetch(apiUrl('/api/story_for_stock'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({
+            client_id: clientId,
+            selected_ticker: selectedTicker,
+            mode: 'STORY',
+            max_words: 150
+          })
+        });
+        const storyData = await storyRes.json();
+        storylineText = storyData.story || '';
+      } catch (e) { console.error('Failed to fetch storyline:', e); }
+    }
+
+    // Fetch news if needed
+    let newsText = '';
+    if (includeNews && selectedTicker) {
+      try {
+        const newsRes = await fetch(apiUrl(`/api/stock/${selectedTicker}/news?limit=3`), { headers: authHeaders() });
+        const newsData = await newsRes.json();
+        if (newsData.news && newsData.news.length > 0) {
+          newsText = newsData.news.slice(0, 3).map(n => `• ${n.title}`).join('\n');
+        }
+      } catch (e) { console.error('Failed to fetch news:', e); }
+    }
+
+    // Generate email based on type
+    let emailContent = generateEmailContent(emailType, {
+      clientName,
+      stockInfo,
+      storylineText,
+      newsText,
+      additionalNotes,
+      includeStoryline,
+      includeNews,
+      includeFundamentals,
+      includeRecommendation,
+      stock
+    });
+
+    // Show preview
+    $('emailPreview').textContent = emailContent;
+    $('emailPreviewContainer').style.display = 'block';
+
+  } catch (e) {
+    console.error('Email generation error:', e);
+    showNotification('Failed to generate email', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Smart Email';
+  }
+}
+
+function generateEmailContent(type, data) {
+  const { clientName, stockInfo, storylineText, newsText, additionalNotes, stock } = data;
+
+  const greeting = `Dear ${clientName},\n\n`;
+  const signature = `\n\nBest regards,\nYour ODDO BHF Investment Team`;
+
+  let body = '';
+
+  switch (type) {
+    case 'pitch':
+      body = `I hope this email finds you well. I wanted to share an investment opportunity that aligns with your portfolio strategy.\n\n`;
+      if (stock) {
+        body += `**Investment Highlight: ${stock.company_name} (${stock.ticker})**\n\n`;
+      }
+      if (storylineText) {
+        body += `${storylineText}\n\n`;
+      }
+      if (newsText) {
+        body += `**Recent Developments:**\n${newsText}\n\n`;
+      }
+      if (additionalNotes) {
+        body += `${additionalNotes}\n\n`;
+      }
+      body += `I would be happy to discuss this opportunity at your convenience. Would you have time for a brief call this week?`;
+      break;
+
+    case 'followup':
+      body = `I wanted to follow up on our recent conversation about ${stockInfo}.\n\n`;
+      if (newsText) {
+        body += `Since we last spoke, here are some relevant updates:\n${newsText}\n\n`;
+      }
+      if (additionalNotes) {
+        body += `${additionalNotes}\n\n`;
+      }
+      body += `Please let me know if you have any questions or would like to discuss further.`;
+      break;
+
+    case 'news':
+      body = `I wanted to bring to your attention some important market developments that may be relevant to your portfolio.\n\n`;
+      if (newsText) {
+        body += `**Recent News:**\n${newsText}\n\n`;
+      }
+      if (storylineText) {
+        body += `**Our Analysis:**\n${storylineText}\n\n`;
+      }
+      body += `I'm monitoring these developments closely and will keep you informed of any significant changes.`;
+      break;
+
+    case 'meeting':
+      body = `I would like to schedule a meeting to discuss your portfolio and explore new investment opportunities.\n\n`;
+      if (stock) {
+        body += `In particular, I'd like to present ${stock.company_name} (${stock.ticker}) as a potential addition to your holdings.\n\n`;
+      }
+      if (additionalNotes) {
+        body += `${additionalNotes}\n\n`;
+      }
+      body += `Please let me know your availability for a 30-minute call or meeting at your earliest convenience.`;
+      break;
+  }
+
+  return greeting + body + signature;
+}
+
+// Copy email to clipboard
+$('copyEmailBtn')?.addEventListener('click', () => {
+  const email = $('emailPreview').textContent;
+  navigator.clipboard.writeText(email).then(() => {
+    showNotification('Email copied to clipboard!', 'success');
+  });
+});
+
+// Open in mail client
+$('openMailClientBtn')?.addEventListener('click', () => {
+  const email = $('emailPreview').textContent;
+  const clientData = window._currentClientData || {};
+  const clientEmail = clientData.client?.contact_email || '';
+  const subject = selectedTicker ? `Investment Opportunity: ${selectedTicker}` : 'Investment Update';
+
+  const mailtoLink = `mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(email)}`;
+  window.open(mailtoLink);
+});
+
+// ============================================================================
+// MEETING SCHEDULER
+// ============================================================================
+$('scheduleMeetingBtn')?.addEventListener('click', generateMeetingInvite);
+
+function generateMeetingInvite() {
+  if (!clientId) {
+    showNotification('Please select a client first', 'warning');
+    return;
+  }
+
+  const meetingType = document.querySelector('#meetingTypeGroup .comm-checkbox.selected')?.dataset.type || 'video';
+  const dateTime = $('meetingDateTime')?.value;
+  const duration = parseInt(document.querySelector('#meetingDurationGroup .comm-checkbox.selected')?.dataset.duration || '30');
+  const agenda = $('meetingAgenda')?.value || '';
+
+  if (!dateTime) {
+    showNotification('Please select a date and time', 'warning');
+    return;
+  }
+
+  const clientData = window._currentClientData || {};
+  const clientName = clientData.client?.client_name || 'Client';
+
+  const meetingPreview = `
+MEETING INVITATION
+
+Title: Investment Discussion with ${clientName}
+Type: ${meetingType === 'video' ? 'Video Call' : meetingType === 'phone' ? 'Phone Call' : meetingType === 'in_person' ? 'In Person' : 'Business Lunch'}
+Date: ${new Date(dateTime).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+Time: ${new Date(dateTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+Duration: ${duration} minutes
+
+Agenda:
+${agenda || 'Portfolio review and investment discussion'}
+
+${selectedTicker ? `Topics to discuss: ${selectedTicker} investment opportunity` : ''}
+  `.trim();
+
+  $('meetingPreview').textContent = meetingPreview;
+  $('meetingPreviewContainer').style.display = 'block';
+}
+
+// Download ICS file
+$('downloadIcsBtn')?.addEventListener('click', () => {
+  const dateTime = $('meetingDateTime')?.value;
+  const duration = parseInt(document.querySelector('#meetingDurationGroup .comm-checkbox.selected')?.dataset.duration || '30');
+  const agenda = $('meetingAgenda')?.value || 'Investment discussion';
+  const clientData = window._currentClientData || {};
+  const clientName = clientData.client?.client_name || 'Client';
+
+  if (!dateTime) return;
+
+  const start = new Date(dateTime);
+  const end = new Date(start.getTime() + duration * 60000);
+
+  const formatDate = (d) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ODDO BHF//Sales Intelligence//EN
+BEGIN:VEVENT
+UID:${Date.now()}@oddoBhf.com
+DTSTAMP:${formatDate(new Date())}
+DTSTART:${formatDate(start)}
+DTEND:${formatDate(end)}
+SUMMARY:Investment Discussion with ${clientName}
+DESCRIPTION:${agenda}${selectedTicker ? ` - Discussing ${selectedTicker}` : ''}
+END:VEVENT
+END:VCALENDAR`;
+
+  const blob = new Blob([icsContent], { type: 'text/calendar' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `meeting-${clientName.replace(/\s/g, '-')}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  showNotification('Calendar invite downloaded!', 'success');
+});
+
+// ============================================================================
+// NOTES SAVING
+// ============================================================================
+$('saveNoteBtn')?.addEventListener('click', () => {
+  const noteType = document.querySelector('#noteTypeGroup .comm-checkbox.selected')?.dataset.type || 'call';
+  const noteContent = $('noteContent')?.value || '';
+
+  if (!noteContent.trim()) {
+    showNotification('Please enter a note', 'warning');
+    return;
+  }
+
+  // In a real implementation, this would save to the backend
+  showNotification('Note saved to CRM!', 'success');
+  $('noteContent').value = '';
+});
+
+// ============================================================================
+// NOTIFICATION SYSTEM
+// ============================================================================
+let notificationCount = 0;
+
+function showNotification(message, type = 'info', options = {}) {
+  const container = $('notificationContainer');
+  const id = `notification-${Date.now()}`;
+
+  const icons = {
+    info: '&#128712;',
+    success: '&#10003;',
+    warning: '&#9888;',
+    error: '&#10060;',
+    news: '&#128240;'
+  };
+
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.id = id;
+  notification.innerHTML = `
+    <div class="notification-icon">${icons[type] || icons.info}</div>
+    <div class="notification-content">
+      <div class="notification-title">${options.title || (type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Notice')}</div>
+      <div class="notification-text">${message}</div>
+      <div class="notification-time">Just now</div>
+      ${options.actions ? `
+        <div class="notification-actions">
+          ${options.actions.map(a => `<button class="notification-action ${a.primary ? 'primary' : 'secondary'}" onclick="${a.onclick}">${a.label}</button>`).join('')}
+        </div>
+      ` : ''}
+    </div>
+    <button class="notification-close" onclick="closeNotification('${id}')">&times;</button>
+  `;
+
+  container.appendChild(notification);
+
+  // Auto-dismiss after 5 seconds unless it has actions
+  if (!options.actions) {
+    setTimeout(() => closeNotification(id), 5000);
+  }
+
+  return id;
+}
+
+function closeNotification(id) {
+  const notification = document.getElementById(id);
+  if (notification) {
+    notification.style.animation = 'fadeOut 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }
+}
+
+// ============================================================================
+// NEWS ALERTS SYSTEM
+// ============================================================================
+let watchedTickers = [];
+let lastNewsCheck = {};
+
+function checkNewsAlerts() {
+  if (!window._shortlist || window._shortlist.length === 0) {
+    showNotification('Generate a shortlist first to monitor news alerts', 'info');
+    return;
+  }
+
+  // Check news for all tickers in shortlist
+  const tickers = window._shortlist.map(s => s.ticker);
+  let alertCount = 0;
+
+  tickers.forEach(async (ticker) => {
+    try {
+      const res = await fetch(apiUrl(`/api/stock/${ticker}/news?limit=3`), { headers: authHeaders() });
+      const data = await res.json();
+
+      if (data.news && data.news.length > 0) {
+        const latestNews = data.news[0];
+        const lastCheck = lastNewsCheck[ticker];
+
+        // Check if this is new news
+        if (!lastCheck || latestNews.title !== lastCheck) {
+          lastNewsCheck[ticker] = latestNews.title;
+
+          // Show notification for important news
+          if (latestNews.sentiment === 'positive' || latestNews.sentiment === 'negative') {
+            alertCount++;
+            showNotification(
+              `${latestNews.title}`,
+              latestNews.sentiment === 'positive' ? 'success' : 'warning',
+              {
+                title: `${ticker} News Alert`,
+                actions: [
+                  { label: 'View Details', primary: true, onclick: `openStockByTicker('${ticker}')` },
+                  { label: 'Dismiss', onclick: `closeNotification(this.closest('.notification').id)` }
+                ]
+              }
+            );
+          }
+        }
+      }
+    } catch (e) { console.error(`News check failed for ${ticker}:`, e); }
+  });
+
+  // Update badge
+  const badge = $('newsAlertBadge');
+  if (badge) {
+    if (alertCount > 0) {
+      badge.textContent = alertCount;
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+      showNotification('No new alerts at this time', 'info');
+    }
+  }
+}
+
+function openStockByTicker(ticker) {
+  const stock = window._shortlist?.find(s => s.ticker === ticker);
+  if (stock) {
+    openStockDetailModal(stock);
+  }
+}
+
+// Auto-check news every 5 minutes when shortlist is loaded
+setInterval(() => {
+  if (window._shortlist && window._shortlist.length > 0) {
+    checkNewsAlerts();
+  }
+}, 300000); // 5 minutes
+
+// Store current client data for email generation
+window._currentClientData = null;
+const originalLoadClient = loadClient;
+loadClient = async function(id) {
+  const result = await originalLoadClient(id);
+  // Fetch and store client data
+  try {
+    const res = await fetch(apiUrl(`/api/client/${id}`), { headers: authHeaders() });
+    window._currentClientData = await res.json();
+  } catch (e) { console.error('Failed to store client data:', e); }
+  return result;
 };
 
 </script>

@@ -2197,13 +2197,13 @@ RULES
 
 WHY_BULLETS FORMAT REQUIREMENTS:
 Each bullet MUST include a specific data source reference. Examples:
-- "Matches client's {sector} sector focus (portfolio top_sector: {value})"
-- "Discussed in recent call on {date} - client expressed interest in {topic}"
-- "Client read {report_count} reports on similar stocks in last 30 days (reading_focus_sector)"
-- "Aligns with {theme} theme preference (dominant_theme from profile)"
-- "Suitable for {risk_appetite} risk profile - volatility {vol_60d}%"
+- "Matches client's Technology sector focus (portfolio top_sector: Technology)"
+- "Discussed in recent call on 2024-01-15 - client expressed interest in AI"
+- "Client read 5 reports on similar stocks in last 30 days (reading_focus_sector)"
+- "Aligns with ESG theme preference (dominant_theme from profile)"
+- "Suitable for Moderate risk profile - volatility 18.5%"
 - "Diversifies away from current top_sector exposure"
-- "Low volatility ({vol_60d}%) matches conservative mandate"
+- "Low volatility (12.3%) matches conservative mandate"
 - "Mentioned in position_hints from call notes"
 Do NOT use generic bullets like "Good investment" - always cite specific data!
 
@@ -3637,93 +3637,84 @@ def get_market_data_client():
 @app.get("/api/stock/{ticker}/quote")
 async def api_stock_quote(ticker: str):
     """
-    Get real-time stock quote from Alpha Vantage.
-
-    Note: Alpha Vantage free tier is limited to 5 calls/minute.
+    Get real-time stock quote from yfinance.
+    Returns live market data including price, change, volume.
     """
-    client = get_market_data_client()
-    if not client:
-        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
-
     try:
-        # Run in thread to avoid blocking
-        quote = await anyio.to_thread.run_sync(client.get_quote, ticker)
+        # Try yfinance first for live data
+        from lib.fundamentals import get_live_price
+        quote = await anyio.to_thread.run_sync(lambda: get_live_price(ticker))
 
-        if quote:
+        if quote and not quote.get("error"):
             return {
                 "ticker": ticker,
-                "price": quote["price"],
-                "change": quote["change"],
-                "change_percent": quote["change_percent"],
-                "open": quote["open"],
-                "high": quote["high"],
-                "low": quote["low"],
-                "volume": quote["volume"],
-                "latest_trading_day": quote["latest_trading_day"],
+                "name": quote.get("name"),
+                "price": quote.get("current_price"),
+                "currency": quote.get("currency"),
+                "change": quote.get("change"),
+                "change_percent": quote.get("change_percent"),
+                "open": quote.get("open"),
+                "high": quote.get("high"),
+                "low": quote.get("low"),
+                "previous_close": quote.get("previous_close"),
+                "volume": quote.get("volume"),
+                "market_cap": quote.get("market_cap"),
+                "market_state": quote.get("market_state"),
+                "fifty_two_week_high": quote.get("fifty_two_week_high"),
+                "fifty_two_week_low": quote.get("fifty_two_week_low"),
+                "source": "yfinance",
+                "fetched_at": quote.get("fetched_at"),
             }
-        else:
-            # Fallback to database price
-            db_price = await fetch_one(
-                """
-                SELECT p.close, p.price_date, s.company_name
-                FROM src_stock_prices p
-                JOIN src_stocks s ON s.stock_id = p.stock_id
-                WHERE s.ticker = :ticker
-                ORDER BY p.price_date DESC
-                LIMIT 1
-                """,
-                {"ticker": ticker}
-            )
-            if db_price:
-                return {
-                    "ticker": ticker,
-                    "price": db_price["close"],
-                    "source": "database",
-                    "as_of": db_price["price_date"],
-                    "company_name": db_price["company_name"],
-                }
-            return JSONResponse(status_code=404, content={"error": f"No quote found for {ticker}"})
+
+        # Fallback to database price
+        db_price = await fetch_one(
+            """
+            SELECT p.close, p.price_date, s.company_name
+            FROM src_stock_prices p
+            JOIN src_stocks s ON s.stock_id = p.stock_id
+            WHERE s.ticker = :ticker
+            ORDER BY p.price_date DESC
+            LIMIT 1
+            """,
+            {"ticker": ticker}
+        )
+        if db_price:
+            return {
+                "ticker": ticker,
+                "price": db_price["close"],
+                "source": "database",
+                "as_of": db_price["price_date"],
+                "company_name": db_price["company_name"],
+            }
+        return JSONResponse(status_code=404, content={"error": f"No quote found for {ticker}"})
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.get("/api/stock/{ticker}/news")
-async def api_stock_news(ticker: str, days: int = 7):
+async def api_stock_news(ticker: str, limit: int = 10):
     """
-    Get recent news for a stock from Finnhub.
-    Falls back to company name search if ticker-based search fails.
+    Get recent news for a stock from yfinance.
+    Returns real news articles with sentiment analysis.
     """
-    client = get_market_data_client()
-    if not client:
-        return JSONResponse(status_code=500, content={"error": "Market data client not available"})
-
     try:
-        # First try ticker-based news
-        news = await anyio.to_thread.run_sync(lambda: client.get_news(ticker, days))
+        from lib.fundamentals import get_stock_news
+        news_data = await anyio.to_thread.run_sync(lambda: get_stock_news(ticker, limit))
 
-        # If no news found, try searching by company name
-        if not news:
-            # Get company name from database
-            stock = await fetch_one(
-                "SELECT company_name FROM src_stocks WHERE ticker = :ticker",
-                {"ticker": ticker}
-            )
-            if stock and stock["company_name"]:
-                company_name = stock["company_name"].split()[0]  # Use first word (e.g., "Infineon" from "Infineon Technologies")
-                news = await anyio.to_thread.run_sync(lambda: client.search_market_news(company_name, days))
-
-        if news:
+        if news_data and news_data.get("news"):
             return {
                 "ticker": ticker,
-                "count": len(news),
-                "news": news,  # Changed from "articles" to "news" for consistency
+                "count": news_data.get("count", 0),
+                "news": news_data.get("news", []),
+                "source": "yfinance",
+                "fetched_at": news_data.get("fetched_at"),
             }
         else:
             return {
                 "ticker": ticker,
                 "count": 0,
                 "news": [],
-                "message": "No recent news found"
+                "message": news_data.get("message", "No recent news found")
             }
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
@@ -3778,74 +3769,62 @@ async def api_stock_profile(ticker: str):
 
 
 @app.get("/api/stock/{ticker}/history")
-async def api_stock_history(ticker: str, days: int = 30):
+async def api_stock_history(ticker: str, period: str = "1mo"):
     """
-    Get historical price data for a stock.
-    First tries database, then falls back to Alpha Vantage API.
-    """
-    # Try database first
-    prices = await fetch_all(
-        """
-        SELECT
-            p.price_date as date,
-            p.open,
-            p.high,
-            p.low,
-            p.close,
-            p.volume
-        FROM src_stock_prices p
-        JOIN src_stocks s ON s.stock_id = p.stock_id
-        WHERE s.ticker = :ticker
-        ORDER BY p.price_date DESC
-        LIMIT :days
-        """,
-        {"ticker": ticker, "days": days}
-    )
+    Get historical price data for a stock from yfinance.
 
-    if prices and len(prices) >= 5:
-        # Reverse to chronological order
-        prices_list = [dict(p) for p in prices]
-        prices_list.reverse()
+    period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, ytd, max
+    """
+    try:
+        # Try yfinance first for real historical data
+        from lib.fundamentals import get_price_history
+        history = await anyio.to_thread.run_sync(lambda: get_price_history(ticker, period))
+
+        if history and history.get("history"):
+            return {
+                "ticker": ticker,
+                "period": period,
+                "source": "yfinance",
+                "prices": history.get("history", []),
+                "fetched_at": history.get("fetched_at"),
+            }
+
+        # Fallback to database
+        prices = await fetch_all(
+            """
+            SELECT
+                p.price_date as date,
+                p.open,
+                p.high,
+                p.low,
+                p.close,
+                p.volume
+            FROM src_stock_prices p
+            JOIN src_stocks s ON s.stock_id = p.stock_id
+            WHERE s.ticker = :ticker
+            ORDER BY p.price_date DESC
+            LIMIT 30
+            """,
+            {"ticker": ticker}
+        )
+
+        if prices:
+            prices_list = [dict(p) for p in prices]
+            prices_list.reverse()
+            return {
+                "ticker": ticker,
+                "source": "database",
+                "prices": prices_list
+            }
+
         return {
             "ticker": ticker,
-            "source": "database",
-            "prices": prices_list
+            "source": "none",
+            "prices": [],
+            "message": "No historical data available"
         }
-
-    # Fall back to Alpha Vantage API
-    client = get_market_data_client()
-    if client:
-        try:
-            api_prices = await anyio.to_thread.run_sync(
-                lambda: client.get_daily_prices(ticker, days)
-            )
-            if api_prices:
-                # Reverse to chronological order
-                api_prices.reverse()
-                return {
-                    "ticker": ticker,
-                    "source": "alphavantage",
-                    "prices": api_prices
-                }
-        except Exception as e:
-            pass
-
-    # Return whatever we have from database (even if less than 5)
-    if prices:
-        prices_list = [dict(p) for p in prices]
-        prices_list.reverse()
-        return {
-            "ticker": ticker,
-            "source": "database",
-            "prices": prices_list
-        }
-
-    return {
-        "ticker": ticker,
-        "source": "none",
-        "prices": [],
-        "message": "No historical data available"
-    }
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.get("/api/stock/{ticker}/indicators")

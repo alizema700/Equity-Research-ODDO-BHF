@@ -712,3 +712,294 @@ def get_batch_summaries(tickers: List[str]) -> Dict[str, Dict[str, Any]]:
         results[ticker] = get_fundamentals_summary(ticker)
         time.sleep(0.1)  # Rate limiting
     return results
+
+
+# =============================================================================
+# LIVE STOCK PRICES
+# =============================================================================
+
+def get_live_price(ticker: str) -> Dict[str, Any]:
+    """
+    Fetch real-time/latest price data for a stock from yfinance.
+
+    Returns:
+    - current_price
+    - open, high, low, close
+    - volume
+    - change, change_percent
+    - market_state (open/closed)
+    """
+    if not YFINANCE_AVAILABLE:
+        return {"error": "yfinance not installed"}
+
+    cache_key = f"live_price:{ticker}"
+    cached = _cache.get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        yf_ticker = get_yahoo_ticker(ticker)
+        stock = yf.Ticker(yf_ticker)
+
+        # Get current quote data
+        info = stock.info
+
+        if not info or info.get("regularMarketPrice") is None:
+            return {"error": f"No price data for {ticker}", "ticker": ticker}
+
+        # Get intraday data for today
+        hist = stock.history(period="1d", interval="1m")
+
+        # Calculate change
+        current = info.get("regularMarketPrice", 0)
+        prev_close = info.get("previousClose", info.get("regularMarketPreviousClose", 0))
+        change = current - prev_close if prev_close else 0
+        change_pct = (change / prev_close * 100) if prev_close else 0
+
+        result = {
+            "ticker": ticker,
+            "yf_ticker": yf_ticker,
+            "name": info.get("shortName", info.get("longName", ticker)),
+            "current_price": current,
+            "currency": info.get("currency", "USD"),
+            "open": info.get("regularMarketOpen"),
+            "high": info.get("regularMarketDayHigh"),
+            "low": info.get("regularMarketDayLow"),
+            "previous_close": prev_close,
+            "volume": info.get("regularMarketVolume"),
+            "avg_volume": info.get("averageVolume"),
+            "change": round(change, 2),
+            "change_percent": round(change_pct, 2),
+            "market_cap": info.get("marketCap"),
+            "market_state": info.get("marketState", "UNKNOWN"),
+            "exchange": info.get("exchange"),
+            "fifty_two_week_high": info.get("fiftyTwoWeekHigh"),
+            "fifty_two_week_low": info.get("fiftyTwoWeekLow"),
+            "fetched_at": datetime.now().isoformat(),
+        }
+
+        # Cache for 1 minute only (live prices)
+        _cache.set(cache_key, result, ttl=60)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error fetching live price for {ticker}: {e}")
+        return {"error": str(e), "ticker": ticker}
+
+
+def get_price_history(ticker: str, period: str = "1mo") -> Dict[str, Any]:
+    """
+    Fetch historical price data.
+
+    period: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
+    """
+    if not YFINANCE_AVAILABLE:
+        return {"error": "yfinance not installed"}
+
+    cache_key = f"price_history:{ticker}:{period}"
+    cached = _cache.get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        yf_ticker = get_yahoo_ticker(ticker)
+        stock = yf.Ticker(yf_ticker)
+
+        hist = stock.history(period=period)
+
+        if hist.empty:
+            return {"error": f"No history for {ticker}", "ticker": ticker}
+
+        # Convert to list of dicts
+        history = []
+        for idx, row in hist.iterrows():
+            history.append({
+                "date": idx.strftime("%Y-%m-%d"),
+                "open": round(row["Open"], 2) if row["Open"] else None,
+                "high": round(row["High"], 2) if row["High"] else None,
+                "low": round(row["Low"], 2) if row["Low"] else None,
+                "close": round(row["Close"], 2) if row["Close"] else None,
+                "volume": int(row["Volume"]) if row["Volume"] else None,
+            })
+
+        result = {
+            "ticker": ticker,
+            "period": period,
+            "history": history,
+            "fetched_at": datetime.now().isoformat(),
+        }
+
+        # Cache based on period
+        ttl = 300 if period in ["1d", "5d"] else 3600
+        _cache.set(cache_key, result, ttl=ttl)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error fetching price history for {ticker}: {e}")
+        return {"error": str(e), "ticker": ticker}
+
+
+# =============================================================================
+# REAL NEWS
+# =============================================================================
+
+def get_stock_news(ticker: str, limit: int = 10) -> Dict[str, Any]:
+    """
+    Fetch real news articles for a stock from yfinance.
+
+    Returns list of news articles with:
+    - title
+    - publisher
+    - link
+    - published date
+    - summary (if available)
+    """
+    if not YFINANCE_AVAILABLE:
+        return {"error": "yfinance not installed"}
+
+    cache_key = f"news:{ticker}"
+    cached = _cache.get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        yf_ticker = get_yahoo_ticker(ticker)
+        stock = yf.Ticker(yf_ticker)
+
+        # Get news
+        news = stock.news
+
+        if not news:
+            return {"ticker": ticker, "news": [], "message": "No news available"}
+
+        articles = []
+        for item in news[:limit]:
+            # New yfinance structure: data is nested under 'content'
+            content = item.get("content", item)  # Fallback to item if no content key
+
+            # Extract title
+            title = content.get("title", "")
+            title_lower = title.lower() if title else ""
+
+            # Determine sentiment based on title keywords
+            sentiment = "neutral"
+            if any(word in title_lower for word in ["surge", "jump", "soar", "rally", "gain", "rise", "up", "beat", "strong", "growth", "profit", "record", "boom"]):
+                sentiment = "positive"
+            elif any(word in title_lower for word in ["fall", "drop", "plunge", "decline", "loss", "down", "miss", "weak", "concern", "risk", "warning", "crash", "tumble"]):
+                sentiment = "negative"
+
+            # Extract publisher
+            provider = content.get("provider", {})
+            publisher = provider.get("displayName") if isinstance(provider, dict) else None
+
+            # Extract link
+            canonical_url = content.get("canonicalUrl", {})
+            link = canonical_url.get("url") if isinstance(canonical_url, dict) else None
+
+            # Extract published date
+            pub_date_str = content.get("pubDate")
+            if pub_date_str:
+                try:
+                    # Parse ISO format date
+                    pub_date = pub_date_str.replace("Z", "").split("T")[0] + " " + pub_date_str.replace("Z", "").split("T")[1][:5]
+                except:
+                    pub_date = pub_date_str
+            else:
+                pub_date = None
+
+            # Extract thumbnail
+            thumbnail_data = content.get("thumbnail", {})
+            thumbnail_url = None
+            if isinstance(thumbnail_data, dict):
+                resolutions = thumbnail_data.get("resolutions", [])
+                if resolutions and len(resolutions) > 0:
+                    thumbnail_url = resolutions[0].get("url")
+
+            articles.append({
+                "title": title,
+                "publisher": publisher,
+                "link": link,
+                "published": pub_date,
+                "type": content.get("contentType", "article"),
+                "thumbnail": thumbnail_url,
+                "related_tickers": item.get("relatedTickers", []),
+                "sentiment": sentiment,
+            })
+
+        result = {
+            "ticker": ticker,
+            "news": articles,
+            "count": len(articles),
+            "fetched_at": datetime.now().isoformat(),
+        }
+
+        # Cache for 15 minutes
+        _cache.set(cache_key, result, ttl=900)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Error fetching news for {ticker}: {e}")
+        return {"error": str(e), "ticker": ticker, "news": []}
+
+
+def get_market_news(limit: int = 20) -> Dict[str, Any]:
+    """
+    Fetch general market news using major index tickers.
+    """
+    if not YFINANCE_AVAILABLE:
+        return {"error": "yfinance not installed"}
+
+    cache_key = "market_news"
+    cached = _cache.get(cache_key)
+    if cached:
+        return cached
+
+    try:
+        # Use S&P 500 for general market news
+        stock = yf.Ticker("^GSPC")
+        news = stock.news
+
+        if not news:
+            # Fallback to AAPL news
+            stock = yf.Ticker("AAPL")
+            news = stock.news
+
+        if not news:
+            return {"news": [], "message": "No market news available"}
+
+        articles = []
+        for item in news[:limit]:
+            title = item.get("title", "").lower()
+            sentiment = "neutral"
+            if any(word in title for word in ["surge", "jump", "rally", "gain", "rise", "beat", "strong"]):
+                sentiment = "positive"
+            elif any(word in title for word in ["fall", "drop", "plunge", "decline", "loss", "concern"]):
+                sentiment = "negative"
+
+            pub_time = item.get("providerPublishTime")
+            pub_date = datetime.fromtimestamp(pub_time).strftime("%Y-%m-%d %H:%M") if pub_time else None
+
+            articles.append({
+                "title": item.get("title"),
+                "publisher": item.get("publisher"),
+                "link": item.get("link"),
+                "published": pub_date,
+                "sentiment": sentiment,
+                "related_tickers": item.get("relatedTickers", []),
+            })
+
+        result = {
+            "news": articles,
+            "count": len(articles),
+            "fetched_at": datetime.now().isoformat(),
+        }
+
+        _cache.set(cache_key, result, ttl=900)
+        return result
+
+    except Exception as e:
+        logger.error(f"Error fetching market news: {e}")
+        return {"error": str(e), "news": []}
