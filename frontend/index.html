@@ -4630,6 +4630,59 @@ async function generateStory(mode) {
 }
 
 // ============================================================================
+// STOCK STORYLINE (from modal)
+// ============================================================================
+async function generateStockStoryline(ticker, companyName, sector) {
+  if (!clientId) {
+    alert('Please select a client first');
+    return;
+  }
+
+  const outputDiv = document.getElementById('stockStorylineOutput');
+  const textDiv = document.getElementById('stockStorylineText');
+
+  outputDiv.style.display = 'block';
+  textDiv.textContent = 'Generating storyline...';
+
+  try {
+    const res = await fetch(apiUrl('/api/story_for_stock'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({
+        client_id: clientId,
+        selected_ticker: ticker,
+        mode: 'STORY',
+        instruction: `Focus on ${companyName} (${ticker}) in the ${sector} sector. Create a compelling sales narrative.`,
+        max_words: 300
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      textDiv.textContent = 'Error: ' + data.error;
+      return;
+    }
+
+    textDiv.textContent = data.story || '(No output generated)';
+
+  } catch (e) {
+    textDiv.textContent = 'Error: ' + e.message;
+    console.error(e);
+  }
+}
+
+function copyStockStoryline() {
+  const text = document.getElementById('stockStorylineText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target.closest('button');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span style="margin-right: 6px;">&#10003;</span> Copied!';
+    setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+  });
+}
+
+// ============================================================================
 // HISTORY (Server-side audit trail)
 // ============================================================================
 async function loadHistory() {
@@ -5005,6 +5058,22 @@ function renderStockDetailContent(stock, quote, news, history = [], fundamentals
       </div>
     `;
   }
+
+  // Generate Storyline Button
+  html += `
+    <div class="stock-detail-section" style="text-align: center;">
+      <button class="btn-primary" onclick="generateStockStoryline('${stock.ticker}', '${(stock.company_name || '').replace(/'/g, "\\'")}', '${stock.sector || ''}')" style="width: 100%; padding: 14px 24px; font-size: 15px;">
+        <span style="margin-right: 8px;">&#9998;</span> Generate Sales Storyline
+      </button>
+      <div id="stockStorylineOutput" style="margin-top: 16px; text-align: left; display: none;">
+        <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">GENERATED STORYLINE</div>
+        <div id="stockStorylineText" style="background: var(--greige); padding: 16px; border-radius: 10px; font-size: 14px; line-height: 1.7; white-space: pre-wrap;"></div>
+        <button class="btn-secondary" onclick="copyStockStoryline()" style="margin-top: 12px; width: 100%;">
+          <span style="margin-right: 6px;">&#128203;</span> Copy to Clipboard
+        </button>
+      </div>
+    </div>
+  `;
 
   // News Section
   html += `
