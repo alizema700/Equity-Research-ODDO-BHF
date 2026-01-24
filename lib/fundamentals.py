@@ -876,25 +876,54 @@ def get_stock_news(ticker: str, limit: int = 10) -> Dict[str, Any]:
 
         articles = []
         for item in news[:limit]:
+            # New yfinance structure: data is nested under 'content'
+            content = item.get("content", item)  # Fallback to item if no content key
+
+            # Extract title
+            title = content.get("title", "")
+            title_lower = title.lower() if title else ""
+
             # Determine sentiment based on title keywords
-            title = item.get("title", "").lower()
             sentiment = "neutral"
-            if any(word in title for word in ["surge", "jump", "soar", "rally", "gain", "rise", "up", "beat", "strong", "growth", "profit"]):
+            if any(word in title_lower for word in ["surge", "jump", "soar", "rally", "gain", "rise", "up", "beat", "strong", "growth", "profit", "record", "boom"]):
                 sentiment = "positive"
-            elif any(word in title for word in ["fall", "drop", "plunge", "decline", "loss", "down", "miss", "weak", "concern", "risk", "warning"]):
+            elif any(word in title_lower for word in ["fall", "drop", "plunge", "decline", "loss", "down", "miss", "weak", "concern", "risk", "warning", "crash", "tumble"]):
                 sentiment = "negative"
 
-            # Convert timestamp
-            pub_time = item.get("providerPublishTime")
-            pub_date = datetime.fromtimestamp(pub_time).strftime("%Y-%m-%d %H:%M") if pub_time else None
+            # Extract publisher
+            provider = content.get("provider", {})
+            publisher = provider.get("displayName") if isinstance(provider, dict) else None
+
+            # Extract link
+            canonical_url = content.get("canonicalUrl", {})
+            link = canonical_url.get("url") if isinstance(canonical_url, dict) else None
+
+            # Extract published date
+            pub_date_str = content.get("pubDate")
+            if pub_date_str:
+                try:
+                    # Parse ISO format date
+                    pub_date = pub_date_str.replace("Z", "").split("T")[0] + " " + pub_date_str.replace("Z", "").split("T")[1][:5]
+                except:
+                    pub_date = pub_date_str
+            else:
+                pub_date = None
+
+            # Extract thumbnail
+            thumbnail_data = content.get("thumbnail", {})
+            thumbnail_url = None
+            if isinstance(thumbnail_data, dict):
+                resolutions = thumbnail_data.get("resolutions", [])
+                if resolutions and len(resolutions) > 0:
+                    thumbnail_url = resolutions[0].get("url")
 
             articles.append({
-                "title": item.get("title"),
-                "publisher": item.get("publisher"),
-                "link": item.get("link"),
+                "title": title,
+                "publisher": publisher,
+                "link": link,
                 "published": pub_date,
-                "type": item.get("type", "article"),
-                "thumbnail": item.get("thumbnail", {}).get("resolutions", [{}])[0].get("url") if item.get("thumbnail") else None,
+                "type": content.get("contentType", "article"),
+                "thumbnail": thumbnail_url,
                 "related_tickers": item.get("relatedTickers", []),
                 "sentiment": sentiment,
             })
