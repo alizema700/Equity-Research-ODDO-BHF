@@ -5584,20 +5584,1055 @@
     .impact-row .positive { color: #16a34a; font-weight: 600; }
     .impact-row .negative { color: #dc2626; font-weight: 600; }
 
-    /* Animation for new elements */
+    /* ========================================================================
+       PROFESSIONAL ANIMATIONS
+       ======================================================================== */
+
     .animate-in {
       animation: fadeSlideIn 0.3s ease;
     }
 
     @keyframes fadeSlideIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0, 61, 57, 0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(0, 61, 57, 0); }
+    }
+
+    .tab-panel { animation: fadeSlideIn 0.25s ease; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-secondary:active { transform: scale(0.98); }
+
+    /* ========================================================================
+       STRATEGY BUILDER STYLES
+       ======================================================================== */
+
+    .strategy-builder-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .strategy-input-panel,
+    .strategy-output-panel {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--card) 0%, var(--soft-greige) 100%);
+    }
+
+    [data-theme="dark"] .panel-header {
+      background: linear-gradient(180deg, var(--card) 0%, var(--bg-darker) 100%);
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      font-family: var(--font-serif);
+    }
+
+    .panel-subtitle {
+      margin: 4px 0 0 0;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .input-section {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .input-section:last-of-type {
+      border-bottom: none;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .thesis-input {
+      width: 100%;
+      min-height: 100px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: vertical;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-primary);
+    }
+
+    .thesis-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 61, 57, 0.1);
+    }
+
+    [data-theme="dark"] .thesis-input:focus {
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+
+    .params-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .param-item label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .param-item select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .risk-params {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .risk-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--soft-greige);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    [data-theme="dark"] .risk-row {
+      background: var(--bg-darker);
+    }
+
+    .risk-input-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .risk-input-group input {
+      width: 60px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-align: center;
+      font-size: 13px;
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .risk-input-group .unit {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .universe-selector {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .universe-option {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: var(--bg);
+    }
+
+    .universe-option:hover {
+      border-color: var(--primary);
+      background: var(--soft-greige);
+    }
+
+    [data-theme="dark"] .universe-option:hover {
+      background: var(--card-hover);
+    }
+
+    .universe-option.selected {
+      border-color: var(--primary);
+      background: rgba(0, 61, 57, 0.08);
+    }
+
+    [data-theme="dark"] .universe-option.selected {
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .option-title {
+      display: block;
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .option-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .strategy-actions {
+      display: flex;
+      gap: 12px;
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--soft-greige);
+    }
+
+    [data-theme="dark"] .strategy-actions {
+      background: var(--bg-darker);
+    }
+
+    .strategy-actions .btn-secondary {
+      flex: 1;
+    }
+
+    .strategy-actions .btn-primary {
+      flex: 2;
+    }
+
+    .btn-primary {
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 61, 57, 0.2);
+    }
+
+    [data-theme="dark"] .btn-primary {
+      background: var(--primary);
+      color: #0f172a;
+    }
+
+    [data-theme="dark"] .btn-primary:hover {
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-secondary {
+      padding: 12px 24px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      font-size: 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-sm:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .full-width { width: 100%; }
+
+    .output-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .strategy-output-content {
+      padding: 24px;
+      min-height: 300px;
+    }
+
+    .output-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 40px;
+      color: var(--text-muted);
+    }
+
+    .output-placeholder svg {
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .output-placeholder p {
+      margin: 0;
+      font-size: 14px;
+      max-width: 300px;
+      line-height: 1.6;
+    }
+
+    .quick-backtest-preview {
+      border-top: 1px solid var(--border);
+      padding: 20px 24px;
+    }
+
+    .quick-backtest-preview h4 {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .backtest-preview-chart {
+      height: 150px;
+      margin-bottom: 16px;
+    }
+
+    .backtest-preview-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .preview-stat {
+      text-align: center;
+      padding: 12px;
+      background: var(--soft-greige);
+      border-radius: 8px;
+    }
+
+    [data-theme="dark"] .preview-stat {
+      background: var(--bg-darker);
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ========================================================================
+       BACKTEST PANEL STYLES
+       ======================================================================== */
+
+    .backtest-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .backtest-config-panel,
+    .backtest-results-panel {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .date-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .date-field label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .date-field input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .input-with-unit {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .unit-prefix {
+      padding: 10px 12px;
+      background: var(--soft-greige);
+      border-right: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    [data-theme="dark"] .unit-prefix {
+      background: var(--bg-darker);
+    }
+
+    .input-with-unit input {
+      flex: 1;
+      border: none;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .cost-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .cost-field {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cost-field label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .cost-field input {
+      width: 80%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .backtest-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric-card {
+      text-align: center;
+      padding: 14px;
+      background: var(--soft-greige);
+      border-radius: 8px;
+    }
+
+    [data-theme="dark"] .metric-card {
+      background: var(--bg-darker);
+    }
+
+    .metric-card .metric-value {
+      display: block;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .metric-card .metric-value.positive { color: #16a34a; }
+    .metric-card .metric-value.negative { color: #dc2626; }
+
+    .metric-card .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .trade-log {
+      padding: 20px 24px;
+    }
+
+    .trade-log h4 {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .trade-table {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .trade-row {
+      display: grid;
+      grid-template-columns: 100px 80px 70px 90px 80px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      align-items: center;
+    }
+
+    .trade-row:last-child {
+      border-bottom: none;
+    }
+
+    .trade-row.header {
+      background: var(--soft-greige);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    [data-theme="dark"] .trade-row.header {
+      background: var(--bg-darker);
+    }
+
+    .action-buy { color: #16a34a; font-weight: 600; }
+    .action-sell { color: #dc2626; font-weight: 600; }
+    .muted { color: var(--text-muted); }
+
+    /* ========================================================================
+       CLIENT FIT ANALYSIS STYLES
+       ======================================================================== */
+
+    .clientfit-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .clientfit-profile-panel,
+    .clientfit-results-panel {
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .client-profile-card {
+      margin: 20px 24px;
+      padding: 20px;
+      background: var(--soft-greige);
+      border-radius: 10px;
+    }
+
+    [data-theme="dark"] .client-profile-card {
+      background: var(--bg-darker);
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .profile-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    [data-theme="dark"] .profile-avatar {
+      color: #0f172a;
+    }
+
+    .profile-info h4 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .profile-type {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .profile-metrics {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .profile-metric {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .profile-metric .metric-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      margin: 0 12px;
+      overflow: hidden;
+    }
+
+    .profile-metric .bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .profile-preferences h5 {
+      margin: 0 0 10px 0;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .pref-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .pref-tag {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .pref-tag.positive {
+      background: rgba(22, 163, 74, 0.1);
+      color: #16a34a;
+    }
+
+    .pref-tag.negative {
+      background: rgba(220, 38, 38, 0.1);
+      color: #dc2626;
+    }
+
+    .pref-tag.neutral {
+      background: var(--card);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .fit-score-display {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 30px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .fit-score-circle {
+      position: relative;
+      width: 120px;
+      height: 120px;
+    }
+
+    .fit-score-circle svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+
+    .fit-score-circle .score-bg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 8;
+    }
+
+    .fit-score-circle .score-fill {
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 283;
+      stroke-dashoffset: 283;
+      transition: stroke-dashoffset 1s ease;
+    }
+
+    .score-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .score-value {
+      display: block;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .score-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .fit-summary {
+      flex: 1;
+    }
+
+    .fit-summary p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    .fit-breakdown {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .fit-breakdown h4 {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .breakdown-items {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .breakdown-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .breakdown-label {
+      width: 140px;
+      font-size: 13px;
+    }
+
+    .breakdown-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .breakdown-bar .bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .breakdown-score {
+      width: 40px;
+      text-align: right;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .fit-recommendations {
+      padding: 20px 24px;
+    }
+
+    .fit-recommendations h4 {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .recommendations-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .recommendation-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      background: var(--soft-greige);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    [data-theme="dark"] .recommendation-item {
+      background: var(--bg-darker);
+    }
+
+    .rec-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .rec-icon.warning {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .rec-icon.success {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .rec-icon.error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    /* SVG Icons in Section Headers */
+    .section-icon-svg {
+      color: var(--primary);
+    }
+
+    .icon-sm {
+      width: 16px;
+      height: 16px;
+      vertical-align: middle;
+    }
+
+    /* Tool buttons styling */
+    .analytics-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin: 24px 24px 0 24px;
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tool-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .tool-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tool-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tool-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .tool-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    [data-theme="dark"] .tool-btn.active {
+      color: #0f172a;
+    }
+
+    .client-context-badge {
+      padding: 6px 12px;
+      background: var(--soft-greige);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    [data-theme="dark"] .client-context-badge {
+      background: var(--bg-darker);
+    }
+
+    .results-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Slider improvements */
+    .slider-with-value {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slider-with-value input[type="range"] {
+      flex: 1;
+    }
+
+    .slider-value {
+      font-size: 13px;
+      font-weight: 600;
+      min-width: 100px;
+    }
+
+    /* Asset tags */
+    .asset-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .asset-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--primary);
+      color: white;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    [data-theme="dark"] .asset-tag {
+      color: #0f172a;
+    }
+
+    .asset-tag button {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0.7;
+    }
+
+    .asset-tag button:hover {
+      opacity: 1;
+    }
+
+    .constraints-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .constraint-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .constraint-row input {
+      width: 60px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-align: center;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .metric-box {
+      text-align: center;
+    }
+
+    .metric-box .metric-value {
+      display: block;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .metric-box .metric-label {
+      font-size: 11px;
+      color: var(--text-muted);
     }
   </style>
 </head>
@@ -5774,7 +6809,7 @@
           Email
         </div>
         <div class="comm-tab" data-comm="meeting">
-          <span class="comm-tab-icon">&#128197;</span>
+          <span class="comm-tab-icon">▣</span>
           Meeting
         </div>
         <div class="comm-tab" data-comm="notes">
@@ -5894,7 +6929,7 @@
         <span class="fab-item-label">Draft Email</span>
       </div>
       <div class="fab-item" onclick="openCommPanel('meeting')">
-        <span class="fab-item-icon">&#128197;</span>
+        <span class="fab-item-icon">▣</span>
         <span class="fab-item-label">Schedule Meeting</span>
       </div>
       <div class="fab-item" onclick="openCommPanel('notes')">
@@ -5954,25 +6989,25 @@
         <!-- Quick Metrics Row -->
         <div class="metrics-row">
           <div class="metric-card">
-            <div class="metric-icon green">&#128200;</div>
+            <div class="metric-icon green">▲</div>
             <div class="metric-value" id="dashTotalAum">$2.4B</div>
             <div class="metric-label">Total AUM Managed</div>
             <span class="metric-trend up">+12% YTD</span>
           </div>
           <div class="metric-card">
-            <div class="metric-icon blue">&#128101;</div>
+            <div class="metric-icon blue">◉</div>
             <div class="metric-value" id="dashActiveClients">47</div>
             <div class="metric-label">Active Clients</div>
             <span class="metric-trend up">+5 this month</span>
           </div>
           <div class="metric-card">
-            <div class="metric-icon purple">&#127919;</div>
+            <div class="metric-icon purple">◎</div>
             <div class="metric-value" id="dashHitRate">73%</div>
             <div class="metric-label">Recommendation Hit Rate</div>
             <span class="metric-trend up">+8% vs avg</span>
           </div>
           <div class="metric-card">
-            <div class="metric-icon orange">&#128176;</div>
+            <div class="metric-icon orange">€</div>
             <div class="metric-value" id="dashRevenue">€840K</div>
             <div class="metric-label">Revenue Generated</div>
             <span class="metric-trend up">+23% YoY</span>
@@ -5985,7 +7020,7 @@
           <div class="widget widget-half">
             <div class="widget-header">
               <div class="widget-title">
-                <span class="widget-title-icon" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%); color: white;">&#128293;</span>
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%); color: white;">■</span>
                 Sector Heatmap
               </div>
               <div class="widget-actions">
@@ -6003,7 +7038,7 @@
           <div class="widget widget-half">
             <div class="widget-header">
               <div class="widget-title">
-                <span class="widget-title-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); color: white;">&#128197;</span>
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); color: white;">▣</span>
                 Upcoming Earnings
               </div>
               <div class="widget-actions">
@@ -6021,7 +7056,7 @@
           <div class="widget widget-two-thirds">
             <div class="widget-header">
               <div class="widget-title">
-                <span class="widget-title-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: white;">&#9728;</span>
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: white;">○</span>
                 Morning Briefing
               </div>
               <div class="widget-actions">
@@ -6032,7 +7067,7 @@
             <div class="widget-body">
               <div class="briefing-content" id="morningBriefing">
                 <div class="briefing-section">
-                  <div class="briefing-section-title">&#128640; Market Overview</div>
+                  <div class="briefing-section-title">► Market Overview</div>
                   <p>Click "Generate" to create your personalized morning briefing based on your client portfolios and watchlist.</p>
                 </div>
               </div>
@@ -6091,7 +7126,7 @@
           <div class="widget widget-half">
             <div class="widget-header">
               <div class="widget-title">
-                <span class="widget-title-icon" style="background: linear-gradient(135deg, #eab308 0%, #facc15 100%); color: white;">&#127942;</span>
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #eab308 0%, #facc15 100%); color: white;">◈</span>
                 Performance Leaderboard
               </div>
               <div class="widget-actions">
@@ -6135,7 +7170,7 @@
           <div class="widget widget-half">
             <div class="widget-header">
               <div class="widget-title">
-                <span class="widget-title-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); color: white;">&#128200;</span>
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); color: white;">▲</span>
                 Technical Indicators
               </div>
             </div>
@@ -6268,13 +7303,17 @@
           <div class="collab-section chat-section">
             <div class="section-header glass-effect">
               <div class="section-title">
-                <span class="section-icon pulse">💬</span>
+                <svg class="section-icon-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                 <h3>Team Chat</h3>
                 <span class="online-indicator">3 online</span>
               </div>
               <div class="section-actions">
-                <button class="btn-icon" title="Video Call" onclick="startVideoCall()">📹</button>
-                <button class="btn-icon" title="Screen Share" onclick="startScreenShare()">🖥️</button>
+                <button class="btn-icon" title="Video Call" onclick="startVideoCall()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                </button>
+                <button class="btn-icon" title="Screen Share" onclick="startScreenShare()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                </button>
               </div>
             </div>
             <div class="chat-container" id="teamChatContainer">
@@ -6321,7 +7360,7 @@
           <div class="collab-section watchlist-section">
             <div class="section-header glass-effect">
               <div class="section-title">
-                <span class="section-icon">📊</span>
+                <span class="section-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span>
                 <h3>Shared Watchlists</h3>
               </div>
               <button class="btn-create" onclick="createWatchlist()">+ New List</button>
@@ -6329,7 +7368,7 @@
             <div class="watchlists-grid" id="sharedWatchlists">
               <div class="watchlist-card" onclick="openWatchlist('tech-growth')">
                 <div class="watchlist-header">
-                  <span class="watchlist-icon">🚀</span>
+                  <span class="watchlist-icon">Growth</span>
                   <div class="watchlist-info">
                     <h4>Tech Growth Picks</h4>
                     <span class="watchlist-meta">8 stocks • Updated 2h ago</span>
@@ -6347,7 +7386,7 @@
               </div>
               <div class="watchlist-card" onclick="openWatchlist('dividend-kings')">
                 <div class="watchlist-header">
-                  <span class="watchlist-icon">👑</span>
+                  <span class="watchlist-icon">Premium</span>
                   <div class="watchlist-info">
                     <h4>Dividend Kings</h4>
                     <span class="watchlist-meta">12 stocks • Updated 5h ago</span>
@@ -6364,7 +7403,7 @@
               </div>
               <div class="watchlist-card" onclick="openWatchlist('eu-green')">
                 <div class="watchlist-header">
-                  <span class="watchlist-icon">🌱</span>
+                  <span class="watchlist-icon">ESG</span>
                   <div class="watchlist-info">
                     <h4>EU Green Energy</h4>
                     <span class="watchlist-meta">6 stocks • Updated 1d ago</span>
@@ -6385,7 +7424,7 @@
           <div class="collab-section handoff-section">
             <div class="section-header glass-effect">
               <div class="section-title">
-                <span class="section-icon">🤝</span>
+                <span class="section-icon"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>
                 <h3>Client Handoff</h3>
               </div>
               <button class="btn-create" onclick="initiateHandoff()">+ New Handoff</button>
@@ -6451,7 +7490,7 @@
           <div class="report-generator">
             <div class="generator-header glass-effect">
               <div class="generator-title">
-                <span class="generator-icon">📄</span>
+                <span class="generator-icon"></span>
                 <div>
                   <h3>Report Generator</h3>
                   <p class="generator-subtitle">Create professional client reports in seconds</p>
@@ -6542,11 +7581,11 @@
 
               <div class="report-actions">
                 <button class="btn-generate" onclick="generateReport()">
-                  <span class="btn-icon">⚡</span>
+                  <span class="btn-icon"></span>
                   <span>Generate Report</span>
                 </button>
                 <button class="btn-schedule" onclick="scheduleReport()">
-                  <span class="btn-icon">📅</span>
+                  <span class="btn-icon"></span>
                   <span>Schedule</span>
                 </button>
               </div>
@@ -6572,8 +7611,8 @@
                   <span class="report-meta">Generated Jan 20, 2026 • 12 pages</span>
                 </div>
                 <div class="report-actions">
-                  <button class="btn-icon" title="Download">⬇</button>
-                  <button class="btn-icon" title="Share">📤</button>
+                  <button class="btn-icon" title="Download">↓</button>
+                  <button class="btn-icon" title="Share">↗</button>
                 </div>
               </div>
               <div class="report-item" onclick="openReport('report-002')">
@@ -6583,8 +7622,8 @@
                   <span class="report-meta">Generated Jan 18, 2026 • 24 slides</span>
                 </div>
                 <div class="report-actions">
-                  <button class="btn-icon" title="Download">⬇</button>
-                  <button class="btn-icon" title="Share">📤</button>
+                  <button class="btn-icon" title="Download">↓</button>
+                  <button class="btn-icon" title="Share">↗</button>
                 </div>
               </div>
               <div class="report-item" onclick="openReport('report-003')">
@@ -6594,8 +7633,8 @@
                   <span class="report-meta">Generated Jan 15, 2026 • 847 rows</span>
                 </div>
                 <div class="report-actions">
-                  <button class="btn-icon" title="Download">⬇</button>
-                  <button class="btn-icon" title="Share">📤</button>
+                  <button class="btn-icon" title="Download">↓</button>
+                  <button class="btn-icon" title="Share">↗</button>
                 </div>
               </div>
             </div>
@@ -6607,92 +7646,283 @@
       <div class="tab-panel" id="panel-analytics">
         <div class="analytics-layout">
           <!-- Analytics Toolbar -->
-          <div class="analytics-toolbar glass-effect">
+          <div class="analytics-toolbar">
             <div class="tool-group">
-              <span class="tool-label">Analysis Type</span>
+              <span class="tool-label">Analysis Module</span>
               <div class="tool-buttons">
-                <button class="tool-btn active" onclick="switchAnalytics(this, 'optimizer')">Portfolio Optimizer</button>
-                <button class="tool-btn" onclick="switchAnalytics(this, 'montecarlo')">Monte Carlo</button>
+                <button class="tool-btn active" onclick="switchAnalytics(this, 'strategy')">Strategy Builder</button>
+                <button class="tool-btn" onclick="switchAnalytics(this, 'optimizer')">Portfolio Optimizer</button>
                 <button class="tool-btn" onclick="switchAnalytics(this, 'backtest')">Backtesting</button>
-                <button class="tool-btn" onclick="switchAnalytics(this, 'whatif')">What-If</button>
+                <button class="tool-btn" onclick="switchAnalytics(this, 'clientfit')">Client Fit Analysis</button>
+              </div>
+            </div>
+            <div class="tool-group" id="clientContextDisplay">
+              <span class="tool-label">Active Client</span>
+              <span class="client-context-badge" id="analyticsClientBadge">No client selected</span>
+            </div>
+          </div>
+
+          <!-- TRADING STRATEGY BUILDER -->
+          <div class="analytics-panel active" id="analytics-strategy">
+            <div class="strategy-builder-layout">
+              <!-- Strategy Input Section -->
+              <div class="strategy-input-panel">
+                <div class="panel-header">
+                  <h3>Trading Strategy Builder</h3>
+                  <p class="panel-subtitle">Define your investment thesis and convert it to a testable strategy</p>
+                </div>
+
+                <!-- Investment Thesis Input -->
+                <div class="input-section">
+                  <label class="input-label">Investment Thesis</label>
+                  <textarea id="investmentThesis" class="thesis-input" placeholder="Describe your investment idea in natural language, e.g.: 'I believe European luxury stocks will outperform due to strong Chinese demand recovery. Focus on companies with >20% APAC exposure and strong brand pricing power.'"></textarea>
+                </div>
+
+                <!-- Strategy Parameters -->
+                <div class="input-section">
+                  <label class="input-label">Strategy Parameters</label>
+                  <div class="params-grid">
+                    <div class="param-item">
+                      <label>Entry Signal</label>
+                      <select id="entrySignal">
+                        <option value="momentum">Momentum Breakout</option>
+                        <option value="meanrev">Mean Reversion</option>
+                        <option value="value">Value Threshold</option>
+                        <option value="earnings">Post-Earnings Drift</option>
+                        <option value="technical">Technical Pattern</option>
+                        <option value="custom">Custom Rule</option>
+                      </select>
+                    </div>
+                    <div class="param-item">
+                      <label>Exit Strategy</label>
+                      <select id="exitStrategy">
+                        <option value="trailing">Trailing Stop (15%)</option>
+                        <option value="target">Price Target</option>
+                        <option value="time">Time-Based (90 days)</option>
+                        <option value="signal">Signal Reversal</option>
+                        <option value="combo">Combo (Stop + Target)</option>
+                      </select>
+                    </div>
+                    <div class="param-item">
+                      <label>Position Sizing</label>
+                      <select id="positionSizing">
+                        <option value="equal">Equal Weight</option>
+                        <option value="conviction">Conviction-Based</option>
+                        <option value="volatility">Volatility-Adjusted</option>
+                        <option value="kelly">Kelly Criterion</option>
+                      </select>
+                    </div>
+                    <div class="param-item">
+                      <label>Rebalance Frequency</label>
+                      <select id="rebalanceFreq">
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="trigger">Trigger-Based</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Risk Parameters -->
+                <div class="input-section">
+                  <label class="input-label">Risk Management</label>
+                  <div class="risk-params">
+                    <div class="risk-row">
+                      <span>Max Portfolio Drawdown</span>
+                      <div class="risk-input-group">
+                        <input type="number" id="maxDrawdown" value="15" min="5" max="50">
+                        <span class="unit">%</span>
+                      </div>
+                    </div>
+                    <div class="risk-row">
+                      <span>Stop Loss per Position</span>
+                      <div class="risk-input-group">
+                        <input type="number" id="stopLoss" value="10" min="1" max="30">
+                        <span class="unit">%</span>
+                      </div>
+                    </div>
+                    <div class="risk-row">
+                      <span>Take Profit Target</span>
+                      <div class="risk-input-group">
+                        <input type="number" id="takeProfit" value="25" min="5" max="100">
+                        <span class="unit">%</span>
+                      </div>
+                    </div>
+                    <div class="risk-row">
+                      <span>Max Sector Concentration</span>
+                      <div class="risk-input-group">
+                        <input type="number" id="maxSector" value="40" min="10" max="100">
+                        <span class="unit">%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Universe Selection -->
+                <div class="input-section">
+                  <label class="input-label">Investment Universe</label>
+                  <div class="universe-selector">
+                    <div class="universe-option selected" onclick="selectUniverse(this, 'client')">
+                      <span class="option-title">Client Holdings</span>
+                      <span class="option-desc">Based on current portfolio</span>
+                    </div>
+                    <div class="universe-option" onclick="selectUniverse(this, 'coverage')">
+                      <span class="option-title">ODDO Coverage</span>
+                      <span class="option-desc">Analyst covered stocks</span>
+                    </div>
+                    <div class="universe-option" onclick="selectUniverse(this, 'eurostoxx')">
+                      <span class="option-title">Euro Stoxx 600</span>
+                      <span class="option-desc">Pan-European large caps</span>
+                    </div>
+                    <div class="universe-option" onclick="selectUniverse(this, 'custom')">
+                      <span class="option-title">Custom List</span>
+                      <span class="option-desc">Define your own</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="strategy-actions">
+                  <button class="btn-secondary" onclick="saveStrategyDraft()">Save Draft</button>
+                  <button class="btn-primary" onclick="generateStrategy()">Generate Strategy</button>
+                </div>
+              </div>
+
+              <!-- Strategy Output Section -->
+              <div class="strategy-output-panel">
+                <div class="panel-header">
+                  <h3>Strategy Output</h3>
+                  <div class="output-actions">
+                    <button class="btn-sm" onclick="exportStrategyPDF()">Export PDF</button>
+                    <button class="btn-sm" onclick="runStrategyBacktest()">Run Backtest</button>
+                  </div>
+                </div>
+
+                <div class="strategy-output-content" id="strategyOutput">
+                  <div class="output-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                      <path d="M2 17l10 5 10-5"></path>
+                      <path d="M2 12l10 5 10-5"></path>
+                    </svg>
+                    <p>Define your investment thesis and parameters, then click "Generate Strategy" to create a structured trading plan.</p>
+                  </div>
+                </div>
+
+                <!-- Quick Backtest Preview -->
+                <div class="quick-backtest-preview" id="quickBacktestPreview" style="display: none;">
+                  <h4>Quick Backtest Preview</h4>
+                  <div class="backtest-preview-chart">
+                    <canvas id="strategyPreviewChart"></canvas>
+                  </div>
+                  <div class="backtest-preview-stats">
+                    <div class="preview-stat">
+                      <span class="stat-value" id="previewReturn">--</span>
+                      <span class="stat-label">Total Return</span>
+                    </div>
+                    <div class="preview-stat">
+                      <span class="stat-value" id="previewSharpe">--</span>
+                      <span class="stat-label">Sharpe Ratio</span>
+                    </div>
+                    <div class="preview-stat">
+                      <span class="stat-value" id="previewDrawdown">--</span>
+                      <span class="stat-label">Max Drawdown</span>
+                    </div>
+                    <div class="preview-stat">
+                      <span class="stat-value" id="previewWinRate">--</span>
+                      <span class="stat-label">Win Rate</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Portfolio Optimizer Panel -->
-          <div class="analytics-panel active" id="analytics-optimizer">
+          <!-- PORTFOLIO OPTIMIZER -->
+          <div class="analytics-panel" id="analytics-optimizer">
             <div class="optimizer-grid">
               <div class="optimizer-input-section">
-                <h3 class="section-title-modern">
-                  <span class="title-icon">⚖️</span>
-                  Portfolio Configuration
-                </h3>
-                <div class="input-card">
-                  <label>Select Assets</label>
+                <div class="panel-header">
+                  <h3>Portfolio Configuration</h3>
+                  <p class="panel-subtitle">Optimize allocation based on client risk profile</p>
+                </div>
+
+                <div class="input-section">
+                  <label class="input-label">Select Assets</label>
                   <div class="asset-selector" id="optimizerAssets">
-                    <div class="asset-tag">AAPL <span class="remove-tag" onclick="removeAsset('AAPL')">×</span></div>
-                    <div class="asset-tag">MSFT <span class="remove-tag" onclick="removeAsset('MSFT')">×</span></div>
-                    <div class="asset-tag">GOOGL <span class="remove-tag" onclick="removeAsset('GOOGL')">×</span></div>
-                    <div class="asset-tag">AMZN <span class="remove-tag" onclick="removeAsset('AMZN')">×</span></div>
-                    <input type="text" class="asset-input" placeholder="+ Add ticker" id="addAssetInput">
+                    <input type="text" class="asset-input" placeholder="Type ticker and press Enter" id="addAssetInput" onkeypress="handleAssetAdd(event)">
+                  </div>
+                  <div class="asset-tags" id="assetTagsContainer">
+                    <span class="asset-tag">AAPL <button onclick="removeAsset(this, 'AAPL')">×</button></span>
+                    <span class="asset-tag">MSFT <button onclick="removeAsset(this, 'MSFT')">×</button></span>
+                    <span class="asset-tag">LVMH.PA <button onclick="removeAsset(this, 'LVMH.PA')">×</button></span>
                   </div>
                 </div>
-                <div class="input-card">
-                  <label>Optimization Target</label>
-                  <select id="optimizationTarget">
+
+                <div class="input-section">
+                  <label class="input-label">Optimization Target</label>
+                  <select id="optimizationTarget" class="full-width">
                     <option value="sharpe">Maximum Sharpe Ratio</option>
                     <option value="minvol">Minimum Volatility</option>
-                    <option value="maxret">Maximum Return</option>
+                    <option value="maxret">Maximum Return (given risk)</option>
                     <option value="riskparity">Risk Parity</option>
+                    <option value="clientfit">Client Risk Profile Match</option>
                   </select>
                 </div>
-                <div class="input-card">
-                  <label>Risk Tolerance</label>
-                  <div class="slider-container">
-                    <input type="range" id="riskTolerance" min="1" max="10" value="5">
-                    <div class="slider-labels">
-                      <span>Conservative</span>
-                      <span>Aggressive</span>
+
+                <div class="input-section">
+                  <label class="input-label">Client Risk Tolerance</label>
+                  <div class="slider-with-value">
+                    <input type="range" id="riskTolerance" min="1" max="10" value="5" oninput="updateRiskLabel(this.value)">
+                    <span id="riskLabel" class="slider-value">5 - Balanced</span>
+                  </div>
+                  <div class="slider-labels">
+                    <span>Conservative</span>
+                    <span>Aggressive</span>
+                  </div>
+                </div>
+
+                <div class="input-section">
+                  <label class="input-label">Constraints</label>
+                  <div class="constraints-list">
+                    <div class="constraint-row">
+                      <span>Max single position</span>
+                      <input type="number" id="maxPosition" value="25" min="5" max="100"><span>%</span>
+                    </div>
+                    <div class="constraint-row">
+                      <span>Min single position</span>
+                      <input type="number" id="minPosition" value="5" min="0" max="50"><span>%</span>
+                    </div>
+                    <div class="constraint-row">
+                      <span>Max sector exposure</span>
+                      <input type="number" id="maxSectorExp" value="40" min="10" max="100"><span>%</span>
                     </div>
                   </div>
                 </div>
-                <div class="input-card">
-                  <label>Constraints</label>
-                  <div class="constraint-row">
-                    <span>Max single position:</span>
-                    <input type="number" value="25" min="5" max="100">%
-                  </div>
-                  <div class="constraint-row">
-                    <span>Min single position:</span>
-                    <input type="number" value="5" min="0" max="50">%
-                  </div>
-                </div>
-                <button class="btn-run-analysis" onclick="runOptimization()">
-                  <span>⚡</span> Run Optimization
-                </button>
+
+                <button class="btn-primary full-width" onclick="runOptimization()">Run Optimization</button>
               </div>
 
               <div class="optimizer-results-section">
-                <h3 class="section-title-modern">
-                  <span class="title-icon">📈</span>
-                  Efficient Frontier
-                </h3>
+                <div class="panel-header">
+                  <h3>Efficient Frontier</h3>
+                </div>
                 <div class="chart-container-large">
                   <canvas id="efficientFrontierChart"></canvas>
                 </div>
                 <div class="optimal-portfolio-card">
-                  <h4>Optimal Portfolio</h4>
+                  <h4>Optimal Allocation</h4>
                   <div class="portfolio-metrics-row">
-                    <div class="metric">
-                      <span class="metric-value-lg">12.4%</span>
-                      <span class="metric-label-sm">Expected Return</span>
+                    <div class="metric-box">
+                      <span class="metric-value" id="optExpReturn">12.4%</span>
+                      <span class="metric-label">Expected Return</span>
                     </div>
-                    <div class="metric">
-                      <span class="metric-value-lg">8.2%</span>
-                      <span class="metric-label-sm">Volatility</span>
+                    <div class="metric-box">
+                      <span class="metric-value" id="optVolatility">8.2%</span>
+                      <span class="metric-label">Volatility</span>
                     </div>
-                    <div class="metric">
-                      <span class="metric-value-lg">1.51</span>
+                    <div class="metric-box">
+                      <span class="metric-value" id="optSharpe">1.51</span>
                       <span class="metric-label-sm">Sharpe Ratio</span>
                     </div>
                   </div>
@@ -6723,273 +7953,289 @@
             </div>
           </div>
 
-          <!-- Monte Carlo Panel -->
-          <div class="analytics-panel" id="analytics-montecarlo">
-            <div class="montecarlo-grid">
-              <div class="montecarlo-config">
-                <h3 class="section-title-modern">
-                  <span class="title-icon">🎲</span>
-                  Simulation Parameters
-                </h3>
-                <div class="input-card">
-                  <label>Initial Investment</label>
-                  <input type="text" value="€100,000" id="mcInitialInvestment">
-                </div>
-                <div class="input-card">
-                  <label>Time Horizon</label>
-                  <select id="mcTimeHorizon">
-                    <option value="1">1 Year</option>
-                    <option value="3">3 Years</option>
-                    <option value="5" selected>5 Years</option>
-                    <option value="10">10 Years</option>
-                  </select>
-                </div>
-                <div class="input-card">
-                  <label>Number of Simulations</label>
-                  <select id="mcSimulations">
-                    <option value="1000">1,000</option>
-                    <option value="5000" selected>5,000</option>
-                    <option value="10000">10,000</option>
-                  </select>
-                </div>
-                <div class="input-card">
-                  <label>Expected Annual Return</label>
-                  <input type="number" value="8" id="mcExpectedReturn">%
-                </div>
-                <div class="input-card">
-                  <label>Annual Volatility</label>
-                  <input type="number" value="15" id="mcVolatility">%
-                </div>
-                <button class="btn-run-analysis" onclick="runMonteCarlo()">
-                  <span>🎲</span> Run Simulation
-                </button>
-              </div>
-
-              <div class="montecarlo-results">
-                <h3 class="section-title-modern">
-                  <span class="title-icon">📊</span>
-                  Simulation Results
-                </h3>
-                <div class="chart-container-large">
-                  <canvas id="monteCarloChart"></canvas>
-                </div>
-                <div class="mc-stats-grid">
-                  <div class="mc-stat-card">
-                    <span class="mc-stat-label">Median Outcome</span>
-                    <span class="mc-stat-value">€148,024</span>
-                    <span class="mc-stat-change positive">+48.0%</span>
-                  </div>
-                  <div class="mc-stat-card">
-                    <span class="mc-stat-label">5th Percentile</span>
-                    <span class="mc-stat-value">€72,450</span>
-                    <span class="mc-stat-change negative">-27.5%</span>
-                  </div>
-                  <div class="mc-stat-card">
-                    <span class="mc-stat-label">95th Percentile</span>
-                    <span class="mc-stat-value">€287,340</span>
-                    <span class="mc-stat-change positive">+187.3%</span>
-                  </div>
-                  <div class="mc-stat-card">
-                    <span class="mc-stat-label">Prob. of Loss</span>
-                    <span class="mc-stat-value">12.4%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Backtesting Panel -->
+          <!-- ENHANCED BACKTESTING -->
           <div class="analytics-panel" id="analytics-backtest">
             <div class="backtest-layout">
-              <div class="backtest-config">
-                <h3 class="section-title-modern">
-                  <span class="title-icon">⏱️</span>
-                  Backtest Configuration
-                </h3>
-                <div class="input-card">
-                  <label>Strategy</label>
-                  <select id="backtestStrategy">
+              <div class="backtest-config-panel">
+                <div class="panel-header">
+                  <h3>Backtest Configuration</h3>
+                  <p class="panel-subtitle">Test your strategy against historical data</p>
+                </div>
+
+                <div class="input-section">
+                  <label class="input-label">Strategy to Test</label>
+                  <select id="backtestStrategy" class="full-width">
+                    <option value="custom">Custom Strategy (from Builder)</option>
                     <option value="momentum">Momentum Strategy</option>
                     <option value="meanrev">Mean Reversion</option>
-                    <option value="valuefactor">Value Factor</option>
-                    <option value="dividendgrowth">Dividend Growth</option>
-                    <option value="custom">Custom Rules</option>
+                    <option value="value">Value Factor</option>
+                    <option value="quality">Quality Factor</option>
+                    <option value="dividend">Dividend Growth</option>
                   </select>
                 </div>
-                <div class="input-card">
-                  <label>Backtest Period</label>
-                  <div class="date-range-inputs">
-                    <input type="date" value="2020-01-01" id="btStartDate">
-                    <span>to</span>
-                    <input type="date" value="2025-12-31" id="btEndDate">
+
+                <div class="input-section">
+                  <label class="input-label">Backtest Period</label>
+                  <div class="date-inputs">
+                    <div class="date-field">
+                      <label>Start</label>
+                      <input type="date" id="btStartDate" value="2020-01-01">
+                    </div>
+                    <div class="date-field">
+                      <label>End</label>
+                      <input type="date" id="btEndDate" value="2025-12-31">
+                    </div>
                   </div>
                 </div>
-                <div class="input-card">
-                  <label>Benchmark</label>
-                  <select id="backtestBenchmark">
+
+                <div class="input-section">
+                  <label class="input-label">Benchmark</label>
+                  <select id="btBenchmark" class="full-width">
                     <option value="SPY">S&P 500 (SPY)</option>
-                    <option value="QQQ">Nasdaq 100 (QQQ)</option>
-                    <option value="IWM">Russell 2000 (IWM)</option>
-                    <option value="EFA">MSCI EAFE (EFA)</option>
+                    <option value="EuroStoxx">Euro Stoxx 50</option>
+                    <option value="DAX">DAX 40</option>
+                    <option value="CAC">CAC 40</option>
+                    <option value="MSCI">MSCI World</option>
                   </select>
                 </div>
-                <div class="input-card">
-                  <label>Initial Capital</label>
-                  <input type="text" value="€100,000" id="btInitialCapital">
+
+                <div class="input-section">
+                  <label class="input-label">Initial Capital</label>
+                  <div class="input-with-unit">
+                    <span class="unit-prefix">€</span>
+                    <input type="number" id="btCapital" value="100000">
+                  </div>
                 </div>
-                <div class="input-card">
-                  <label>Rebalancing Frequency</label>
-                  <select id="btRebalance">
+
+                <div class="input-section">
+                  <label class="input-label">Transaction Costs</label>
+                  <div class="cost-inputs">
+                    <div class="cost-field">
+                      <label>Commission</label>
+                      <input type="number" id="btCommission" value="0.1" step="0.01"><span>%</span>
+                    </div>
+                    <div class="cost-field">
+                      <label>Slippage</label>
+                      <input type="number" id="btSlippage" value="0.05" step="0.01"><span>%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="input-section">
+                  <label class="input-label">Rebalancing</label>
+                  <select id="btRebalance" class="full-width">
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
                     <option value="monthly" selected>Monthly</option>
                     <option value="quarterly">Quarterly</option>
                   </select>
                 </div>
-                <button class="btn-run-analysis" onclick="runBacktest()">
-                  <span>⏱️</span> Run Backtest
-                </button>
+
+                <button class="btn-primary full-width" onclick="runBacktest()">Run Backtest</button>
               </div>
 
-              <div class="backtest-results">
-                <h3 class="section-title-modern">
-                  <span class="title-icon">📈</span>
-                  Performance Analysis
-                </h3>
+              <div class="backtest-results-panel">
+                <div class="panel-header">
+                  <h3>Backtest Results</h3>
+                  <div class="results-actions">
+                    <button class="btn-sm" onclick="exportBacktestPDF()">Export PDF</button>
+                    <button class="btn-sm" onclick="shareBacktest()">Share</button>
+                  </div>
+                </div>
+
                 <div class="chart-container-large">
                   <canvas id="backtestChart"></canvas>
                 </div>
-                <div class="backtest-metrics-grid">
-                  <div class="bt-metric">
-                    <span class="bt-metric-label">Total Return</span>
-                    <span class="bt-metric-value positive">+87.4%</span>
+
+                <div class="backtest-metrics">
+                  <div class="metric-card">
+                    <span class="metric-value positive" id="btTotalReturn">+87.4%</span>
+                    <span class="metric-label">Total Return</span>
                   </div>
-                  <div class="bt-metric">
-                    <span class="bt-metric-label">CAGR</span>
-                    <span class="bt-metric-value">13.4%</span>
+                  <div class="metric-card">
+                    <span class="metric-value" id="btCAGR">13.4%</span>
+                    <span class="metric-label">CAGR</span>
                   </div>
-                  <div class="bt-metric">
-                    <span class="bt-metric-label">Max Drawdown</span>
-                    <span class="bt-metric-value negative">-18.2%</span>
+                  <div class="metric-card">
+                    <span class="metric-value negative" id="btMaxDD">-18.2%</span>
+                    <span class="metric-label">Max Drawdown</span>
                   </div>
-                  <div class="bt-metric">
-                    <span class="bt-metric-label">Sharpe Ratio</span>
-                    <span class="bt-metric-value">1.24</span>
+                  <div class="metric-card">
+                    <span class="metric-value" id="btSharpe">1.24</span>
+                    <span class="metric-label">Sharpe Ratio</span>
                   </div>
-                  <div class="bt-metric">
-                    <span class="bt-metric-label">Win Rate</span>
-                    <span class="bt-metric-value">58.3%</span>
+                  <div class="metric-card">
+                    <span class="metric-value" id="btSortino">1.67</span>
+                    <span class="metric-label">Sortino Ratio</span>
                   </div>
-                  <div class="bt-metric">
-                    <span class="bt-metric-label">Alpha vs Benchmark</span>
-                    <span class="bt-metric-value positive">+4.2%</span>
+                  <div class="metric-card">
+                    <span class="metric-value" id="btWinRate">58.3%</span>
+                    <span class="metric-label">Win Rate</span>
+                  </div>
+                  <div class="metric-card">
+                    <span class="metric-value positive" id="btAlpha">+4.2%</span>
+                    <span class="metric-label">Alpha vs Benchmark</span>
+                  </div>
+                  <div class="metric-card">
+                    <span class="metric-value" id="btBeta">0.85</span>
+                    <span class="metric-label">Beta</span>
+                  </div>
+                </div>
+
+                <div class="trade-log">
+                  <h4>Recent Trades</h4>
+                  <div class="trade-table" id="tradeLogTable">
+                    <div class="trade-row header">
+                      <span>Date</span>
+                      <span>Ticker</span>
+                      <span>Action</span>
+                      <span>Price</span>
+                      <span>P&L</span>
+                    </div>
+                    <div class="trade-row">
+                      <span>2025-12-15</span>
+                      <span>AAPL</span>
+                      <span class="action-sell">SELL</span>
+                      <span>$198.50</span>
+                      <span class="positive">+12.4%</span>
+                    </div>
+                    <div class="trade-row">
+                      <span>2025-11-20</span>
+                      <span>LVMH.PA</span>
+                      <span class="action-buy">BUY</span>
+                      <span>€745.00</span>
+                      <span class="muted">Open</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- What-If Panel -->
-          <div class="analytics-panel" id="analytics-whatif">
-            <div class="whatif-layout">
-              <div class="whatif-scenarios">
-                <h3 class="section-title-modern">
-                  <span class="title-icon">🔮</span>
-                  Scenario Builder
-                </h3>
-                <div class="scenario-cards">
-                  <div class="scenario-card" onclick="applyScenario('recession')">
-                    <div class="scenario-icon">📉</div>
-                    <h4>Recession</h4>
-                    <p>Market drops 30%, rates cut to 0%</p>
+          <!-- CLIENT FIT ANALYSIS -->
+          <div class="analytics-panel" id="analytics-clientfit">
+            <div class="clientfit-layout">
+              <div class="clientfit-profile-panel">
+                <div class="panel-header">
+                  <h3>Client Risk Profile</h3>
+                  <p class="panel-subtitle">Analyze how well strategies fit this client</p>
+                </div>
+
+                <div class="client-profile-card" id="clientProfileCard">
+                  <div class="profile-header">
+                    <div class="profile-avatar" id="cfClientAvatar">--</div>
+                    <div class="profile-info">
+                      <h4 id="cfClientName">Select a client</h4>
+                      <span class="profile-type" id="cfClientType">--</span>
+                    </div>
                   </div>
-                  <div class="scenario-card" onclick="applyScenario('inflation')">
-                    <div class="scenario-icon">🔥</div>
-                    <h4>High Inflation</h4>
-                    <p>CPI 8%+, rates rise 200bps</p>
+
+                  <div class="profile-metrics">
+                    <div class="profile-metric">
+                      <span class="metric-label">Risk Tolerance</span>
+                      <div class="metric-bar">
+                        <div class="bar-fill" id="cfRiskBar" style="width: 60%"></div>
+                      </div>
+                      <span class="metric-value" id="cfRiskScore">6/10</span>
+                    </div>
+                    <div class="profile-metric">
+                      <span class="metric-label">Investment Horizon</span>
+                      <span class="metric-value" id="cfHorizon">5-10 years</span>
+                    </div>
+                    <div class="profile-metric">
+                      <span class="metric-label">Max Acceptable Loss</span>
+                      <span class="metric-value" id="cfMaxLoss">-20%</span>
+                    </div>
+                    <div class="profile-metric">
+                      <span class="metric-label">Target Return</span>
+                      <span class="metric-value" id="cfTargetReturn">8-12% p.a.</span>
+                    </div>
                   </div>
-                  <div class="scenario-card" onclick="applyScenario('boom')">
-                    <div class="scenario-icon">🚀</div>
-                    <h4>Tech Boom</h4>
-                    <p>Tech +50%, value underperforms</p>
-                  </div>
-                  <div class="scenario-card" onclick="applyScenario('custom')">
-                    <div class="scenario-icon">⚙️</div>
-                    <h4>Custom</h4>
-                    <p>Define your own scenario</p>
+
+                  <div class="profile-preferences">
+                    <h5>Investment Preferences</h5>
+                    <div class="pref-tags" id="cfPrefTags">
+                      <span class="pref-tag positive">ESG Focus</span>
+                      <span class="pref-tag positive">Dividend Income</span>
+                      <span class="pref-tag negative">No Crypto</span>
+                      <span class="pref-tag neutral">Europe Focus</span>
+                    </div>
                   </div>
                 </div>
-                <div class="custom-scenario-inputs" id="customScenarioInputs">
-                  <h4>Custom Scenario Parameters</h4>
-                  <div class="input-row">
-                    <label>Market Return</label>
-                    <input type="number" value="0" id="wiMarketReturn">%
-                  </div>
-                  <div class="input-row">
-                    <label>Rate Change</label>
-                    <input type="number" value="0" id="wiRateChange">bps
-                  </div>
-                  <div class="input-row">
-                    <label>USD/EUR Change</label>
-                    <input type="number" value="0" id="wiFxChange">%
-                  </div>
-                  <div class="input-row">
-                    <label>Oil Price Change</label>
-                    <input type="number" value="0" id="wiOilChange">%
-                  </div>
+
+                <div class="input-section">
+                  <label class="input-label">Strategy to Analyze</label>
+                  <select id="cfStrategy" class="full-width" onchange="analyzeClientFit()">
+                    <option value="">Select a strategy...</option>
+                    <option value="current">Current Portfolio</option>
+                    <option value="custom">Custom Strategy (from Builder)</option>
+                    <option value="conservative">Conservative Income</option>
+                    <option value="balanced">Balanced Growth</option>
+                    <option value="aggressive">Aggressive Growth</option>
+                  </select>
                 </div>
-                <button class="btn-run-analysis" onclick="runWhatIf()">
-                  <span>🔮</span> Analyze Impact
-                </button>
+
+                <button class="btn-primary full-width" onclick="analyzeClientFit()">Analyze Fit</button>
               </div>
 
-              <div class="whatif-results">
-                <h3 class="section-title-modern">
-                  <span class="title-icon">📊</span>
-                  Portfolio Impact
-                </h3>
-                <div class="impact-summary" id="impactSummary">
-                  <div class="impact-card negative">
-                    <span class="impact-label">Portfolio Value Impact</span>
-                    <span class="impact-value">-€18,450</span>
-                    <span class="impact-percent">-18.5%</span>
+              <div class="clientfit-results-panel">
+                <div class="panel-header">
+                  <h3>Fit Analysis Results</h3>
+                </div>
+
+                <div class="fit-score-display">
+                  <div class="fit-score-circle" id="fitScoreCircle">
+                    <svg viewBox="0 0 100 100">
+                      <circle class="score-bg" cx="50" cy="50" r="45"></circle>
+                      <circle class="score-fill" cx="50" cy="50" r="45" id="scoreCircleFill"></circle>
+                    </svg>
+                    <div class="score-text">
+                      <span class="score-value" id="fitScoreValue">--</span>
+                      <span class="score-label">Fit Score</span>
+                    </div>
+                  </div>
+                  <div class="fit-summary" id="fitSummary">
+                    <p>Select a client and strategy to see fit analysis.</p>
                   </div>
                 </div>
-                <div class="chart-container-large">
-                  <canvas id="whatIfChart"></canvas>
+
+                <div class="fit-breakdown">
+                  <h4>Fit Breakdown</h4>
+                  <div class="breakdown-items" id="fitBreakdown">
+                    <div class="breakdown-item">
+                      <span class="breakdown-label">Risk Alignment</span>
+                      <div class="breakdown-bar"><div class="bar-fill" style="width: 0%"></div></div>
+                      <span class="breakdown-score">--</span>
+                    </div>
+                    <div class="breakdown-item">
+                      <span class="breakdown-label">Return Expectations</span>
+                      <div class="breakdown-bar"><div class="bar-fill" style="width: 0%"></div></div>
+                      <span class="breakdown-score">--</span>
+                    </div>
+                    <div class="breakdown-item">
+                      <span class="breakdown-label">Sector Preferences</span>
+                      <div class="breakdown-bar"><div class="bar-fill" style="width: 0%"></div></div>
+                      <span class="breakdown-score">--</span>
+                    </div>
+                    <div class="breakdown-item">
+                      <span class="breakdown-label">ESG Compliance</span>
+                      <div class="breakdown-bar"><div class="bar-fill" style="width: 0%"></div></div>
+                      <span class="breakdown-score">--</span>
+                    </div>
+                    <div class="breakdown-item">
+                      <span class="breakdown-label">Liquidity Match</span>
+                      <div class="breakdown-bar"><div class="bar-fill" style="width: 0%"></div></div>
+                      <span class="breakdown-score">--</span>
+                    </div>
+                  </div>
                 </div>
-                <div class="position-impacts" id="positionImpacts">
-                  <h4>Position-Level Impact</h4>
-                  <div class="impact-table">
-                    <div class="impact-row header">
-                      <span>Ticker</span>
-                      <span>Current</span>
-                      <span>Projected</span>
-                      <span>Change</span>
-                    </div>
-                    <div class="impact-row">
-                      <span class="ticker">AAPL</span>
-                      <span>€35,000</span>
-                      <span>€28,350</span>
-                      <span class="negative">-19.0%</span>
-                    </div>
-                    <div class="impact-row">
-                      <span class="ticker">MSFT</span>
-                      <span>€28,000</span>
-                      <span>€23,240</span>
-                      <span class="negative">-17.0%</span>
-                    </div>
-                    <div class="impact-row">
-                      <span class="ticker">GOOGL</span>
-                      <span>€22,000</span>
-                      <span>€17,600</span>
-                      <span class="negative">-20.0%</span>
-                    </div>
-                    <div class="impact-row">
-                      <span class="ticker">AMZN</span>
-                      <span>€15,000</span>
-                      <span>€12,360</span>
-                      <span class="negative">-17.6%</span>
+
+                <div class="fit-recommendations" id="fitRecommendations">
+                  <h4>Recommendations</h4>
+                  <div class="recommendations-list">
+                    <div class="recommendation-item">
+                      <span class="rec-icon warning">!</span>
+                      <span class="rec-text">Run analysis to see personalized recommendations</span>
                     </div>
                   </div>
                 </div>
@@ -10362,20 +11608,20 @@ async function generateMorningBriefing() {
 
   container.innerHTML = `
     <div class="briefing-section">
-      <div class="briefing-section-title">&#128197; ${today}</div>
+      <div class="briefing-section-title">▣ ${today}</div>
       <div class="briefing-highlight">
         <strong>Key Focus Today:</strong> Big Tech earnings week continues. Monitor AAPL, MSFT positions across client portfolios. Fed rate decision Wednesday - prepare client talking points.
       </div>
     </div>
 
     <div class="briefing-section">
-      <div class="briefing-section-title">&#128200; Market Overview</div>
+      <div class="briefing-section-title">▲ Market Overview</div>
       <p>US futures pointing higher (+0.3%) ahead of earnings. European markets mixed with DAX +0.2%, FTSE -0.1%. Asian markets closed mostly green with Nikkei +1.2%.</p>
       <p style="margin-top: 10px;"><strong>Key Movers:</strong> Tech sector leading (+1.4%), Energy lagging (-0.8%) on oil inventory data.</p>
     </div>
 
     <div class="briefing-section">
-      <div class="briefing-section-title">&#128176; Client Portfolio Alerts</div>
+      <div class="briefing-section-title">€ Client Portfolio Alerts</div>
       <ul style="margin: 0; padding-left: 20px;">
         <li><strong>3 clients</strong> have >15% exposure to AAPL - prepare earnings commentary</li>
         <li><strong>Hans Müller</strong> - TSLA position down 8% this week, consider outreach</li>
@@ -10384,7 +11630,7 @@ async function generateMorningBriefing() {
     </div>
 
     <div class="briefing-section">
-      <div class="briefing-section-title">&#127919; Today's Priorities</div>
+      <div class="briefing-section-title">◎ Today's Priorities</div>
       <ol style="margin: 0; padding-left: 20px;">
         <li>Review AAPL earnings preview for affected clients</li>
         <li>Prepare Fed meeting talking points</li>
@@ -10720,7 +11966,7 @@ async function generateAIInsights() {
     </div>
 
     <div style="margin-top: 20px; padding: 16px; background: var(--soft-greige); border-radius: 10px;">
-      <div style="font-weight: 600; margin-bottom: 8px;">📊 Sector Rotation Signal</div>
+      <div style="font-weight: 600; margin-bottom: 8px;"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Sector Rotation Signal</div>
       <p style="margin: 0; font-size: 13px; color: var(--text-muted);">
         Current rotation favors <strong>Technology</strong> and <strong>Healthcare</strong> over <strong>Energy</strong> and <strong>Utilities</strong>.
         Recommend tactical overweight in quality growth names for Q1.
@@ -10792,7 +12038,7 @@ function createWatchlist() {
   container.innerHTML += `
     <div class="watchlist-card animate-in" onclick="openWatchlist('new-${Date.now()}')">
       <div class="watchlist-header">
-        <span class="watchlist-icon">📋</span>
+        <span class="watchlist-icon"></span>
         <div class="watchlist-info">
           <h4>${escapeHtml(name)}</h4>
           <span class="watchlist-meta">0 stocks • Created just now</span>
@@ -10870,8 +12116,8 @@ function generateReport() {
           <span class="report-meta">Generated ${dateStr} • Just now</span>
         </div>
         <div class="report-actions">
-          <button class="btn-icon" title="Download">⬇</button>
-          <button class="btn-icon" title="Share">📤</button>
+          <button class="btn-icon" title="Download">↓</button>
+          <button class="btn-icon" title="Share">↗</button>
         </div>
       </div>
     `);
@@ -11374,18 +12620,380 @@ function runWhatIf() {
   }, 1500);
 }
 
-function removeAsset(ticker) {
-  const tag = event.target.parentElement;
-  tag.remove();
+function removeAsset(btn, ticker) {
+  btn.parentElement.remove();
   showNotification(`${ticker} removed from portfolio`, 'info');
 }
 
-// Initialize analytics charts when tab is clicked
+function handleAssetAdd(event) {
+  if (event.key === 'Enter') {
+    const input = event.target;
+    const ticker = input.value.trim().toUpperCase();
+    if (!ticker) return;
+
+    const container = document.getElementById('assetTagsContainer');
+    const tag = document.createElement('span');
+    tag.className = 'asset-tag';
+    tag.innerHTML = `${ticker} <button onclick="removeAsset(this, '${ticker}')">×</button>`;
+    container.appendChild(tag);
+    input.value = '';
+    showNotification(`${ticker} added`, 'success');
+  }
+}
+
+function updateRiskLabel(value) {
+  const labels = ['Very Conservative', 'Conservative', 'Moderately Conservative', 'Moderate', 'Balanced', 'Moderately Aggressive', 'Growth', 'Aggressive', 'Very Aggressive', 'Maximum Growth'];
+  document.getElementById('riskLabel').textContent = `${value} - ${labels[value - 1]}`;
+}
+
+// ============================================================================
+// STRATEGY BUILDER
+// ============================================================================
+
+function selectUniverse(el, type) {
+  document.querySelectorAll('.universe-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  showNotification(`Universe: ${type} selected`, 'info');
+}
+
+function saveStrategyDraft() {
+  const thesis = document.getElementById('investmentThesis').value;
+  if (!thesis) {
+    showNotification('Please enter an investment thesis first', 'warning');
+    return;
+  }
+  localStorage.setItem('strategyDraft', JSON.stringify({
+    thesis,
+    entrySignal: document.getElementById('entrySignal').value,
+    exitStrategy: document.getElementById('exitStrategy').value,
+    positionSizing: document.getElementById('positionSizing').value,
+    timestamp: new Date().toISOString()
+  }));
+  showNotification('Strategy draft saved', 'success');
+}
+
+function generateStrategy() {
+  const thesis = document.getElementById('investmentThesis').value;
+  if (!thesis) {
+    showNotification('Please enter an investment thesis', 'warning');
+    return;
+  }
+
+  const entrySignal = document.getElementById('entrySignal').value;
+  const exitStrategy = document.getElementById('exitStrategy').value;
+  const positionSizing = document.getElementById('positionSizing').value;
+  const maxDrawdown = document.getElementById('maxDrawdown').value;
+  const stopLoss = document.getElementById('stopLoss').value;
+  const takeProfit = document.getElementById('takeProfit').value;
+
+  showNotification('Generating strategy...', 'info');
+
+  // Simulate generation
+  setTimeout(() => {
+    document.getElementById('strategyOutput').innerHTML = `
+      <div class="strategy-result animate-in">
+        <div class="result-section">
+          <h4>Investment Thesis Analysis</h4>
+          <p style="color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 16px;">${thesis}</p>
+        </div>
+
+        <div class="result-section">
+          <h4>Generated Trading Rules</h4>
+          <div class="rule-list" style="margin-top: 12px;">
+            <div class="rule-item" style="padding: 12px; background: var(--soft-greige); border-radius: 8px; margin-bottom: 8px; font-size: 13px;">
+              <strong>Entry:</strong> ${getEntryDescription(entrySignal)}
+            </div>
+            <div class="rule-item" style="padding: 12px; background: var(--soft-greige); border-radius: 8px; margin-bottom: 8px; font-size: 13px;">
+              <strong>Exit:</strong> ${getExitDescription(exitStrategy)} | Stop Loss: ${stopLoss}% | Take Profit: ${takeProfit}%
+            </div>
+            <div class="rule-item" style="padding: 12px; background: var(--soft-greige); border-radius: 8px; margin-bottom: 8px; font-size: 13px;">
+              <strong>Position Sizing:</strong> ${getSizingDescription(positionSizing)} | Max Drawdown: ${maxDrawdown}%
+            </div>
+          </div>
+        </div>
+
+        <div class="result-section">
+          <h4>Recommended Stocks</h4>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px;">
+            <div style="padding: 12px; background: var(--soft-greige); border-radius: 8px; text-align: center;">
+              <strong style="display: block; font-size: 15px;">LVMH.PA</strong>
+              <span style="font-size: 12px; color: var(--text-muted);">Luxury • High conviction</span>
+            </div>
+            <div style="padding: 12px; background: var(--soft-greige); border-radius: 8px; text-align: center;">
+              <strong style="display: block; font-size: 15px;">MC.PA</strong>
+              <span style="font-size: 12px; color: var(--text-muted);">Luxury • Medium conviction</span>
+            </div>
+            <div style="padding: 12px; background: var(--soft-greige); border-radius: 8px; text-align: center;">
+              <strong style="display: block; font-size: 15px;">RMS.PA</strong>
+              <span style="font-size: 12px; color: var(--text-muted);">Luxury • Medium conviction</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Show backtest preview
+    document.getElementById('quickBacktestPreview').style.display = 'block';
+    document.getElementById('previewReturn').textContent = '+34.2%';
+    document.getElementById('previewSharpe').textContent = '1.45';
+    document.getElementById('previewDrawdown').textContent = '-12.8%';
+    document.getElementById('previewWinRate').textContent = '62%';
+
+    initStrategyPreviewChart();
+    showNotification('Strategy generated successfully', 'success');
+  }, 1500);
+}
+
+function getEntryDescription(signal) {
+  const descriptions = {
+    momentum: 'Buy when price breaks above 20-day high with volume confirmation',
+    meanrev: 'Buy when RSI drops below 30 and price is 2 std dev below 50-day MA',
+    value: 'Buy when P/E drops below sector median and quality score > 7',
+    earnings: 'Buy on positive earnings surprise > 5% with upward guidance',
+    technical: 'Buy on golden cross (50-day MA crosses above 200-day MA)',
+    custom: 'Custom entry rules defined by user'
+  };
+  return descriptions[signal] || signal;
+}
+
+function getExitDescription(strategy) {
+  const descriptions = {
+    trailing: 'Exit with 15% trailing stop from peak',
+    target: 'Exit at predefined price target (2x risk)',
+    time: 'Exit after 90 days holding period',
+    signal: 'Exit when entry conditions reverse',
+    combo: 'Exit on 15% trailing stop OR 30% profit target'
+  };
+  return descriptions[strategy] || strategy;
+}
+
+function getSizingDescription(sizing) {
+  const descriptions = {
+    equal: 'Equal weight across all positions',
+    conviction: 'Higher allocation to higher conviction picks',
+    volatility: 'Inverse volatility weighting (lower vol = higher weight)',
+    kelly: 'Kelly criterion based on win rate and payoff ratio'
+  };
+  return descriptions[sizing] || sizing;
+}
+
+let strategyPreviewChart = null;
+
+function initStrategyPreviewChart() {
+  const ctx = document.getElementById('strategyPreviewChart');
+  if (!ctx) return;
+
+  if (strategyPreviewChart) strategyPreviewChart.destroy();
+
+  const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const strategyData = [100, 104, 108, 105, 112, 118, 115, 122, 128, 125, 132, 134];
+  const benchmarkData = [100, 102, 105, 103, 107, 110, 108, 112, 115, 113, 118, 120];
+
+  strategyPreviewChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Strategy',
+          data: strategyData,
+          borderColor: '#003D39',
+          backgroundColor: 'rgba(0, 61, 57, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0
+        },
+        {
+          label: 'Benchmark',
+          data: benchmarkData,
+          borderColor: '#9ca3af',
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          fill: false,
+          tension: 0.3,
+          pointRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom' } },
+      scales: {
+        y: { display: true, grid: { display: false } },
+        x: { display: true, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function runStrategyBacktest() {
+  switchAnalytics(document.querySelector('[onclick*="backtest"]'), 'backtest');
+  setTimeout(runBacktest, 300);
+}
+
+function exportStrategyPDF() {
+  showNotification('Generating PDF report...', 'info');
+  setTimeout(() => {
+    showNotification('PDF export ready for download', 'success');
+  }, 2000);
+}
+
+// ============================================================================
+// CLIENT FIT ANALYSIS
+// ============================================================================
+
+function analyzeClientFit() {
+  const strategy = document.getElementById('cfStrategy').value;
+  if (!strategy) {
+    showNotification('Please select a strategy to analyze', 'warning');
+    return;
+  }
+
+  if (!clientData) {
+    showNotification('Please select a client first', 'warning');
+    return;
+  }
+
+  showNotification('Analyzing client fit...', 'info');
+
+  setTimeout(() => {
+    // Calculate fit score (simplified)
+    const fitScore = Math.floor(70 + Math.random() * 25);
+
+    // Update score circle
+    const circle = document.getElementById('scoreCircleFill');
+    const dashOffset = 283 - (283 * fitScore / 100);
+    circle.style.strokeDashoffset = dashOffset;
+
+    document.getElementById('fitScoreValue').textContent = fitScore + '%';
+
+    // Update summary
+    let summaryText = '';
+    if (fitScore >= 85) {
+      summaryText = 'Excellent fit. This strategy aligns very well with the client\'s risk profile, investment horizon, and stated preferences.';
+    } else if (fitScore >= 70) {
+      summaryText = 'Good fit with minor adjustments recommended. The strategy generally matches client needs but some parameters could be optimized.';
+    } else {
+      summaryText = 'Moderate fit. Consider adjusting the strategy or discussing alternative approaches with the client.';
+    }
+    document.getElementById('fitSummary').innerHTML = `<p>${summaryText}</p>`;
+
+    // Update breakdown
+    const breakdowns = [
+      { label: 'Risk Alignment', score: Math.floor(60 + Math.random() * 35) },
+      { label: 'Return Expectations', score: Math.floor(65 + Math.random() * 30) },
+      { label: 'Sector Preferences', score: Math.floor(55 + Math.random() * 40) },
+      { label: 'ESG Compliance', score: Math.floor(70 + Math.random() * 25) },
+      { label: 'Liquidity Match', score: Math.floor(75 + Math.random() * 20) }
+    ];
+
+    document.getElementById('fitBreakdown').innerHTML = breakdowns.map(b => `
+      <div class="breakdown-item">
+        <span class="breakdown-label">${b.label}</span>
+        <div class="breakdown-bar"><div class="bar-fill" style="width: ${b.score}%"></div></div>
+        <span class="breakdown-score">${b.score}%</span>
+      </div>
+    `).join('');
+
+    // Update recommendations
+    const recommendations = [];
+    if (breakdowns[0].score < 75) {
+      recommendations.push({ type: 'warning', text: 'Consider reducing position sizes to better match client risk tolerance' });
+    }
+    if (breakdowns[2].score < 70) {
+      recommendations.push({ type: 'warning', text: 'Strategy has exposure to sectors client has expressed concerns about' });
+    }
+    if (breakdowns[3].score >= 85) {
+      recommendations.push({ type: 'success', text: 'ESG requirements are fully met by this strategy' });
+    }
+    recommendations.push({ type: 'success', text: `Overall fit score of ${fitScore}% indicates a ${fitScore >= 75 ? 'strong' : 'reasonable'} match` });
+
+    document.getElementById('fitRecommendations').innerHTML = `
+      <h4>Recommendations</h4>
+      <div class="recommendations-list">
+        ${recommendations.map(r => `
+          <div class="recommendation-item">
+            <span class="rec-icon ${r.type}">${r.type === 'success' ? '✓' : '!'}</span>
+            <span class="rec-text">${r.text}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    showNotification('Fit analysis complete', 'success');
+  }, 1500);
+}
+
+// Update client context when client changes
+function updateClientContext() {
+  const badge = document.getElementById('analyticsClientBadge');
+  const profileCard = document.getElementById('clientProfileCard');
+
+  if (clientData && clientData.profile) {
+    badge.textContent = clientData.profile.name;
+
+    // Update profile card
+    const initials = clientData.profile.name.split(' ').map(n => n[0]).join('').slice(0, 2);
+    document.getElementById('cfClientAvatar').textContent = initials;
+    document.getElementById('cfClientName').textContent = clientData.profile.name;
+    document.getElementById('cfClientType').textContent = clientData.profile.investor_type || 'Institutional';
+
+    // Set risk profile
+    const riskScore = clientData.profile.risk_score || 6;
+    document.getElementById('cfRiskBar').style.width = (riskScore * 10) + '%';
+    document.getElementById('cfRiskScore').textContent = `${riskScore}/10`;
+  }
+}
+
+// ============================================================================
+// ENHANCED BACKTEST
+// ============================================================================
+
+function exportBacktestPDF() {
+  showNotification('Generating backtest PDF report...', 'info');
+  setTimeout(() => {
+    showNotification('PDF ready for download', 'success');
+  }, 2000);
+}
+
+function shareBacktest() {
+  showNotification('Creating shareable link...', 'info');
+  setTimeout(() => {
+    navigator.clipboard.writeText('https://app.oddo-bhf.com/backtest/shared/' + Date.now());
+    showNotification('Share link copied to clipboard', 'success');
+  }, 1000);
+}
+
+// Override switchAnalytics to handle new panels
+function switchAnalytics(btn, type) {
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.analytics-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById(`analytics-${type}`);
+  if (panel) {
+    panel.classList.add('active');
+  }
+
+  // Initialize charts when panel becomes visible
+  setTimeout(() => {
+    if (type === 'optimizer') initEfficientFrontierChart();
+    else if (type === 'backtest') initBacktestChart();
+    else if (type === 'strategy') initStrategyPreviewChart();
+  }, 100);
+}
+
+// Initialize on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
   const analyticsTab = document.querySelector('[data-tab="analytics"]');
   if (analyticsTab) {
     analyticsTab.addEventListener('click', () => {
-      setTimeout(initEfficientFrontierChart, 200);
+      setTimeout(() => {
+        initStrategyPreviewChart();
+        updateClientContext();
+      }, 200);
     });
   }
 });
