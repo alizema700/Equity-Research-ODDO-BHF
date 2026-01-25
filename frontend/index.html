@@ -3131,6 +3131,503 @@
       min-width: 18px;
       text-align: center;
     }
+
+    /* ========================================================================
+       PREMIUM DASHBOARD - Bloomberg meets Apple Design
+       ======================================================================== */
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+      padding: 20px 0;
+    }
+
+    .widget {
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .widget:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      transform: translateY(-2px);
+    }
+    [data-theme="dark"] .widget:hover {
+      box-shadow: 0 8px 30px rgba(16, 185, 129, 0.15);
+      border-color: var(--primary);
+    }
+
+    .widget-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .widget-title {
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--font-serif);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .widget-title-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .widget-actions { display: flex; gap: 8px; }
+    .widget-action {
+      background: var(--soft-greige);
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .widget-action:hover { background: var(--greige); color: var(--text); }
+
+    .widget-body { padding: 20px; }
+    .widget-body.no-padding { padding: 0; }
+
+    /* Widget Sizes */
+    .widget-full { grid-column: span 12; }
+    .widget-half { grid-column: span 6; }
+    .widget-third { grid-column: span 4; }
+    .widget-quarter { grid-column: span 3; }
+    .widget-two-thirds { grid-column: span 8; }
+
+    @media (max-width: 1200px) {
+      .widget-third { grid-column: span 6; }
+      .widget-quarter { grid-column: span 6; }
+      .widget-two-thirds { grid-column: span 12; }
+    }
+    @media (max-width: 768px) {
+      .widget-half, .widget-third, .widget-quarter { grid-column: span 12; }
+    }
+
+    /* === SECTOR HEATMAP === */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .heatmap-cell {
+      padding: 16px 12px;
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .heatmap-cell::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+    }
+    .heatmap-cell:hover { transform: scale(1.03); }
+    .heatmap-sector {
+      font-size: 11px;
+      font-weight: 600;
+      opacity: 0.9;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .heatmap-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .heatmap-cell.positive { background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white; }
+    .heatmap-cell.negative { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); color: white; }
+    .heatmap-cell.neutral { background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%); color: white; }
+    [data-theme="dark"] .heatmap-cell.positive { color: #0f172a; }
+    [data-theme="dark"] .heatmap-cell.negative { color: #0f172a; }
+
+    /* === EARNINGS CALENDAR === */
+    .earnings-list { display: flex; flex-direction: column; gap: 12px; }
+    .earnings-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px;
+      background: var(--soft-greige);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .earnings-item:hover { background: var(--greige); transform: translateX(4px); }
+    .earnings-date {
+      min-width: 50px;
+      text-align: center;
+    }
+    .earnings-date-day {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+    }
+    .earnings-date-month {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .earnings-info { flex: 1; }
+    .earnings-ticker {
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .earnings-company { font-size: 12px; color: var(--text-muted); }
+    .earnings-estimate {
+      text-align: right;
+    }
+    .earnings-estimate-label { font-size: 10px; color: var(--text-muted); }
+    .earnings-estimate-value { font-size: 16px; font-weight: 700; }
+    .earnings-surprise {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .earnings-surprise.beat { background: #dcfce7; color: #16a34a; }
+    .earnings-surprise.miss { background: #fef2f2; color: #dc2626; }
+
+    /* === MORNING BRIEFING === */
+    .briefing-content {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text);
+    }
+    .briefing-section {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .briefing-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .briefing-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .briefing-highlight {
+      background: linear-gradient(135deg, var(--primary-light) 0%, transparent 100%);
+      padding: 12px 16px;
+      border-radius: 10px;
+      border-left: 3px solid var(--primary);
+      margin: 12px 0;
+    }
+
+    /* === CLIENT SIMILARITY === */
+    .similar-clients { display: flex; flex-direction: column; gap: 12px; }
+    .similar-client {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--soft-greige);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .similar-client:hover { background: var(--greige); }
+    .similar-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--gradient-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+      font-size: 16px;
+    }
+    [data-theme="dark"] .similar-avatar { color: #0f172a; }
+    .similar-info { flex: 1; }
+    .similar-name { font-weight: 600; font-size: 14px; }
+    .similar-reason { font-size: 12px; color: var(--text-muted); }
+    .similar-score {
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* === ACTION ITEMS === */
+    .action-items { display: flex; flex-direction: column; gap: 10px; }
+    .action-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--soft-greige);
+      border-radius: 12px;
+      border-left: 3px solid var(--primary);
+      transition: all 0.2s;
+    }
+    .action-item.urgent { border-left-color: #dc2626; }
+    .action-item.warning { border-left-color: #f59e0b; }
+    .action-item:hover { background: var(--greige); }
+    .action-checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .action-checkbox:hover { border-color: var(--primary); }
+    .action-checkbox.done { background: var(--primary); border-color: var(--primary); color: white; }
+    [data-theme="dark"] .action-checkbox.done { color: #0f172a; }
+    .action-content { flex: 1; }
+    .action-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .action-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 12px; }
+    .action-priority {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .action-priority.high { background: #fef2f2; color: #dc2626; }
+    .action-priority.medium { background: #fffbeb; color: #d97706; }
+    .action-priority.low { background: #f0fdf4; color: #16a34a; }
+
+    /* === PIPELINE TRACKER === */
+    .pipeline {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+    }
+    .pipeline-stage {
+      min-width: 200px;
+      background: var(--soft-greige);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .pipeline-stage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .pipeline-stage-title {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .pipeline-stage-count {
+      background: var(--bg);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .pipeline-clients { display: flex; flex-direction: column; gap: 8px; }
+    .pipeline-client {
+      background: var(--card);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .pipeline-client:hover { border-color: var(--primary); }
+    .pipeline-client-name { font-weight: 600; margin-bottom: 2px; }
+    .pipeline-client-info { color: var(--text-muted); font-size: 11px; }
+
+    /* === LEADERBOARD === */
+    .leaderboard { display: flex; flex-direction: column; gap: 8px; }
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: var(--soft-greige);
+      border-radius: 12px;
+    }
+    .leaderboard-item:first-child { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); }
+    .leaderboard-item:nth-child(2) { background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%); }
+    .leaderboard-item:nth-child(3) { background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); }
+    .leaderboard-rank {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .leaderboard-info { flex: 1; }
+    .leaderboard-name { font-weight: 600; font-size: 14px; }
+    .leaderboard-stats { font-size: 11px; color: var(--text-muted); }
+    .leaderboard-score {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* === STOCK COMPARISON === */
+    .comparison-header {
+      display: grid;
+      grid-template-columns: 150px repeat(3, 1fr);
+      gap: 16px;
+      padding: 12px 16px;
+      background: var(--soft-greige);
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+    .comparison-ticker {
+      text-align: center;
+    }
+    .comparison-ticker-symbol {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .comparison-ticker-name {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .comparison-row {
+      display: grid;
+      grid-template-columns: 150px repeat(3, 1fr);
+      gap: 16px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .comparison-row:last-child { border-bottom: none; }
+    .comparison-label {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .comparison-value {
+      text-align: center;
+      font-weight: 600;
+    }
+    .comparison-value.best { color: var(--primary); }
+
+    /* === TECHNICAL INDICATORS === */
+    .indicator-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .indicator-card {
+      background: var(--soft-greige);
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .indicator-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .indicator-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .indicator-signal {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .indicator-signal.buy { background: #dcfce7; color: #16a34a; }
+    .indicator-signal.sell { background: #fef2f2; color: #dc2626; }
+    .indicator-signal.neutral { background: #f3f4f6; color: #6b7280; }
+
+    /* === QUICK METRICS ROW === */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    .metric-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+    }
+    [data-theme="dark"] .metric-card:hover {
+      box-shadow: 0 12px 40px rgba(16, 185, 129, 0.15);
+      border-color: var(--primary);
+    }
+    .metric-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .metric-icon.green { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); color: white; }
+    .metric-icon.blue { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); color: white; }
+    .metric-icon.purple { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); color: white; }
+    .metric-icon.orange { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: white; }
+    [data-theme="dark"] .metric-icon { color: #0f172a; }
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .metric-trend {
+      font-size: 11px;
+      margin-top: 8px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+    .metric-trend.up { background: #dcfce7; color: #16a34a; }
+    .metric-trend.down { background: #fef2f2; color: #dc2626; }
   </style>
 </head>
 <body>
@@ -3471,9 +3968,228 @@
 
       <!-- TABS -->
       <div class="tabs">
+        <button class="tab" data-tab="dashboard">Dashboard</button>
         <button class="tab active" data-tab="shortlist">Shortlist</button>
         <button class="tab" data-tab="story">Story</button>
+        <button class="tab" data-tab="insights">Insights</button>
         <button class="tab" data-tab="history">History</button>
+      </div>
+
+      <!-- TAB: DASHBOARD -->
+      <div class="tab-panel" id="panel-dashboard">
+        <!-- Quick Metrics Row -->
+        <div class="metrics-row">
+          <div class="metric-card">
+            <div class="metric-icon green">&#128200;</div>
+            <div class="metric-value" id="dashTotalAum">$2.4B</div>
+            <div class="metric-label">Total AUM Managed</div>
+            <span class="metric-trend up">+12% YTD</span>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon blue">&#128101;</div>
+            <div class="metric-value" id="dashActiveClients">47</div>
+            <div class="metric-label">Active Clients</div>
+            <span class="metric-trend up">+5 this month</span>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon purple">&#127919;</div>
+            <div class="metric-value" id="dashHitRate">73%</div>
+            <div class="metric-label">Recommendation Hit Rate</div>
+            <span class="metric-trend up">+8% vs avg</span>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon orange">&#128176;</div>
+            <div class="metric-value" id="dashRevenue">€840K</div>
+            <div class="metric-label">Revenue Generated</div>
+            <span class="metric-trend up">+23% YoY</span>
+          </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+          <!-- Sector Heatmap -->
+          <div class="widget widget-half">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%); color: white;">&#128293;</span>
+                Sector Heatmap
+              </div>
+              <div class="widget-actions">
+                <button class="widget-action" onclick="refreshHeatmap()">Refresh</button>
+              </div>
+            </div>
+            <div class="widget-body">
+              <div class="heatmap-grid" id="sectorHeatmap">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Earnings Calendar -->
+          <div class="widget widget-half">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); color: white;">&#128197;</span>
+                Upcoming Earnings
+              </div>
+              <div class="widget-actions">
+                <button class="widget-action">This Week</button>
+              </div>
+            </div>
+            <div class="widget-body no-padding" style="padding: 16px;">
+              <div class="earnings-list" id="earningsCalendar">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Morning Briefing -->
+          <div class="widget widget-two-thirds">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: white;">&#9728;</span>
+                Morning Briefing
+              </div>
+              <div class="widget-actions">
+                <button class="widget-action" onclick="generateMorningBriefing()">Generate</button>
+                <button class="widget-action" onclick="sendBriefingEmail()">Send to Clients</button>
+              </div>
+            </div>
+            <div class="widget-body">
+              <div class="briefing-content" id="morningBriefing">
+                <div class="briefing-section">
+                  <div class="briefing-section-title">&#128640; Market Overview</div>
+                  <p>Click "Generate" to create your personalized morning briefing based on your client portfolios and watchlist.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Items -->
+          <div class="widget widget-third">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); color: white;">&#9888;</span>
+                Action Items
+              </div>
+              <span style="background: #fef2f2; color: #dc2626; padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 600;">3 urgent</span>
+            </div>
+            <div class="widget-body no-padding" style="padding: 16px;">
+              <div class="action-items" id="actionItems">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Pipeline Tracker -->
+          <div class="widget widget-full">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); color: white;">&#128202;</span>
+                Client Pipeline
+              </div>
+            </div>
+            <div class="widget-body">
+              <div class="pipeline" id="clientPipeline">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Client Similarity -->
+          <div class="widget widget-half">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); color: white;">&#129309;</span>
+                Similar Clients
+              </div>
+            </div>
+            <div class="widget-body no-padding" style="padding: 16px;">
+              <div class="similar-clients" id="similarClients">
+                <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                  Select a client to find similar profiles
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Leaderboard -->
+          <div class="widget widget-half">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #eab308 0%, #facc15 100%); color: white;">&#127942;</span>
+                Performance Leaderboard
+              </div>
+              <div class="widget-actions">
+                <button class="widget-action">This Month</button>
+              </div>
+            </div>
+            <div class="widget-body no-padding" style="padding: 16px;">
+              <div class="leaderboard" id="leaderboard">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: INSIGHTS (Stock Comparison & Technical) -->
+      <div class="tab-panel" id="panel-insights">
+        <div class="dashboard-grid">
+          <!-- Stock Comparison -->
+          <div class="widget widget-full">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%); color: white;">&#9878;</span>
+                Stock Comparison
+              </div>
+              <div class="widget-actions">
+                <input type="text" id="compareStock1" placeholder="Ticker 1" style="width: 80px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px;">
+                <input type="text" id="compareStock2" placeholder="Ticker 2" style="width: 80px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px;">
+                <input type="text" id="compareStock3" placeholder="Ticker 3" style="width: 80px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px;">
+                <button class="widget-action" onclick="compareStocks()" style="background: var(--primary); color: white;">Compare</button>
+              </div>
+            </div>
+            <div class="widget-body" id="stockComparison">
+              <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                Enter up to 3 tickers above to compare stocks side by side
+              </div>
+            </div>
+          </div>
+
+          <!-- Technical Indicators -->
+          <div class="widget widget-half">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); color: white;">&#128200;</span>
+                Technical Indicators
+              </div>
+            </div>
+            <div class="widget-body" id="technicalIndicators">
+              <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                Select a stock from shortlist to view technical analysis
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Insights -->
+          <div class="widget widget-half">
+            <div class="widget-header">
+              <div class="widget-title">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); color: white;">&#129302;</span>
+                AI Market Insights
+              </div>
+              <div class="widget-actions">
+                <button class="widget-action" onclick="generateAIInsights()">Analyze</button>
+              </div>
+            </div>
+            <div class="widget-body" id="aiInsights">
+              <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                Click "Analyze" to generate AI-powered market insights
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- TAB: SHORTLIST -->
