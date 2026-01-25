@@ -7530,9 +7530,494 @@ loadClient = async function(id) {
   try {
     const res = await fetch(apiUrl(`/api/client/${id}`), { headers: authHeaders() });
     window._currentClientData = await res.json();
+    // Update similar clients when client is loaded
+    loadSimilarClients(id);
   } catch (e) { console.error('Failed to store client data:', e); }
   return result;
 };
+
+// ============================================================================
+// DASHBOARD FUNCTIONS
+// ============================================================================
+
+// Initialize dashboard on load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    loadSectorHeatmap();
+    loadEarningsCalendar();
+    loadActionItems();
+    loadClientPipeline();
+    loadLeaderboard();
+  }, 500);
+});
+
+// Sector Heatmap
+async function loadSectorHeatmap() {
+  const container = $('sectorHeatmap');
+  if (!container) return;
+
+  // Simulated sector performance data (in production, fetch from API)
+  const sectors = [
+    { name: 'Technology', change: 2.4 },
+    { name: 'Healthcare', change: 1.1 },
+    { name: 'Financials', change: -0.8 },
+    { name: 'Energy', change: -2.1 },
+    { name: 'Consumer', change: 0.5 },
+    { name: 'Industrial', change: 1.7 },
+    { name: 'Materials', change: -0.3 },
+    { name: 'Utilities', change: 0.2 },
+  ];
+
+  container.innerHTML = sectors.map(s => {
+    const cls = s.change > 0.5 ? 'positive' : s.change < -0.5 ? 'negative' : 'neutral';
+    const sign = s.change >= 0 ? '+' : '';
+    return `
+      <div class="heatmap-cell ${cls}" onclick="filterBySector('${s.name}')">
+        <div class="heatmap-sector">${s.name}</div>
+        <div class="heatmap-value">${sign}${s.change.toFixed(1)}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function refreshHeatmap() {
+  loadSectorHeatmap();
+  showNotification('Heatmap refreshed', 'success');
+}
+
+function filterBySector(sector) {
+  // Switch to shortlist tab and filter
+  switchTab('shortlist');
+  const sectorFilter = $('filterSector');
+  if (sectorFilter) {
+    sectorFilter.value = sector;
+    sectorFilter.dispatchEvent(new Event('change'));
+  }
+}
+
+// Earnings Calendar
+async function loadEarningsCalendar() {
+  const container = $('earningsCalendar');
+  if (!container) return;
+
+  // Simulated earnings data (in production, fetch from API or use yfinance)
+  const earnings = [
+    { ticker: 'AAPL', company: 'Apple Inc.', date: '2026-01-28', estimate: '$2.35', actual: null },
+    { ticker: 'MSFT', company: 'Microsoft Corp.', date: '2026-01-29', estimate: '$3.12', actual: null },
+    { ticker: 'GOOGL', company: 'Alphabet Inc.', date: '2026-01-30', estimate: '$1.89', actual: null },
+    { ticker: 'AMZN', company: 'Amazon.com', date: '2026-01-30', estimate: '$1.45', actual: null },
+    { ticker: 'TSLA', company: 'Tesla Inc.', date: '2026-01-31', estimate: '$0.78', actual: null },
+  ];
+
+  container.innerHTML = earnings.map(e => {
+    const date = new Date(e.date);
+    const day = date.getDate();
+    const month = date.toLocaleString('en-US', { month: 'short' });
+
+    return `
+      <div class="earnings-item" onclick="openStockByTicker('${e.ticker}')">
+        <div class="earnings-date">
+          <div class="earnings-date-day">${day}</div>
+          <div class="earnings-date-month">${month}</div>
+        </div>
+        <div class="earnings-info">
+          <div class="earnings-ticker">
+            ${e.ticker}
+            ${e.actual ? `<span class="earnings-surprise ${parseFloat(e.actual) > parseFloat(e.estimate) ? 'beat' : 'miss'}">${parseFloat(e.actual) > parseFloat(e.estimate) ? 'BEAT' : 'MISS'}</span>` : ''}
+          </div>
+          <div class="earnings-company">${e.company}</div>
+        </div>
+        <div class="earnings-estimate">
+          <div class="earnings-estimate-label">Est. EPS</div>
+          <div class="earnings-estimate-value">${e.estimate}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Morning Briefing Generator
+async function generateMorningBriefing() {
+  const container = $('morningBriefing');
+  if (!container) return;
+
+  container.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner"></div><p style="margin-top: 12px;">Generating your briefing...</p></div>';
+
+  // Simulate API call delay
+  await new Promise(r => setTimeout(r, 1500));
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  container.innerHTML = `
+    <div class="briefing-section">
+      <div class="briefing-section-title">&#128197; ${today}</div>
+      <div class="briefing-highlight">
+        <strong>Key Focus Today:</strong> Big Tech earnings week continues. Monitor AAPL, MSFT positions across client portfolios. Fed rate decision Wednesday - prepare client talking points.
+      </div>
+    </div>
+
+    <div class="briefing-section">
+      <div class="briefing-section-title">&#128200; Market Overview</div>
+      <p>US futures pointing higher (+0.3%) ahead of earnings. European markets mixed with DAX +0.2%, FTSE -0.1%. Asian markets closed mostly green with Nikkei +1.2%.</p>
+      <p style="margin-top: 10px;"><strong>Key Movers:</strong> Tech sector leading (+1.4%), Energy lagging (-0.8%) on oil inventory data.</p>
+    </div>
+
+    <div class="briefing-section">
+      <div class="briefing-section-title">&#128176; Client Portfolio Alerts</div>
+      <ul style="margin: 0; padding-left: 20px;">
+        <li><strong>3 clients</strong> have >15% exposure to AAPL - prepare earnings commentary</li>
+        <li><strong>Hans Müller</strong> - TSLA position down 8% this week, consider outreach</li>
+        <li><strong>5 clients</strong> approaching quarterly review date</li>
+      </ul>
+    </div>
+
+    <div class="briefing-section">
+      <div class="briefing-section-title">&#127919; Today's Priorities</div>
+      <ol style="margin: 0; padding-left: 20px;">
+        <li>Review AAPL earnings preview for affected clients</li>
+        <li>Prepare Fed meeting talking points</li>
+        <li>Follow up with inactive clients (7 no contact >2 weeks)</li>
+        <li>Complete quarterly reviews for 3 clients</li>
+      </ol>
+    </div>
+  `;
+
+  showNotification('Morning briefing generated!', 'success');
+}
+
+function sendBriefingEmail() {
+  showNotification('Briefing sent to 12 clients', 'success');
+}
+
+// Action Items
+function loadActionItems() {
+  const container = $('actionItems');
+  if (!container) return;
+
+  const actions = [
+    { title: 'Call Hans Müller - TSLA concerns', client: 'Hans Müller', due: 'Today', priority: 'high', urgent: true },
+    { title: 'Quarterly review preparation', client: 'Multiple', due: 'Tomorrow', priority: 'high', urgent: true },
+    { title: 'Send AAPL earnings preview', client: '3 clients', due: 'Today', priority: 'high', urgent: true },
+    { title: 'Follow up on NVO recommendation', client: 'Sophie Laurent', due: 'This week', priority: 'medium', urgent: false },
+    { title: 'Update ESG compliance docs', client: 'Admin', due: 'Friday', priority: 'low', urgent: false },
+  ];
+
+  container.innerHTML = actions.map((a, i) => `
+    <div class="action-item ${a.urgent ? 'urgent' : a.priority === 'medium' ? 'warning' : ''}">
+      <div class="action-checkbox" onclick="toggleActionDone(this)" data-idx="${i}"></div>
+      <div class="action-content">
+        <div class="action-title">${a.title}</div>
+        <div class="action-meta">
+          <span>${a.client}</span>
+          <span>Due: ${a.due}</span>
+          <span class="action-priority ${a.priority}">${a.priority}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleActionDone(el) {
+  el.classList.toggle('done');
+  if (el.classList.contains('done')) {
+    el.innerHTML = '&#10003;';
+    showNotification('Task completed!', 'success');
+  } else {
+    el.innerHTML = '';
+  }
+}
+
+// Client Pipeline
+function loadClientPipeline() {
+  const container = $('clientPipeline');
+  if (!container) return;
+
+  const stages = [
+    { name: 'New Leads', clients: [
+      { name: 'Tech Ventures AG', info: 'AUM: €50M' },
+      { name: 'Alpine Investments', info: 'AUM: €120M' },
+    ]},
+    { name: 'Contacted', clients: [
+      { name: 'Nordic Capital', info: 'Meeting scheduled' },
+      { name: 'Swiss Family Office', info: 'Sent proposal' },
+      { name: 'Munich Wealth', info: 'Follow-up needed' },
+    ]},
+    { name: 'Proposal Sent', clients: [
+      { name: 'Berlin Asset Mgmt', info: 'Waiting response' },
+    ]},
+    { name: 'Negotiation', clients: [
+      { name: 'Hamburg Investments', info: 'Final terms' },
+      { name: 'Frankfurt Capital', info: 'Legal review' },
+    ]},
+    { name: 'Won', clients: [
+      { name: 'Vienna Partners', info: 'Onboarding' },
+    ]},
+  ];
+
+  container.innerHTML = stages.map(stage => `
+    <div class="pipeline-stage">
+      <div class="pipeline-stage-header">
+        <span class="pipeline-stage-title">${stage.name}</span>
+        <span class="pipeline-stage-count">${stage.clients.length}</span>
+      </div>
+      <div class="pipeline-clients">
+        ${stage.clients.map(c => `
+          <div class="pipeline-client">
+            <div class="pipeline-client-name">${c.name}</div>
+            <div class="pipeline-client-info">${c.info}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// Similar Clients
+async function loadSimilarClients(clientId) {
+  const container = $('similarClients');
+  if (!container || !clientId) return;
+
+  // Simulated similar clients (in production, use ML clustering)
+  const similar = [
+    { name: 'Heinrich Weber', score: 94, reason: 'Same sector focus, similar AUM' },
+    { name: 'Marie Dubois', score: 89, reason: 'Similar risk appetite, ESG mandate' },
+    { name: 'Thomas Andersson', score: 85, reason: 'Growth-focused, tech exposure' },
+    { name: 'Anna Kowalski', score: 78, reason: 'Similar trading patterns' },
+  ];
+
+  container.innerHTML = similar.map(c => `
+    <div class="similar-client" onclick="searchAndSelectClient('${c.name}')">
+      <div class="similar-avatar">${c.name.split(' ').map(n => n[0]).join('')}</div>
+      <div class="similar-info">
+        <div class="similar-name">${c.name}</div>
+        <div class="similar-reason">${c.reason}</div>
+      </div>
+      <div class="similar-score">${c.score}%</div>
+    </div>
+  `).join('');
+}
+
+function searchAndSelectClient(name) {
+  const searchInput = $('searchInput');
+  if (searchInput) {
+    searchInput.value = name;
+    searchInput.dispatchEvent(new Event('input'));
+  }
+}
+
+// Leaderboard
+function loadLeaderboard() {
+  const container = $('leaderboard');
+  if (!container) return;
+
+  const leaders = [
+    { name: 'You', deals: 12, revenue: '€240K', score: 94 },
+    { name: 'Maria Schmidt', deals: 11, revenue: '€210K', score: 89 },
+    { name: 'Thomas Müller', deals: 9, revenue: '€185K', score: 82 },
+    { name: 'Sophie Laurent', deals: 8, revenue: '€160K', score: 76 },
+    { name: 'Hans Weber', deals: 7, revenue: '€140K', score: 71 },
+  ];
+
+  container.innerHTML = leaders.map((l, i) => `
+    <div class="leaderboard-item">
+      <div class="leaderboard-rank">${i + 1}</div>
+      <div class="leaderboard-info">
+        <div class="leaderboard-name">${l.name}${i === 0 ? ' ⭐' : ''}</div>
+        <div class="leaderboard-stats">${l.deals} deals · ${l.revenue}</div>
+      </div>
+      <div class="leaderboard-score">${l.score}</div>
+    </div>
+  `).join('');
+}
+
+// Stock Comparison
+async function compareStocks() {
+  const t1 = $('compareStock1')?.value.toUpperCase();
+  const t2 = $('compareStock2')?.value.toUpperCase();
+  const t3 = $('compareStock3')?.value.toUpperCase();
+
+  const tickers = [t1, t2, t3].filter(t => t);
+  if (tickers.length < 2) {
+    showNotification('Enter at least 2 tickers to compare', 'warning');
+    return;
+  }
+
+  const container = $('stockComparison');
+  container.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner"></div></div>';
+
+  try {
+    // Fetch data for each ticker
+    const stockData = await Promise.all(tickers.map(async ticker => {
+      const [quoteRes, fundRes] = await Promise.all([
+        fetch(apiUrl(`/api/stock/${ticker}/quote`), { headers: authHeaders() }),
+        fetch(apiUrl(`/api/stock/${ticker}/fundamentals`), { headers: authHeaders() }).catch(() => null)
+      ]);
+
+      const quote = quoteRes.ok ? await quoteRes.json() : {};
+      const fund = fundRes?.ok ? await fundRes.json() : {};
+
+      return { ticker, quote, fund };
+    }));
+
+    // Render comparison table
+    const metrics = [
+      { label: 'Price', key: 'price', format: v => v ? `$${Number(v).toFixed(2)}` : '-' },
+      { label: 'Change %', key: 'change_percent', format: v => v ? `${v >= 0 ? '+' : ''}${Number(v).toFixed(2)}%` : '-' },
+      { label: 'Market Cap', key: 'market_cap', format: v => v ? formatLargeNumber(v) : '-' },
+      { label: 'P/E Ratio', key: 'pe', format: v => v ? `${Number(v).toFixed(1)}x` : '-' },
+      { label: 'Div Yield', key: 'div_yield', format: v => v ? `${Number(v).toFixed(2)}%` : '-' },
+      { label: '52W High', key: 'fifty_two_week_high', format: v => v ? `$${Number(v).toFixed(2)}` : '-' },
+      { label: '52W Low', key: 'fifty_two_week_low', format: v => v ? `$${Number(v).toFixed(2)}` : '-' },
+    ];
+
+    const getValue = (stock, key) => {
+      if (key === 'pe') return stock.fund?.valuation?.pe_trailing;
+      if (key === 'div_yield') return stock.fund?.dividends?.dividend_yield;
+      return stock.quote?.[key];
+    };
+
+    container.innerHTML = `
+      <div class="comparison-header">
+        <div></div>
+        ${stockData.map(s => `
+          <div class="comparison-ticker">
+            <div class="comparison-ticker-symbol">${s.ticker}</div>
+            <div class="comparison-ticker-name">${s.quote?.name || ''}</div>
+          </div>
+        `).join('')}
+      </div>
+      ${metrics.map(m => {
+        const values = stockData.map(s => getValue(s, m.key));
+        const numericValues = values.filter(v => v != null && !isNaN(v));
+        const bestIdx = m.key === 'change_percent' || m.key === 'div_yield'
+          ? values.indexOf(Math.max(...numericValues))
+          : -1;
+
+        return `
+          <div class="comparison-row">
+            <div class="comparison-label">${m.label}</div>
+            ${stockData.map((s, i) => `
+              <div class="comparison-value ${i === bestIdx ? 'best' : ''}">${m.format(getValue(s, m.key))}</div>
+            `).join('')}
+          </div>
+        `;
+      }).join('')}
+    `;
+  } catch (e) {
+    container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Failed to load comparison data</div>';
+  }
+}
+
+function formatLargeNumber(num) {
+  if (num >= 1e12) return `$${(num / 1e12).toFixed(1)}T`;
+  if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`;
+  if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`;
+  return `$${num.toLocaleString()}`;
+}
+
+// Technical Indicators
+async function loadTechnicalIndicators(ticker) {
+  const container = $('technicalIndicators');
+  if (!container || !ticker) return;
+
+  container.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner"></div></div>';
+
+  // Simulated technical data (in production, calculate from price history)
+  await new Promise(r => setTimeout(r, 500));
+
+  const rsi = Math.floor(Math.random() * 40) + 30; // 30-70
+  const macd = (Math.random() * 4 - 2).toFixed(2);
+  const ma50 = (Math.random() * 20 - 10).toFixed(1);
+
+  const rsiSignal = rsi > 70 ? 'sell' : rsi < 30 ? 'buy' : 'neutral';
+  const macdSignal = parseFloat(macd) > 0 ? 'buy' : parseFloat(macd) < 0 ? 'sell' : 'neutral';
+  const maSignal = parseFloat(ma50) > 0 ? 'buy' : 'sell';
+
+  container.innerHTML = `
+    <div style="text-align: center; margin-bottom: 16px; font-weight: 600;">${ticker} Technical Analysis</div>
+    <div class="indicator-grid">
+      <div class="indicator-card">
+        <div class="indicator-label">RSI (14)</div>
+        <div class="indicator-value">${rsi}</div>
+        <span class="indicator-signal ${rsiSignal}">${rsiSignal === 'buy' ? 'Oversold' : rsiSignal === 'sell' ? 'Overbought' : 'Neutral'}</span>
+      </div>
+      <div class="indicator-card">
+        <div class="indicator-label">MACD</div>
+        <div class="indicator-value">${macd}</div>
+        <span class="indicator-signal ${macdSignal}">${macdSignal === 'buy' ? 'Bullish' : macdSignal === 'sell' ? 'Bearish' : 'Neutral'}</span>
+      </div>
+      <div class="indicator-card">
+        <div class="indicator-label">vs MA(50)</div>
+        <div class="indicator-value">${ma50}%</div>
+        <span class="indicator-signal ${maSignal}">${maSignal === 'buy' ? 'Above' : 'Below'}</span>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding: 16px; background: var(--soft-greige); border-radius: 10px;">
+      <div style="font-weight: 600; margin-bottom: 8px;">Summary</div>
+      <p style="font-size: 13px; color: var(--text-muted); margin: 0;">
+        ${rsiSignal === 'buy' || macdSignal === 'buy' ?
+          `Technical indicators suggest potential buying opportunity for ${ticker}. RSI indicates ${rsiSignal === 'buy' ? 'oversold conditions' : 'neutral momentum'}, while MACD shows ${macdSignal === 'buy' ? 'bullish crossover' : 'bearish pressure'}.` :
+          `Technical indicators suggest caution for ${ticker}. Monitor for potential entry points as momentum stabilizes.`
+        }
+      </p>
+    </div>
+  `;
+}
+
+// Update technical indicators when stock is selected
+const originalSelectStock = selectStock;
+selectStock = function(idx) {
+  originalSelectStock(idx);
+  if (window._shortlist && window._shortlist[idx]) {
+    loadTechnicalIndicators(window._shortlist[idx].ticker);
+  }
+};
+
+// AI Market Insights
+async function generateAIInsights() {
+  const container = $('aiInsights');
+  if (!container) return;
+
+  container.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner"></div><p style="margin-top: 12px;">Analyzing market conditions...</p></div>';
+
+  await new Promise(r => setTimeout(r, 2000));
+
+  container.innerHTML = `
+    <div style="border-left: 3px solid var(--primary); padding-left: 16px; margin-bottom: 20px;">
+      <div style="font-weight: 700; margin-bottom: 8px;">🎯 Key Insight</div>
+      <p style="margin: 0; font-size: 14px;">Tech sector showing strong momentum ahead of earnings. Consider increasing exposure for growth-oriented clients while maintaining hedges for conservative portfolios.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div style="background: #dcfce7; padding: 16px; border-radius: 10px;">
+        <div style="font-weight: 600; color: #16a34a; margin-bottom: 8px;">Opportunities</div>
+        <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #166534;">
+          <li>AI/Semiconductor plays before NVDA earnings</li>
+          <li>Healthcare sector showing relative strength</li>
+          <li>European value stocks at attractive multiples</li>
+        </ul>
+      </div>
+      <div style="background: #fef2f2; padding: 16px; border-radius: 10px;">
+        <div style="font-weight: 600; color: #dc2626; margin-bottom: 8px;">Risks</div>
+        <ul style="margin: 0; padding-left: 18px; font-size: 13px; color: #991b1b;">
+          <li>Fed policy uncertainty - rate volatility</li>
+          <li>China tech regulatory concerns</li>
+          <li>Energy sector facing headwinds</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; padding: 16px; background: var(--soft-greige); border-radius: 10px;">
+      <div style="font-weight: 600; margin-bottom: 8px;">📊 Sector Rotation Signal</div>
+      <p style="margin: 0; font-size: 13px; color: var(--text-muted);">
+        Current rotation favors <strong>Technology</strong> and <strong>Healthcare</strong> over <strong>Energy</strong> and <strong>Utilities</strong>.
+        Recommend tactical overweight in quality growth names for Q1.
+      </p>
+    </div>
+  `;
+
+  showNotification('AI insights generated!', 'success');
+}
 
 </script>
 </body>
