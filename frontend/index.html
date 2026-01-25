@@ -1172,19 +1172,19 @@
       font-weight: 300;
     }
 
-    /* === HEADER === */
+    /* === HEADER - ODDO Style === */
     .header {
-      background: white;
+      background: var(--light);
       color: var(--text);
-      padding: 16px 32px;
+      padding: var(--space-md) var(--space-2xl);
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: var(--space-xl);
       position: sticky;
       top: 0;
       z-index: 100;
-      border-bottom: 2px solid var(--primary);
-      box-shadow: 0 2px 8px rgba(0, 61, 57, 0.08);
+      border-bottom: 3px solid var(--primary);
+      box-shadow: var(--shadow-natural);
     }
 
     .logo {
@@ -1279,25 +1279,39 @@
     }
 
     .btn-primary {
-      background: var(--secondary-red);
+      background: var(--button-dark);
       color: white;
+      border-radius: var(--radius-pill);
+      padding: 12px 28px;
+      font-weight: 600;
+      font-size: var(--text-label);
+      letter-spacing: 0.02em;
+      box-shadow: var(--shadow-natural);
+      transition: all var(--transition-normal);
     }
 
     .btn-primary:hover {
-      background: #a31810;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(207, 32, 20, 0.3);
+      background: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-deep);
     }
 
     .btn-secondary {
-      background: var(--primary);
-      color: white;
-      border: 1px solid var(--primary);
+      background: transparent;
+      color: var(--button-dark);
+      border: 2px solid var(--button-dark);
+      border-radius: var(--radius-pill);
+      padding: 10px 26px;
+      font-weight: 600;
+      font-size: var(--text-label);
+      transition: all var(--transition-normal);
     }
 
     .btn-secondary:hover {
-      background: var(--accent-dark);
-      transform: translateY(-1px);
+      background: var(--button-dark);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-natural);
     }
 
     .status-chip {
@@ -1359,23 +1373,30 @@
     }
 
     .metric-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
+      background: var(--light);
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow-natural);
+      transition: all var(--transition-normal);
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-deep);
     }
 
     .metric-label {
-      font-size: 11px;
+      font-size: var(--text-small);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-muted);
-      margin-bottom: 6px;
+      margin-bottom: var(--space-xs);
     }
 
     .metric-value {
-      font-size: 18px;
+      font-size: var(--text-h4);
       font-weight: 700;
       font-family: var(--font-serif);
       color: var(--primary);
@@ -1413,10 +1434,11 @@
     }
 
     .summary-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
+      background: var(--light);
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow-natural);
       margin-bottom: 12px;
     }
 
@@ -1611,49 +1633,52 @@
     }
 
     .main-title {
-      font-size: 28px;
+      font-size: var(--text-h2);
       font-weight: 700;
       font-family: var(--font-serif);
       color: var(--primary);
+      line-height: 1.2;
     }
 
     .main-subtitle {
-      font-size: 14px;
+      font-size: var(--text-body);
       color: var(--text-muted);
-      margin-top: 6px;
+      margin-top: var(--space-sm);
       font-family: var(--font-primary);
     }
 
-    /* === TABS === */
+    /* === TABS - ODDO Style === */
     .tabs {
       display: flex;
-      gap: 0;
-      background: transparent;
-      padding: 0;
-      border-bottom: 2px solid var(--border);
-      margin-bottom: 24px;
+      gap: var(--space-xs);
+      background: var(--secondary-grey);
+      padding: var(--space-xs);
+      border-radius: var(--radius-pill);
+      margin-bottom: var(--space-xl);
       width: fit-content;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
     }
 
     .tab {
-      padding: 12px 24px;
-      border-radius: 0;
-      font-size: 13px;
+      padding: var(--space-sm) var(--space-lg);
+      border-radius: var(--radius-pill);
+      font-size: var(--text-label);
       font-weight: 600;
       cursor: pointer;
       border: none;
       background: transparent;
       color: var(--text-muted);
-      transition: all 0.2s;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
+      transition: all var(--transition-normal);
     }
 
-    .tab:hover { color: var(--primary); }
-    .tab.active {
-      background: transparent;
+    .tab:hover {
       color: var(--primary);
-      border-bottom-color: var(--secondary-red);
+      background: rgba(255,255,255,0.6);
+    }
+    .tab.active {
+      background: var(--button-dark);
+      color: white;
+      box-shadow: var(--shadow-natural);
     }
 
     .tab-panel { display: none; }
@@ -1661,11 +1686,12 @@
 
     /* === INSTRUCTION BOX === */
     .instruction-box {
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 20px;
+      background: var(--light);
+      border: none;
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      margin-bottom: var(--space-xl);
+      box-shadow: var(--shadow-natural);
     }
 
     .instruction-label {
@@ -1725,15 +1751,16 @@
     }
 
     .stock-card {
-      background: var(--gradient-card);
-      border: 1px solid var(--border);
+      background: var(--light);
+      border: none;
       border-radius: var(--radius-lg);
-      padding: 20px;
+      padding: var(--space-xl);
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all var(--transition-normal);
       position: relative;
       overflow: hidden;
       animation: fadeInUp 0.4s ease-out backwards;
+      box-shadow: var(--shadow-natural);
     }
 
     .stock-card::before {
@@ -1742,16 +1769,15 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
-      background: var(--gradient-primary);
+      height: 4px;
+      background: var(--primary);
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity var(--transition-normal);
     }
 
     .stock-card:hover {
-      border-color: var(--primary);
-      box-shadow: var(--shadow-glow);
-      transform: translateY(-4px);
+      box-shadow: var(--shadow-deep);
+      transform: translateY(-6px);
     }
 
     .stock-card:hover::before {
