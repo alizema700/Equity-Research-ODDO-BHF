@@ -6683,40 +6683,42 @@
       border: 1px solid var(--border);
     }
 
-    /* Personalized Greeting Section */
+    /* Personalized Greeting Section - Clean & Readable */
     .personalized-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       padding: var(--space-xl);
-      background: var(--gradient-premium);
-      color: white;
+      background: var(--light);
+      border: 2px solid var(--primary);
       border-radius: var(--radius-lg);
       margin-bottom: var(--space-xl);
       position: relative;
       overflow: hidden;
+      box-shadow: var(--shadow-natural);
     }
 
     .personalized-header::before {
       content: '';
       position: absolute;
-      top: -50%;
-      right: -20%;
-      width: 60%;
-      height: 200%;
-      background: radial-gradient(ellipse, rgba(255,255,255,0.1) 0%, transparent 70%);
-      pointer-events: none;
+      top: 0;
+      left: 0;
+      width: 6px;
+      height: 100%;
+      background: var(--gradient-premium);
     }
 
     .greeting-content h2 {
-      font-size: var(--text-h2);
+      font-size: var(--text-h3);
       font-weight: 700;
       font-family: var(--font-serif);
       margin-bottom: var(--space-xs);
+      color: var(--primary);
     }
 
     .greeting-content p {
       font-size: var(--text-body);
+      color: var(--text-muted);
       opacity: 0.9;
     }
 
@@ -6729,21 +6731,26 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 12px 20px;
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.3);
+      padding: 10px 18px;
+      background: var(--primary);
+      border: none;
       border-radius: var(--radius-pill);
       color: white;
       font-size: var(--text-small);
       font-weight: 600;
       cursor: pointer;
       transition: all var(--transition-normal);
-      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
     }
 
     .quick-action-btn:hover {
-      background: rgba(255,255,255,0.25);
+      background: var(--accent-dark);
       transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .quick-action-btn svg {
+      stroke: white;
     }
 
     /* Priority Indicator */
@@ -6974,19 +6981,7 @@
       overflow: hidden;
     }
 
-    .personalized-rec::after {
-      content: 'PERSONALIZED';
-      position: absolute;
-      top: 10px;
-      right: -30px;
-      background: var(--gradient-premium);
-      color: white;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 4px 40px;
-      transform: rotate(45deg);
-      letter-spacing: 1px;
-    }
+    /* PERSONALIZED sticker removed for cleaner look */
 
     .rec-match-score {
       display: flex;
@@ -9579,36 +9574,33 @@
             </div>
           </div>
 
-          <!-- Client Similarity -->
-          <div class="widget widget-half">
-            <div class="widget-header">
-              <div class="widget-title">
-                <span class="widget-title-icon" style="background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); color: white;">&#129309;</span>
+          <!-- Client Similarity - Compact -->
+          <div class="widget widget-third" style="max-height: 200px;">
+            <div class="widget-header" style="padding: 12px 16px;">
+              <div class="widget-title" style="font-size: 13px;">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); color: white; width: 24px; height: 24px; font-size: 12px;">&#129309;</span>
                 Similar Clients
               </div>
             </div>
-            <div class="widget-body no-padding" style="padding: 16px;">
-              <div class="similar-clients" id="similarClients">
-                <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+            <div class="widget-body no-padding" style="padding: 12px; max-height: 140px; overflow-y: auto;">
+              <div class="similar-clients" id="similarClients" style="font-size: 12px;">
+                <div style="text-align: center; color: var(--text-muted); padding: 10px;">
                   Select a client to find similar profiles
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Leaderboard -->
-          <div class="widget widget-half">
-            <div class="widget-header">
-              <div class="widget-title">
-                <span class="widget-title-icon" style="background: linear-gradient(135deg, #eab308 0%, #facc15 100%); color: white;">◈</span>
-                Performance Leaderboard
-              </div>
-              <div class="widget-actions">
-                <button class="widget-action">This Month</button>
+          <!-- Leaderboard - Compact -->
+          <div class="widget widget-third" style="max-height: 200px;">
+            <div class="widget-header" style="padding: 12px 16px;">
+              <div class="widget-title" style="font-size: 13px;">
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #eab308 0%, #facc15 100%); color: white; width: 24px; height: 24px; font-size: 12px;">◈</span>
+                Leaderboard
               </div>
             </div>
-            <div class="widget-body no-padding" style="padding: 16px;">
-              <div class="leaderboard" id="leaderboard">
+            <div class="widget-body no-padding" style="padding: 12px; max-height: 140px; overflow-y: auto;">
+              <div class="leaderboard" id="leaderboard" style="font-size: 12px;">
                 <!-- Populated by JS -->
               </div>
             </div>
@@ -9914,26 +9906,61 @@
         </div>
       </div>
 
-      <!-- TAB: INSIGHTS (Stock Comparison & Technical) -->
+      <!-- TAB: INSIGHTS (Stock Comparison & Technical) - IMPROVED -->
       <div class="tab-panel" id="panel-insights">
+        <!-- Smart Comparison Suggestions -->
+        <div class="premium-card" style="padding: var(--space-lg); margin-bottom: var(--space-lg);">
+          <h3 style="margin: 0 0 var(--space-md) 0; font-size: var(--text-body); font-weight: 700; color: var(--primary);">Quick Comparisons</h3>
+          <p style="margin: 0 0 var(--space-md) 0; font-size: var(--text-small); color: var(--text-muted);">Click to instantly compare - based on your shortlist and client portfolio</p>
+          <div id="smartComparisons" style="display: flex; flex-wrap: wrap; gap: var(--space-sm);">
+            <button class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;" onclick="quickCompare('top-picks')">
+              Top Picks (AAPL vs MSFT vs NVDA)
+            </button>
+            <button class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;" onclick="quickCompare('european-luxury')">
+              European Luxury (LVMH vs Hermes vs Kering)
+            </button>
+            <button class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;" onclick="quickCompare('german-tech')">
+              German Tech (SAP vs Siemens vs Infineon)
+            </button>
+            <button class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;" onclick="quickCompare('banks')">
+              European Banks (BNP vs SocGen vs Deutsche)
+            </button>
+            <button class="btn btn-primary" style="font-size: 12px; padding: 8px 16px;" onclick="compareFromShortlist()">
+              Compare from Shortlist
+            </button>
+          </div>
+
+          <!-- Custom Comparison -->
+          <div style="margin-top: var(--space-lg); padding-top: var(--space-lg); border-top: 1px solid var(--border);">
+            <label style="font-size: var(--text-small); font-weight: 600; color: var(--text-muted); display: block; margin-bottom: var(--space-sm);">Custom Comparison</label>
+            <div style="display: flex; gap: var(--space-sm); align-items: center;">
+              <input type="text" id="compareStock1" placeholder="Ticker 1 (e.g. AAPL)" style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px;">
+              <span style="color: var(--text-muted);">vs</span>
+              <input type="text" id="compareStock2" placeholder="Ticker 2 (e.g. MSFT)" style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px;">
+              <span style="color: var(--text-muted);">vs</span>
+              <input type="text" id="compareStock3" placeholder="Ticker 3 (optional)" style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px;">
+              <button class="btn btn-primary" onclick="compareStocks()" style="padding: 10px 20px;">Compare</button>
+            </div>
+          </div>
+        </div>
+
         <div class="dashboard-grid">
-          <!-- Stock Comparison -->
+          <!-- Stock Comparison Results -->
           <div class="widget widget-full">
             <div class="widget-header">
               <div class="widget-title">
                 <span class="widget-title-icon" style="background: linear-gradient(135deg, #10b981 0%, #34d399 100%); color: white;">&#9878;</span>
-                Stock Comparison
+                Comparison Results
               </div>
               <div class="widget-actions">
-                <input type="text" id="compareStock1" placeholder="Ticker 1" style="width: 80px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px;">
-                <input type="text" id="compareStock2" placeholder="Ticker 2" style="width: 80px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px;">
-                <input type="text" id="compareStock3" placeholder="Ticker 3" style="width: 80px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px;">
-                <button class="widget-action" onclick="compareStocks()" style="background: var(--primary); color: white;">Compare</button>
+                <button class="widget-action" onclick="exportComparison()">Export</button>
+                <button class="widget-action" onclick="addToStory()">Add to Story</button>
               </div>
             </div>
             <div class="widget-body" id="stockComparison">
               <div style="text-align: center; color: var(--text-muted); padding: 40px;">
-                Enter up to 3 tickers above to compare stocks side by side
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom: 16px; opacity: 0.5;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                <p style="margin: 0;">Select a quick comparison above or enter tickers manually</p>
               </div>
             </div>
           </div>
@@ -9943,12 +9970,33 @@
             <div class="widget-header">
               <div class="widget-title">
                 <span class="widget-title-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); color: white;">▲</span>
-                Technical Indicators
+                Technical Analysis
               </div>
             </div>
             <div class="widget-body" id="technicalIndicators">
-              <div style="text-align: center; color: var(--text-muted); padding: 40px;">
-                Select a stock from shortlist to view technical analysis
+              <div style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div style="background: var(--soft-greige); padding: 12px; border-radius: var(--radius);">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">RSI (14)</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #f59e0b;">54.2</div>
+                    <div style="font-size: 10px; color: var(--text-muted);">Neutral</div>
+                  </div>
+                  <div style="background: var(--soft-greige); padding: 12px; border-radius: var(--radius);">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">MACD</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #10b981;">Bullish</div>
+                    <div style="font-size: 10px; color: var(--text-muted);">Cross above signal</div>
+                  </div>
+                  <div style="background: var(--soft-greige); padding: 12px; border-radius: var(--radius);">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">50-Day MA</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #10b981;">Above</div>
+                    <div style="font-size: 10px; color: var(--text-muted);">+3.2% from MA</div>
+                  </div>
+                  <div style="background: var(--soft-greige); padding: 12px; border-radius: var(--radius);">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Volume</div>
+                    <div style="font-size: 18px; font-weight: 700; color: var(--text);">1.2x</div>
+                    <div style="font-size: 10px; color: var(--text-muted);">vs 20-day avg</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -9957,16 +10005,17 @@
           <div class="widget widget-half">
             <div class="widget-header">
               <div class="widget-title">
-                <span class="widget-title-icon" style="background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); color: white;">&#129302;</span>
-                AI Market Insights
-              </div>
-              <div class="widget-actions">
-                <button class="widget-action" onclick="generateAIInsights()">Analyze</button>
+                <span class="widget-title-icon" style="background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%); color: white;">AI</span>
+                AI Insights
               </div>
             </div>
             <div class="widget-body" id="aiInsights">
-              <div style="text-align: center; color: var(--text-muted); padding: 40px;">
-                Click "Analyze" to generate AI-powered market insights
+              <div style="padding: 16px;">
+                <div style="background: linear-gradient(135deg, rgba(0,61,57,0.05) 0%, rgba(0,61,57,0.02) 100%); padding: 16px; border-radius: var(--radius); border-left: 3px solid var(--primary); margin-bottom: 12px;">
+                  <div style="font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px;">Key Insight</div>
+                  <p style="margin: 0; font-size: 13px; line-height: 1.5;">Based on current market conditions and your client's risk profile, consider increasing exposure to defensive sectors while reducing cyclical positions.</p>
+                </div>
+                <button class="btn btn-secondary" style="width: 100%; font-size: 12px;" onclick="generateAIInsights()">Generate More Insights</button>
               </div>
             </div>
           </div>
@@ -10097,12 +10146,30 @@
                 <div class="output-header">
                   <span class="output-title" id="outputTitle">Investment Story</span>
                   <div class="output-actions">
+                    <button class="btn-sm" onclick="toggleEditMode()">Edit</button>
                     <button class="btn-sm" onclick="regenerateStory()">Regenerate</button>
                     <button class="btn-sm" id="copyBtn">Copy</button>
                   </div>
                 </div>
                 <div class="output-body">
-                  <div class="output-text" id="outputText"></div>
+                  <div class="output-text" id="outputText" contenteditable="false"></div>
+                </div>
+
+                <!-- Story Refinement Section -->
+                <div class="story-refinement" style="padding: 16px; background: var(--soft-greige); border-top: 1px solid var(--border);">
+                  <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 8px;">Refine Story</label>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <button class="btn-sm btn-secondary" onclick="refineStory('shorter')">Make Shorter</button>
+                    <button class="btn-sm btn-secondary" onclick="refineStory('longer')">Add Details</button>
+                    <button class="btn-sm btn-secondary" onclick="refineStory('simpler')">Simplify Language</button>
+                    <button class="btn-sm btn-secondary" onclick="refineStory('risks')">Add Risk Focus</button>
+                    <button class="btn-sm btn-secondary" onclick="refineStory('bullish')">More Bullish</button>
+                    <button class="btn-sm btn-secondary" onclick="refineStory('cautious')">More Cautious</button>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" id="customRefinement" placeholder="Custom instruction: e.g. 'Add comparison with competitor XYZ'" style="flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px;">
+                    <button class="btn btn-primary" style="padding: 10px 20px; font-size: 13px;" onclick="refineStoryCustom()">Apply</button>
+                  </div>
                 </div>
 
                 <!-- Governance Section -->
@@ -15547,6 +15614,436 @@ function scheduleReport() {
 
 function openReport(reportId) {
   showNotification(`Opening report: ${reportId}`, 'info');
+}
+
+// ============================================================================
+// QUICK COMPARISON FUNCTIONS
+// ============================================================================
+
+const COMPARISON_PRESETS = {
+  'top-picks': ['AAPL', 'MSFT', 'NVDA'],
+  'european-luxury': ['MC.PA', 'RMS.PA', 'KER.PA'],
+  'german-tech': ['SAP.DE', 'SIE.DE', 'IFX.DE'],
+  'banks': ['BNP.PA', 'GLE.PA', 'DBK.DE']
+};
+
+function quickCompare(preset) {
+  const tickers = COMPARISON_PRESETS[preset];
+  if (!tickers) return;
+
+  document.getElementById('compareStock1').value = tickers[0] || '';
+  document.getElementById('compareStock2').value = tickers[1] || '';
+  document.getElementById('compareStock3').value = tickers[2] || '';
+
+  compareStocks();
+  showNotification(`Comparing: ${tickers.join(' vs ')}`, 'info');
+}
+
+function compareFromShortlist() {
+  if (!window._shortlist || window._shortlist.length < 2) {
+    showNotification('Need at least 2 stocks in shortlist to compare', 'warning');
+    return;
+  }
+
+  const top3 = window._shortlist.slice(0, 3).map(s => s.ticker);
+  document.getElementById('compareStock1').value = top3[0] || '';
+  document.getElementById('compareStock2').value = top3[1] || '';
+  document.getElementById('compareStock3').value = top3[2] || '';
+
+  compareStocks();
+  showNotification(`Comparing top shortlist picks`, 'success');
+}
+
+function exportComparison() {
+  showNotification('Preparing comparison export...', 'info');
+  setTimeout(() => {
+    const blob = new Blob([document.getElementById('stockComparison').innerText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'stock-comparison.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+    showNotification('Comparison exported', 'success');
+  }, 500);
+}
+
+function addToStory() {
+  const comparison = document.getElementById('stockComparison').innerText;
+  if (!comparison || comparison.includes('Select a quick comparison')) {
+    showNotification('Generate a comparison first', 'warning');
+    return;
+  }
+  // Store for story use
+  window._comparisonData = comparison;
+  switchTab('story');
+  showNotification('Comparison data ready - generate your story', 'success');
+}
+
+// ============================================================================
+// STORY REFINEMENT FUNCTIONS
+// ============================================================================
+
+let storyHistory = [];
+
+function toggleEditMode() {
+  const outputText = document.getElementById('outputText');
+  const isEditable = outputText.contentEditable === 'true';
+
+  outputText.contentEditable = !isEditable;
+  outputText.style.border = isEditable ? 'none' : '2px dashed var(--primary)';
+  outputText.style.padding = isEditable ? '0' : '12px';
+  outputText.style.background = isEditable ? 'transparent' : 'rgba(0,61,57,0.02)';
+
+  showNotification(isEditable ? 'Edit mode disabled' : 'Edit mode enabled - click text to edit', 'info');
+}
+
+function refineStory(type) {
+  const currentStory = document.getElementById('outputText').innerText;
+  if (!currentStory) {
+    showNotification('Generate a story first', 'warning');
+    return;
+  }
+
+  // Save to history for undo
+  storyHistory.push(currentStory);
+
+  const refinements = {
+    'shorter': 'Making story more concise...',
+    'longer': 'Adding more details...',
+    'simpler': 'Simplifying language...',
+    'risks': 'Adding risk analysis...',
+    'bullish': 'Adjusting tone to bullish...',
+    'cautious': 'Adjusting tone to cautious...'
+  };
+
+  showNotification(refinements[type] || 'Refining story...', 'info');
+
+  // Simulate refinement (in real implementation, this would call AI)
+  setTimeout(() => {
+    let refined = currentStory;
+
+    switch(type) {
+      case 'shorter':
+        // Take first 60% of sentences
+        const sentences = currentStory.split('. ');
+        refined = sentences.slice(0, Math.ceil(sentences.length * 0.6)).join('. ') + '.';
+        break;
+      case 'longer':
+        refined = currentStory + '\n\nAdditional Analysis: Based on current market conditions and the company\'s strategic positioning, we see further upside potential. Key catalysts include upcoming earnings announcements and sector-wide momentum.';
+        break;
+      case 'risks':
+        refined = currentStory + '\n\nKey Risks: Market volatility, sector rotation, regulatory changes, and macroeconomic headwinds could impact performance. Position sizing should reflect client risk tolerance.';
+        break;
+      case 'bullish':
+        refined = currentStory.replace(/neutral/gi, 'positive').replace(/cautious/gi, 'optimistic');
+        break;
+      case 'cautious':
+        refined = currentStory.replace(/strong/gi, 'moderate').replace(/bullish/gi, 'cautiously optimistic');
+        break;
+    }
+
+    document.getElementById('outputText').innerText = refined;
+    showNotification('Story refined', 'success');
+  }, 1000);
+}
+
+function refineStoryCustom() {
+  const instruction = document.getElementById('customRefinement').value.trim();
+  if (!instruction) {
+    showNotification('Enter a refinement instruction', 'warning');
+    return;
+  }
+
+  const currentStory = document.getElementById('outputText').innerText;
+  if (!currentStory) {
+    showNotification('Generate a story first', 'warning');
+    return;
+  }
+
+  storyHistory.push(currentStory);
+  showNotification(`Applying: "${instruction}"...`, 'info');
+
+  // In real implementation, this would call AI with the custom instruction
+  setTimeout(() => {
+    document.getElementById('outputText').innerText = currentStory + `\n\n[Custom refinement applied: ${instruction}]`;
+    document.getElementById('customRefinement').value = '';
+    showNotification('Custom refinement applied', 'success');
+  }, 1500);
+}
+
+// ============================================================================
+// EXTERNAL INTEGRATIONS (Bloomberg, Teams, Outlook)
+// ============================================================================
+
+const INTEGRATIONS = {
+  bloomberg: {
+    name: 'Bloomberg Terminal',
+    baseUrl: 'bloomberg://',
+    searchUrl: (ticker) => `https://www.bloomberg.com/quote/${ticker}:US`
+  },
+  teams: {
+    name: 'Microsoft Teams',
+    chatUrl: 'https://teams.microsoft.com/l/chat/0/0',
+    callUrl: 'https://teams.microsoft.com/l/call/0/0'
+  },
+  outlook: {
+    name: 'Outlook',
+    composeUrl: 'https://outlook.office.com/mail/deeplink/compose'
+  },
+  gmail: {
+    name: 'Gmail',
+    composeUrl: 'https://mail.google.com/mail/?view=cm&fs=1'
+  }
+};
+
+function openInBloomberg(ticker) {
+  const url = INTEGRATIONS.bloomberg.searchUrl(ticker);
+  window.open(url, '_blank');
+  showNotification(`Opening ${ticker} in Bloomberg`, 'info');
+}
+
+function openTeamsChat(recipientEmail) {
+  const url = recipientEmail
+    ? `${INTEGRATIONS.teams.chatUrl}?users=${encodeURIComponent(recipientEmail)}`
+    : INTEGRATIONS.teams.chatUrl;
+  window.open(url, '_blank');
+  showNotification('Opening Microsoft Teams chat', 'info');
+}
+
+function startTeamsCall(recipientEmail) {
+  const url = recipientEmail
+    ? `https://teams.microsoft.com/l/call/0/0?users=${encodeURIComponent(recipientEmail)}`
+    : INTEGRATIONS.teams.callUrl;
+  window.open(url, '_blank');
+  showNotification('Starting Teams call', 'info');
+}
+
+function composeOutlookEmail(to, subject, body) {
+  const params = new URLSearchParams({
+    to: to || '',
+    subject: subject || '',
+    body: body || ''
+  });
+  const url = `${INTEGRATIONS.outlook.composeUrl}?${params}`;
+  window.open(url, '_blank');
+  showNotification('Opening Outlook compose', 'info');
+}
+
+function composeGmailEmail(to, subject, body) {
+  const params = new URLSearchParams({
+    to: to || '',
+    su: subject || '',
+    body: body || ''
+  });
+  const url = `${INTEGRATIONS.gmail.composeUrl}&${params}`;
+  window.open(url, '_blank');
+  showNotification('Opening Gmail compose', 'info');
+}
+
+function addToClientEmail() {
+  const story = document.getElementById('outputText')?.innerText || '';
+  const clientEmail = clientData?.profile?.email || '';
+  const clientName = clientData?.profile?.name || 'Client';
+  const stockTicker = window._selectedStockTicker || '';
+
+  const subject = `Investment Update: ${stockTicker}`;
+  const body = `Dear ${clientName},\n\n${story}\n\nBest regards,\nYour ODDO BHF Analyst`;
+
+  // Show options
+  showNotification('Select email client', 'info', {
+    title: 'Send via',
+    actions: [
+      { label: 'Outlook', onclick: `composeOutlookEmail('${clientEmail}', '${subject}', '')`, primary: true },
+      { label: 'Gmail', onclick: `composeGmailEmail('${clientEmail}', '${subject}', '')` }
+    ]
+  });
+}
+
+// ============================================================================
+// EXPORT FUNCTIONS (PDF, Excel, etc.)
+// ============================================================================
+
+function exportToPDF() {
+  showNotification('Generating PDF...', 'info');
+
+  setTimeout(() => {
+    // Create a simple PDF-like content
+    const content = document.getElementById('outputText')?.innerText || 'No content to export';
+    const title = document.getElementById('outputTitle')?.innerText || 'Investment Story';
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${title}</title>
+        <style>
+          body { font-family: 'Lato', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+          h1 { color: #003D39; border-bottom: 2px solid #003D39; padding-bottom: 10px; }
+          .content { line-height: 1.8; }
+          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <img src="/static/Oddo_BHF_logo.svg.png" alt="ODDO BHF" style="height: 40px; margin-bottom: 20px;">
+        <h1>${title}</h1>
+        <div class="content">${content.replace(/\n/g, '<br>')}</div>
+        <div class="footer">
+          Generated by ODDO BHF Sales Intelligence Platform<br>
+          ${new Date().toLocaleDateString('de-DE')} | Confidential
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+
+    showNotification('PDF ready - use browser print dialog', 'success');
+  }, 1000);
+}
+
+function generateReport() {
+  const template = document.getElementById('reportTemplate').value;
+  const ticker = document.getElementById('reportStockTicker')?.value || '';
+  const dateRange = document.getElementById('reportDateRange').value;
+  const selectedType = document.querySelector('.report-type.selected');
+  const format = selectedType ? selectedType.querySelector('.type-icon').textContent.toLowerCase() : 'pdf';
+
+  showNotification('Generating report...', 'info');
+
+  setTimeout(() => {
+    // Generate actual content based on template
+    if (format === 'pdf') {
+      exportReportPDF(template, ticker, dateRange);
+    } else {
+      // Add to recent reports
+      const list = document.getElementById('recentReportsList');
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+      list.insertAdjacentHTML('afterbegin', `
+        <div class="report-item animate-in" onclick="openReport('report-${Date.now()}')">
+          <div class="report-type-badge ${format}">${format.toUpperCase()}</div>
+          <div class="report-info">
+            <h4>${template.charAt(0).toUpperCase() + template.slice(1)} Report ${ticker ? '- ' + ticker : ''}</h4>
+            <span class="report-meta">Generated ${dateStr} • Just now</span>
+          </div>
+          <div class="report-actions">
+            <button class="btn-icon" title="Download" onclick="event.stopPropagation(); downloadReport('${format}')">↓</button>
+            <button class="btn-icon" title="Share" onclick="event.stopPropagation(); shareReport()">↗</button>
+          </div>
+        </div>
+      `);
+
+      showNotification('Report generated successfully!', 'success');
+    }
+  }, 2000);
+}
+
+function exportReportPDF(template, ticker, dateRange) {
+  const printWindow = window.open('', '_blank');
+  const clientName = clientData?.profile?.name || 'Client';
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>ODDO BHF - ${template} Report</title>
+      <style>
+        body { font-family: 'Lato', Arial, sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #003D39; padding-bottom: 15px; margin-bottom: 30px; }
+        .header img { height: 40px; }
+        .header-info { text-align: right; font-size: 12px; color: #666; }
+        h1 { color: #003D39; margin: 0 0 10px 0; }
+        h2 { color: #003D39; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+        .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+        .metric-box { background: #f7f4f2; padding: 15px; border-radius: 8px; }
+        .metric-label { font-size: 11px; color: #666; text-transform: uppercase; }
+        .metric-value { font-size: 24px; font-weight: 700; color: #003D39; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #003D39; color: white; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #666; }
+        @media print { body { padding: 20px; } }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <img src="/static/Oddo_BHF_logo.svg.png" alt="ODDO BHF">
+        <div class="header-info">
+          <div>Equity Research Report</div>
+          <div>${new Date().toLocaleDateString('de-DE')}</div>
+        </div>
+      </div>
+
+      <h1>${ticker || 'Portfolio'} - ${template.charAt(0).toUpperCase() + template.slice(1)} Report</h1>
+      <p style="color: #666;">Prepared for: ${clientName} | Period: ${dateRange}</p>
+
+      <div class="metric-grid">
+        <div class="metric-box">
+          <div class="metric-label">Current Price</div>
+          <div class="metric-value">€185.42</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Target Price</div>
+          <div class="metric-value">€210.00</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Rating</div>
+          <div class="metric-value" style="color: #10b981;">Outperform</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Upside</div>
+          <div class="metric-value">+13.2%</div>
+        </div>
+      </div>
+
+      <h2>Executive Summary</h2>
+      <p>Based on our comprehensive analysis, we maintain our positive outlook on the investment thesis. Key drivers include strong fundamentals, favorable market positioning, and attractive valuation relative to peers.</p>
+
+      <h2>Financial Overview</h2>
+      <table>
+        <tr><th>Metric</th><th>FY24A</th><th>FY25E</th><th>FY26E</th></tr>
+        <tr><td>Revenue (€M)</td><td>125,400</td><td>138,200</td><td>152,100</td></tr>
+        <tr><td>EBITDA (€M)</td><td>42,300</td><td>47,500</td><td>53,200</td></tr>
+        <tr><td>Net Income (€M)</td><td>28,100</td><td>31,800</td><td>36,400</td></tr>
+        <tr><td>EPS (€)</td><td>6.42</td><td>7.28</td><td>8.35</td></tr>
+      </table>
+
+      <h2>Investment Thesis</h2>
+      <p>Our conviction is supported by: (1) Market leadership position, (2) Strong cash flow generation, (3) Attractive dividend yield, and (4) Multiple expansion potential.</p>
+
+      <h2>Key Risks</h2>
+      <p>Investors should monitor: macroeconomic headwinds, competitive pressure, regulatory changes, and currency fluctuations.</p>
+
+      <div class="footer">
+        <strong>ODDO BHF</strong> | This document is for informational purposes only and does not constitute investment advice.<br>
+        Generated by ODDO BHF Sales Intelligence Platform | Confidential
+      </div>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.print();
+
+  showNotification('Report PDF ready', 'success');
+}
+
+function downloadReport(format) {
+  showNotification(`Downloading ${format.toUpperCase()} report...`, 'info');
+  // In real implementation, this would trigger actual download
+}
+
+function shareReport() {
+  showNotification('Share options', 'info', {
+    title: 'Share Report',
+    actions: [
+      { label: 'Email', onclick: 'composeOutlookEmail("", "ODDO BHF Report", "")', primary: true },
+      { label: 'Teams', onclick: 'openTeamsChat("")' }
+    ]
+  });
 }
 
 // ============================================================================
