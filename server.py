@@ -120,6 +120,28 @@ async def root():
 
 
 # =========================
+# PWA Support Routes
+# =========================
+
+@app.get("/manifest.json")
+async def get_manifest():
+    """Serve the PWA manifest."""
+    manifest_path = os.path.join(FRONTEND_DIR, "manifest.json")
+    if os.path.isfile(manifest_path):
+        return FileResponse(manifest_path, media_type="application/manifest+json")
+    return {"error": "Manifest not found"}
+
+
+@app.get("/sw.js")
+async def get_service_worker():
+    """Serve the service worker."""
+    sw_path = os.path.join(FRONTEND_DIR, "sw.js")
+    if os.path.isfile(sw_path):
+        return FileResponse(sw_path, media_type="application/javascript")
+    return {"error": "Service worker not found"}
+
+
+# =========================
 # DB helpers (sqlite3 only)
 # =========================
 

@@ -4,6 +4,22 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ODDO BHF Sales Intelligence</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#003D39"/>
+  <meta name="description" content="Professional Sales Intelligence Platform for Equity Research"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="ODDO Sales"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="msapplication-TileColor" content="#003D39"/>
+  <meta name="msapplication-tap-highlight" content="no"/>
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="icon" type="image/svg+xml" href="/static/icons/app-icon.svg"/>
+  <link rel="apple-touch-icon" href="/static/icons/app-icon.svg"/>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
@@ -18608,7 +18624,311 @@ document.addEventListener('DOMContentLoaded', () => {
       closeMobileMenu();
     }
   });
+
+  // Register Service Worker for PWA
+  registerServiceWorker();
+
+  // Request notification permission after a short delay
+  setTimeout(() => {
+    if (Notification.permission === 'default') {
+      showNotificationPrompt();
+    }
+  }, 3000);
 });
+
+// ===============================================
+// PWA & NOTIFICATIONS
+// ===============================================
+
+let swRegistration = null;
+
+// Register Service Worker
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      swRegistration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/'
+      });
+      console.log('[PWA] Service Worker registered:', swRegistration.scope);
+
+      // Check for updates
+      swRegistration.addEventListener('updatefound', () => {
+        const newWorker = swRegistration.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            showNotification('Update Available', 'info');
+          }
+        });
+      });
+
+      // Listen for messages from service worker
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data.type === 'NOTIFICATION_CLICK') {
+          handleNotificationAction(event.data.data);
+        }
+      });
+
+    } catch (error) {
+      console.error('[PWA] Service Worker registration failed:', error);
+    }
+  }
+}
+
+// Show notification permission prompt
+function showNotificationPrompt() {
+  const prompt = document.createElement('div');
+  prompt.id = 'notificationPrompt';
+  prompt.innerHTML = `
+    <div style="position: fixed; bottom: 20px; right: 20px; background: var(--card); border: 2px solid var(--primary); border-radius: 12px; padding: 20px; box-shadow: var(--shadow-lg); z-index: 10000; max-width: 350px; animation: slide-in-right 0.3s ease;">
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <div style="font-size: 28px;">🔔</div>
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 8px 0; font-size: 16px; color: var(--primary);">Enable Notifications</h4>
+          <p style="margin: 0 0 16px 0; font-size: 13px; color: var(--text-muted);">Get alerts for price targets, earnings, and client activity on your phone.</p>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="requestNotificationPermission()" class="btn btn-primary" style="font-size: 12px; padding: 8px 16px;">Enable</button>
+            <button onclick="dismissNotificationPrompt()" class="btn btn-secondary" style="font-size: 12px; padding: 8px 16px;">Later</button>
+          </div>
+        </div>
+        <button onclick="dismissNotificationPrompt()" style="background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-muted);">&times;</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(prompt);
+}
+
+function dismissNotificationPrompt() {
+  const prompt = document.getElementById('notificationPrompt');
+  if (prompt) prompt.remove();
+  localStorage.setItem('notificationPromptDismissed', Date.now());
+}
+
+// Request notification permission
+async function requestNotificationPermission() {
+  dismissNotificationPrompt();
+
+  if (!('Notification' in window)) {
+    showNotification('Notifications not supported in this browser', 'error');
+    return false;
+  }
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      showNotification('Notifications enabled!', 'success');
+
+      // Subscribe to push notifications
+      await subscribeToPush();
+
+      // Send a test notification
+      setTimeout(() => {
+        sendLocalNotification(
+          'Welcome to ODDO Sales Intelligence',
+          'You will now receive alerts for price targets, earnings, and more.'
+        );
+      }, 2000);
+
+      return true;
+    } else {
+      showNotification('Notification permission denied', 'info');
+      return false;
+    }
+  } catch (error) {
+    console.error('[Notifications] Permission request failed:', error);
+    return false;
+  }
+}
+
+// Subscribe to push notifications
+async function subscribeToPush() {
+  if (!swRegistration) return;
+
+  try {
+    // For demo purposes, we use a simple subscription without VAPID keys
+    // In production, you'd use Firebase or your own push server
+    const subscription = await swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(
+        'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
+      )
+    });
+    console.log('[Push] Subscription:', subscription);
+  } catch (error) {
+    // Push subscription might not be available (requires HTTPS and valid VAPID key)
+    console.log('[Push] Subscription not available:', error.message);
+  }
+}
+
+// Helper for VAPID key conversion
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// Send local notification (doesn't require push server)
+function sendLocalNotification(title, body, data = {}) {
+  if (Notification.permission !== 'granted') return;
+
+  // Use service worker if available
+  if (swRegistration) {
+    swRegistration.showNotification(title, {
+      body,
+      icon: '/static/icons/app-icon.svg',
+      badge: '/static/icons/icon-72x72.svg',
+      tag: `local-${Date.now()}`,
+      vibrate: [200, 100, 200],
+      data
+    });
+  } else {
+    // Fallback to basic notification
+    new Notification(title, {
+      body,
+      icon: '/static/icons/app-icon.svg'
+    });
+  }
+}
+
+// Handle notification actions
+function handleNotificationAction(data) {
+  if (data.ticker) {
+    viewStockDetail(data.ticker);
+  }
+  if (data.clientId) {
+    loadClient(data.clientId);
+  }
+  if (data.tab) {
+    switchTab(data.tab);
+  }
+}
+
+// Notification triggers for various events
+function notifyPriceAlert(ticker, message, urgent = false) {
+  if (Notification.permission !== 'granted') return;
+
+  sendLocalNotification(
+    `${urgent ? '🚨 ' : '📈 '}${ticker} Price Alert`,
+    message,
+    { ticker, url: `/?stock=${ticker}` }
+  );
+}
+
+function notifyEarningsReminder(ticker, companyName, daysUntil) {
+  if (Notification.permission !== 'granted') return;
+
+  sendLocalNotification(
+    `⏰ Earnings in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`,
+    `${ticker} (${companyName}) reports earnings soon. Review client positions.`,
+    { ticker, tab: 'dashboard' }
+  );
+}
+
+function notifyClientActivity(clientName, activity) {
+  if (Notification.permission !== 'granted') return;
+
+  sendLocalNotification(
+    `👤 ${clientName}`,
+    activity,
+    { tab: 'clients' }
+  );
+}
+
+function notifyResearchUpdate(ticker, headline) {
+  if (Notification.permission !== 'granted') return;
+
+  sendLocalNotification(
+    `📊 New Research: ${ticker}`,
+    headline,
+    { ticker, tab: 'insights' }
+  );
+}
+
+// Demo: Schedule periodic notification checks
+function startNotificationScheduler() {
+  // Check for earnings alerts every hour
+  setInterval(() => {
+    checkEarningsNotifications();
+  }, 60 * 60 * 1000);
+
+  // Simulate price alerts (demo)
+  setInterval(() => {
+    const alerts = [
+      { ticker: 'NVDA', message: 'Crossed above $950 resistance', urgent: true },
+      { ticker: 'AAPL', message: 'Approaching 52-week high', urgent: false },
+      { ticker: 'SAP.DE', message: 'Unusual volume detected', urgent: false }
+    ];
+    const randomAlert = alerts[Math.floor(Math.random() * alerts.length)];
+    if (Math.random() > 0.7) { // 30% chance to show
+      notifyPriceAlert(randomAlert.ticker, randomAlert.message, randomAlert.urgent);
+    }
+  }, 5 * 60 * 1000); // Every 5 minutes
+}
+
+function checkEarningsNotifications() {
+  const watchlist = ['MSFT', 'AAPL', 'NVDA', 'GOOGL', 'META'];
+  // In real app, this would fetch from API
+  watchlist.forEach(ticker => {
+    const daysUntil = Math.floor(Math.random() * 10);
+    if (daysUntil <= 2) {
+      notifyEarningsReminder(ticker, ticker, daysUntil);
+    }
+  });
+}
+
+// Check if app is installable
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallButton();
+});
+
+function showInstallButton() {
+  // Add install button to header if not already installed
+  const headerActions = document.querySelector('.header-actions');
+  if (headerActions && !document.getElementById('installBtn')) {
+    const installBtn = document.createElement('button');
+    installBtn.id = 'installBtn';
+    installBtn.className = 'btn btn-ghost';
+    installBtn.innerHTML = '📲 Install';
+    installBtn.onclick = installPWA;
+    headerActions.insertBefore(installBtn, headerActions.firstChild);
+  }
+}
+
+async function installPWA() {
+  if (!deferredPrompt) {
+    showNotification('App already installed or not installable', 'info');
+    return;
+  }
+
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+
+  if (outcome === 'accepted') {
+    showNotification('App installed successfully!', 'success');
+    document.getElementById('installBtn')?.remove();
+  }
+
+  deferredPrompt = null;
+}
+
+window.addEventListener('appinstalled', () => {
+  showNotification('ODDO Sales Intelligence installed!', 'success');
+  document.getElementById('installBtn')?.remove();
+  deferredPrompt = null;
+});
+
+// Start notification scheduler if enabled
+if (Notification.permission === 'granted') {
+  startNotificationScheduler();
+}
 </script>
 
 <!-- Meeting Prep Modal -->
