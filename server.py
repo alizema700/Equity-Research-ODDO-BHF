@@ -1,6 +1,7 @@
 import os
 import json
 import sqlite3
+import logging
 from io import BytesIO
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
@@ -8,6 +9,9 @@ from functools import lru_cache
 import time
 
 import anyio
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 from dotenv import load_dotenv
 
