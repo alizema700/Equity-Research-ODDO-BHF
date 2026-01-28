@@ -9656,6 +9656,16 @@
   </style>
 </head>
 <body>
+  <!-- Authentication Check -->
+  <script>
+    (function() {
+      const token = localStorage.getItem('oddo_auth_token') || sessionStorage.getItem('oddo_auth_token');
+      if (!token) {
+        window.location.href = '/login';
+      }
+    })();
+  </script>
+
   <!-- LIVE TICKER -->
   <div class="live-ticker-container" id="liveTicker">
     <div class="live-ticker" id="tickerContent">
@@ -9691,9 +9701,13 @@
     </div>
 
     <div class="header-actions">
+      <span class="user-greeting" id="userGreeting" style="font-size: 13px; color: var(--text-muted); margin-right: 8px;"></span>
       <button class="btn btn-ghost" id="settingsBtn">API</button>
       <button class="btn btn-ghost" id="healthBtn">Health</button>
       <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode"></button>
+      <button class="btn btn-ghost" onclick="logout()" title="Logout" style="color: var(--accent-red);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
       <span class="status-chip" id="statusChip">No Client</span>
     </div>
   </header>
@@ -12385,6 +12399,44 @@
   </div>
 
 <script>
+// ============================================================================
+// AUTHENTICATION
+// ============================================================================
+function getAuthToken() {
+  return localStorage.getItem('oddo_auth_token') || sessionStorage.getItem('oddo_auth_token');
+}
+
+function getCurrentUser() {
+  const userStr = localStorage.getItem('oddo_user') || sessionStorage.getItem('oddo_user');
+  return userStr ? JSON.parse(userStr) : null;
+}
+
+function logout() {
+  // Clear tokens
+  localStorage.removeItem('oddo_auth_token');
+  localStorage.removeItem('oddo_user');
+  sessionStorage.removeItem('oddo_auth_token');
+  sessionStorage.removeItem('oddo_user');
+
+  // Call logout API
+  fetch('/api/logout', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + getAuthToken() }
+  }).catch(() => {});
+
+  // Redirect to login
+  window.location.href = '/login';
+}
+
+// Display user name on load
+document.addEventListener('DOMContentLoaded', () => {
+  const user = getCurrentUser();
+  const greetingEl = document.getElementById('userGreeting');
+  if (user && greetingEl) {
+    greetingEl.textContent = `Hi, ${user.name || user.username}`;
+  }
+});
+
 // ============================================================================
 // STATE
 // ============================================================================

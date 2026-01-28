@@ -59,7 +59,7 @@ BASE_DIR = os.path.dirname(__file__)
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path=ENV_PATH, override=True)
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -117,6 +117,108 @@ async def root():
     if os.path.isfile(index_path):
         return FileResponse(index_path)
     return HTMLResponse("<h1>Frontend not found</h1><p>Place index.html in frontend/</p>")
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    """Serve the login page."""
+    login_path = os.path.join(FRONTEND_DIR, "login.html")
+    if os.path.isfile(login_path):
+        return FileResponse(login_path)
+    return HTMLResponse("<h1>Login page not found</h1>")
+
+
+# =========================
+# Authentication API
+# =========================
+
+# Simple user database (in production, use proper database with hashed passwords)
+USERS = {
+    "Admin": {
+        "password": "pass1234",
+        "name": "Administrator",
+        "role": "admin",
+        "email": "admin@oddo-bhf.com"
+    },
+    "analyst": {
+        "password": "analyst123",
+        "name": "Senior Analyst",
+        "role": "analyst",
+        "email": "analyst@oddo-bhf.com"
+    }
+}
+
+import secrets
+import hashlib
+
+# Simple token storage (in production, use Redis or database)
+active_tokens = {}
+
+def generate_token():
+    return secrets.token_urlsafe(32)
+
+@app.post("/api/login")
+async def api_login(request: Request):
+    """Handle user login."""
+    try:
+        body = await request.json()
+        username = body.get("username", "")
+        password = body.get("password", "")
+
+        # Check credentials
+        user = USERS.get(username)
+        if user and user["password"] == password:
+            # Generate token
+            token = generate_token()
+            active_tokens[token] = {
+                "username": username,
+                "name": user["name"],
+                "role": user["role"],
+                "email": user["email"]
+            }
+
+            return {
+                "success": True,
+                "token": token,
+                "user": {
+                    "username": username,
+                    "name": user["name"],
+                    "role": user["role"],
+                    "email": user["email"]
+                }
+            }
+        else:
+            return JSONResponse(
+                status_code=401,
+                content={"success": False, "message": "Invalid username or password"}
+            )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+
+@app.post("/api/logout")
+async def api_logout(request: Request):
+    """Handle user logout."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        if token in active_tokens:
+            del active_tokens[token]
+    return {"success": True}
+
+
+@app.get("/api/verify-token")
+async def verify_token(request: Request):
+    """Verify if a token is valid."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        if token in active_tokens:
+            return {"valid": True, "user": active_tokens[token]}
+    return {"valid": False}
 
 
 # =========================
