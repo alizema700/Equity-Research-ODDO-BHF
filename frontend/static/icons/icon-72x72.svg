@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+  <rect width="72" height="72" fill="#003D39"/>
+  <circle cx="36" cy="36" r="24" fill="none" stroke="white" stroke-width="3"/>
+  <text x="36" y="43" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">O</text>
+</svg>

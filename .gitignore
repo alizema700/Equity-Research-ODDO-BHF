@@ -45,5 +45,5 @@ node_modules/
 .next/
 out/
 .vercel/
-data.db
+# data.db - included for Railway deployment
 data.db.backup

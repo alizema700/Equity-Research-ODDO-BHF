@@ -1,6 +1,7 @@
 import os
 import json
 import sqlite3
+import logging
 from io import BytesIO
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
@@ -8,6 +9,9 @@ from functools import lru_cache
 import time
 
 import anyio
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 from dotenv import load_dotenv
 
@@ -59,7 +63,7 @@ BASE_DIR = os.path.dirname(__file__)
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path=ENV_PATH, override=True)
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -81,10 +85,16 @@ except Exception:  # pragma: no cover
 # Config
 # =========================
 
+# Database configuration - supports SQLite (dev) and PostgreSQL (production)
+DB_TYPE = os.environ.get("DB_TYPE", "sqlite").lower()  # "sqlite" or "postgres"
 DB_PATH = os.environ.get("CLIENT_DB_PATH", os.path.join(BASE_DIR, "data.db"))
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DB_PATH}")
 
-# SQLite-only (built-in sqlite3; no aiosqlite / SQLAlchemy)
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+# For Railway/Supabase PostgreSQL
+if DATABASE_URL.startswith("postgres://"):
+    # Railway sometimes uses postgres:// but psycopg2 needs postgresql://
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    DB_TYPE = "postgres"
 
 OPENAI_API_KEY = (os.environ.get("OPENAI_API_KEY") or "").strip()
 OPENAI_MODEL = (os.environ.get("OPENAI_MODEL") or "o3").strip()
@@ -119,65 +129,247 @@ async def root():
     return HTMLResponse("<h1>Frontend not found</h1><p>Place index.html in frontend/</p>")
 
 
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    """Serve the login page."""
+    login_path = os.path.join(FRONTEND_DIR, "login.html")
+    if os.path.isfile(login_path):
+        return FileResponse(login_path)
+    return HTMLResponse("<h1>Login page not found</h1>")
+
+
 # =========================
-# DB helpers (sqlite3 only)
+# Authentication API
 # =========================
 
-def _sqlite_connect() -> sqlite3.Connection:
-    # One connection per query (safe/simple). `row_factory` gives dict-like rows.
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+# Simple user database (in production, use proper database with hashed passwords)
+USERS = {
+    "Admin": {
+        "password": "pass1234",
+        "name": "Administrator",
+        "role": "admin",
+        "email": "admin@oddo-bhf.com"
+    },
+    "analyst": {
+        "password": "analyst123",
+        "name": "Senior Analyst",
+        "role": "analyst",
+        "email": "analyst@oddo-bhf.com"
+    }
+}
+
+import secrets
+import hashlib
+
+# Simple token storage (in production, use Redis or database)
+active_tokens = {}
+
+def generate_token():
+    return secrets.token_urlsafe(32)
+
+@app.post("/api/login")
+async def api_login(request: Request):
+    """Handle user login."""
+    try:
+        body = await request.json()
+        username = body.get("username", "")
+        password = body.get("password", "")
+
+        # Check credentials
+        user = USERS.get(username)
+        if user and user["password"] == password:
+            # Generate token
+            token = generate_token()
+            active_tokens[token] = {
+                "username": username,
+                "name": user["name"],
+                "role": user["role"],
+                "email": user["email"]
+            }
+
+            return {
+                "success": True,
+                "token": token,
+                "user": {
+                    "username": username,
+                    "name": user["name"],
+                    "role": user["role"],
+                    "email": user["email"]
+                }
+            }
+        else:
+            return JSONResponse(
+                status_code=401,
+                content={"success": False, "message": "Invalid username or password"}
+            )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(e)}
+        )
+
+
+@app.post("/api/logout")
+async def api_logout(request: Request):
+    """Handle user logout."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        if token in active_tokens:
+            del active_tokens[token]
+    return {"success": True}
+
+
+@app.get("/api/verify-token")
+async def verify_token(request: Request):
+    """Verify if a token is valid."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        if token in active_tokens:
+            return {"valid": True, "user": active_tokens[token]}
+    return {"valid": False}
+
+
+# =========================
+# PWA Support Routes
+# =========================
+
+@app.get("/manifest.json")
+async def get_manifest():
+    """Serve the PWA manifest."""
+    manifest_path = os.path.join(FRONTEND_DIR, "manifest.json")
+    if os.path.isfile(manifest_path):
+        return FileResponse(manifest_path, media_type="application/manifest+json")
+    return {"error": "Manifest not found"}
+
+
+@app.get("/sw.js")
+async def get_service_worker():
+    """Serve the service worker."""
+    sw_path = os.path.join(FRONTEND_DIR, "sw.js")
+    if os.path.isfile(sw_path):
+        return FileResponse(sw_path, media_type="application/javascript")
+    return {"error": "Service worker not found"}
+
+
+# =========================
+# DB helpers (SQLite + PostgreSQL)
+# =========================
+
+def _convert_params_to_pg(sql: str) -> str:
+    """Convert SQLite :param syntax to PostgreSQL %(param)s syntax."""
+    import re
+    return re.sub(r":(\w+)", r"%(\1)s", sql)
+
+
+def _convert_date_functions(sql: str) -> str:
+    """Convert SQLite date functions to PostgreSQL equivalents."""
+    import re
+    if DB_TYPE == "postgres":
+        # date('now') -> CURRENT_DATE
+        sql = re.sub(r"date\('now'\)", "CURRENT_DATE", sql, flags=re.IGNORECASE)
+        # date('now', '-30 days') -> CURRENT_DATE - INTERVAL '30 days'
+        sql = re.sub(r"date\('now',\s*'(-?\d+)\s*days?'\)", r"CURRENT_DATE + INTERVAL '\1 days'", sql, flags=re.IGNORECASE)
+        # datetime('now') -> NOW()
+        sql = re.sub(r"datetime\('now'\)", "NOW()", sql, flags=re.IGNORECASE)
+    return sql
+
+
+def _get_connection():
+    """Get a database connection based on DB_TYPE."""
+    if DB_TYPE == "postgres":
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        return conn
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
 
 
 def _query_one(sql: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
     params = params or {}
-    conn = _sqlite_connect()
+    conn = _get_connection()
     try:
-        cur = conn.execute(sql, params)
-        row = cur.fetchone()
-        return dict(row) if row else None
+        if DB_TYPE == "postgres":
+            cur = conn.cursor()
+            pg_sql = _convert_date_functions(_convert_params_to_pg(sql))
+            cur.execute(pg_sql, params)
+            row = cur.fetchone()
+            return dict(row) if row else None
+        else:
+            cur = conn.execute(sql, params)
+            row = cur.fetchone()
+            return dict(row) if row else None
     finally:
         conn.close()
 
 
 def _query_all(sql: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     params = params or {}
-    conn = _sqlite_connect()
+    conn = _get_connection()
     try:
-        cur = conn.execute(sql, params)
-        rows = cur.fetchall()
-        return [dict(r) for r in rows]
+        if DB_TYPE == "postgres":
+            cur = conn.cursor()
+            pg_sql = _convert_date_functions(_convert_params_to_pg(sql))
+            cur.execute(pg_sql, params)
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]
+        else:
+            cur = conn.execute(sql, params)
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]
     finally:
         conn.close()
 
 
 async def fetch_one(sql: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-    # Run blocking sqlite3 in a thread so FastAPI stays responsive.
+    # Run blocking DB call in a thread so FastAPI stays responsive.
     return await anyio.to_thread.run_sync(_query_one, sql, params)
 
 
 async def fetch_all(sql: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-    # Run blocking sqlite3 in a thread so FastAPI stays responsive.
+    # Run blocking DB call in a thread so FastAPI stays responsive.
     return await anyio.to_thread.run_sync(_query_all, sql, params)
 
 
 async def table_exists(table_name: str) -> bool:
-    row = await fetch_one(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name=:t",
-        {"t": table_name},
-    )
+    if DB_TYPE == "postgres":
+        row = await fetch_one(
+            "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename=:t",
+            {"t": table_name},
+        )
+    else:
+        row = await fetch_one(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=:t",
+            {"t": table_name},
+        )
     return bool(row)
 
 
 def _execute_write(sql: str, params: Optional[Dict[str, Any]] = None) -> int:
     """Execute an INSERT/UPDATE/DELETE and return lastrowid."""
     params = params or {}
-    conn = _sqlite_connect()
+    conn = _get_connection()
     try:
-        cur = conn.execute(sql, params)
-        conn.commit()
-        return cur.lastrowid
+        if DB_TYPE == "postgres":
+            cur = conn.cursor()
+            # Add RETURNING id for PostgreSQL to get the inserted ID
+            pg_sql = _convert_params_to_pg(sql)
+            if "INSERT" in sql.upper() and "RETURNING" not in sql.upper():
+                pg_sql = pg_sql.rstrip(";") + " RETURNING id"
+            cur.execute(pg_sql, params)
+            conn.commit()
+            if "INSERT" in sql.upper():
+                result = cur.fetchone()
+                return result["id"] if result else 0
+            return cur.rowcount
+        else:
+            cur = conn.execute(sql, params)
+            conn.commit()
+            return cur.lastrowid
     finally:
         conn.close()
 
@@ -4059,12 +4251,14 @@ async def api_market_summary():
 if __name__ == "__main__":
     import argparse
     import uvicorn
-    
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8000)
+    # Railway sets PORT env var dynamically, use that as default if available
+    default_port = int(os.environ.get("PORT", 8000))
+    parser.add_argument("--port", type=int, default=default_port)
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--with-api", action="store_true", help="Enable external API calls")
     args = parser.parse_args()
-    
+
     uvicorn.run(app, host=args.host, port=args.port)
 
