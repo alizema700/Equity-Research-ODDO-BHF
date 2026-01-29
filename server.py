@@ -2693,14 +2693,6 @@ def build_shortlist_pdf_bytes(client_ctx: Dict[str, Any], shortlist_payload: Dic
 # API endpoints
 # =========================
 
-@app.get("/", response_class=HTMLResponse)
-def home():
-    index_path = os.path.join(FRONTEND_DIR, "index.html")
-    if os.path.isfile(index_path):
-        with open(index_path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h3>Backend is running.</h3><p>Use /api/health or /api/search?q=...</p>"
-
 @app.get("/api/health")
 async def api_health():
     try:
