@@ -2226,19 +2226,50 @@ async def build_client_context(client_id: int) -> Dict[str, Any]:
 # OpenAI calls
 # =========================
 
-def llm_text(prompt: str) -> str:
-    """Return plain text from the LLM.
+SYSTEM_PROMPT_SHORTLIST = """You are a Senior Equity Research Strategist at ODDO BHF, one of Europe's leading independent \
+financial groups. You have 20+ years of experience in European equity markets.
 
-    We intentionally use Chat Completions here for maximum compatibility with
-    older `openai` Python SDK versions that do not support `oa.responses.*`.
-    """
+Your expertise:
+- Deep knowledge of European equity markets (DAX, CAC 40, FTSE, SMI, AEX)
+- Institutional client advisory across hedge funds, pension funds, insurance companies, family offices
+- Behavioral finance: reading client signals from trading patterns, research consumption, and call notes
+- Portfolio construction: sector rotation, diversification, risk budgeting
+- Fundamental analysis: valuation multiples, earnings quality, balance sheet analysis
+
+Your reasoning methodology:
+1. UNDERSTAND the client's investment DNA (risk appetite, style, constraints, behavioral signals)
+2. IDENTIFY high-conviction opportunities that match their profile
+3. DIFFERENTIATE between noise and genuine signals in client behavior
+4. JUSTIFY every recommendation with specific, traceable evidence
+5. ANTICIPATE objections and prepare counter-arguments
+
+You NEVER invent data. You ONLY use what is provided in the JSON context. \
+If data is missing, you acknowledge it explicitly."""
+
+SYSTEM_PROMPT_STORY = """You are the top-performing Equity Sales Storyteller at ODDO BHF. \
+You craft investment narratives that institutional clients act on.
+
+Your competitive advantage:
+- You transform raw research data into compelling, client-specific investment stories
+- You understand what motivates each client type (hedge fund alpha, pension income, family office wealth preservation)
+- You use behavioral evidence (what they read, discussed, traded) to personalize every pitch
+- You anticipate objections before the client raises them
+- You write with authority but never arrogance; data-driven but never dry
+
+Your golden rule: Every sentence must either (a) cite specific evidence, (b) connect to the client's needs, \
+or (c) provide actionable insight. Generic filler has zero value."""
+
+
+def llm_text(prompt: str, temperature: float = 0.7) -> str:
+    """Return plain text from the LLM with configurable temperature."""
     if oa is None:
         raise RuntimeError("OPENAI_API_KEY is missing. Put it in .env or export it in your shell.")
 
     resp = oa.chat.completions.create(
         model=OPENAI_MODEL,
+        temperature=temperature,
         messages=[
-            {"role": "system", "content": "You are a helpful assistant. Follow instructions precisely."},
+            {"role": "system", "content": SYSTEM_PROMPT_STORY},
             {"role": "user", "content": prompt},
         ],
     )
@@ -2246,32 +2277,181 @@ def llm_text(prompt: str) -> str:
     txt = (resp.choices[0].message.content or "").strip()
     return txt
 
-def llm_json(prompt: str) -> Dict[str, Any]:
-    """
-    Best-effort JSON-only response. If the model returns text around JSON,
-    we try to extract the first {...} block.
-    """
-    txt = llm_text(prompt)
-    if not txt:
-        raise ValueError("LLM returned empty output.")
 
-    # direct parse first
+def llm_json(prompt: str, temperature: float = 0.3) -> Dict[str, Any]:
+    """
+    Structured JSON response using OpenAI JSON mode.
+    Lower temperature for consistent, precise output.
+    """
+    if oa is None:
+        raise RuntimeError("OPENAI_API_KEY is missing. Put it in .env or export it in your shell.")
+
     try:
+        resp = oa.chat.completions.create(
+            model=OPENAI_MODEL,
+            temperature=temperature,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT_SHORTLIST + "\n\nAlways respond with valid JSON only."},
+                {"role": "user", "content": prompt},
+            ],
+        )
+        txt = (resp.choices[0].message.content or "").strip()
         return json.loads(txt)
-    except Exception:
-        pass
-
-    # try to extract JSON object
-    start = txt.find("{")
-    end = txt.rfind("}")
-    if start != -1 and end != -1 and end > start:
-        snippet = txt[start:end + 1]
+    except Exception as e:
+        # Fallback: try without json_object mode (some models don't support it)
+        logger.warning(f"JSON mode failed ({e}), falling back to text extraction")
+        txt = llm_text(prompt, temperature=temperature)
+        if not txt:
+            raise ValueError("LLM returned empty output.")
         try:
-            return json.loads(snippet)
+            return json.loads(txt)
         except Exception:
             pass
+        start = txt.find("{")
+        end = txt.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            snippet = txt[start:end + 1]
+            try:
+                return json.loads(snippet)
+            except Exception:
+                pass
+        raise ValueError("LLM did not return valid JSON.")
 
-    raise ValueError("LLM did not return valid JSON.")
+
+# =========================
+# Signal Scoring Engine
+# =========================
+
+def compute_signal_scores(
+    candidates: List[Dict[str, Any]],
+    client_ctx: Dict[str, Any],
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Pre-compute a relevance score for each candidate stock based on client signals.
+    Returns {ticker: {score, evidence[]}} so the LLM can see WHY each stock is relevant.
+    """
+    signals = client_ctx.get("signals", {})
+    profile = client_ctx.get("profile", {})
+    portfolio = client_ctx.get("portfolio_summary", {})
+
+    # Extract signal data
+    recent_calls = signals.get("recent_calls", []) or []
+    recent_trades = signals.get("recent_trades", []) or []
+    recent_reads = signals.get("recent_reads_daysdiff", []) or []
+    call_hints = signals.get("call_position_hints", []) or []
+    topic_signals = signals.get("topic_signals", []) or []
+
+    # Build lookup sets
+    call_mentioned = {}
+    for c in recent_calls:
+        company = (c.get("discussed_company") or "").lower()
+        sector = (c.get("discussed_sector") or "").lower()
+        if company:
+            call_mentioned[company] = c.get("call_timestamp", "")
+        if sector:
+            call_mentioned[sector] = c.get("call_timestamp", "")
+
+    hint_tickers = {}
+    for h in call_hints:
+        t = (h.get("ticker") or "").upper()
+        if t:
+            hint_tickers[t] = h.get("sentiment", "neutral")
+
+    read_tickers = {}
+    for r in recent_reads:
+        t = (r.get("report_ticker") or r.get("ticker") or "").upper()
+        dd = r.get("days_diff", 999)
+        if t:
+            read_tickers[t] = min(read_tickers.get(t, 999), dd)
+
+    traded_tickers = set()
+    for tr in recent_trades:
+        t = (tr.get("ticker") or "").upper()
+        if t:
+            traded_tickers.add(t)
+
+    top_sector = (portfolio.get("top_sector") or "").lower()
+    top_theme = (portfolio.get("top_theme") or "").lower()
+    risk_appetite = (profile.get("risk_appetite") or "Moderate")
+
+    topic_set = set()
+    for ts in topic_signals:
+        topic_set.add((ts.get("topic") or "").lower())
+
+    scores = {}
+    for cand in candidates:
+        ticker = (cand.get("ticker") or "").upper()
+        company = (cand.get("company_name") or "").lower()
+        sector = (cand.get("sector") or "").lower()
+        theme = (cand.get("theme_tag") or "").lower()
+
+        score = 0.0
+        evidence = []
+
+        # 1. Direct call mention (3x weight)
+        if company in call_mentioned or ticker.lower() in call_mentioned:
+            score += 3.0
+            date = call_mentioned.get(company) or call_mentioned.get(ticker.lower(), "")
+            evidence.append(f"CALL_MENTION: Discussed in client call ({date})")
+
+        # 2. Call hint with sentiment (3x)
+        if ticker in hint_tickers:
+            sentiment = hint_tickers[ticker]
+            score += 3.0 if sentiment == "positive" else 1.5
+            evidence.append(f"CALL_HINT: Explicit {sentiment} signal from call notes")
+
+        # 3. Recent reading (2x, weighted by recency)
+        if ticker in read_tickers:
+            dd = read_tickers[ticker]
+            if dd <= 7:
+                score += 2.5
+                evidence.append(f"READ_URGENT: Client read report {dd}d ago (high urgency)")
+            elif dd <= 30:
+                score += 1.5
+                evidence.append(f"READ_RECENT: Client read report {dd}d ago")
+            else:
+                score += 0.5
+                evidence.append(f"READ_PAST: Client read report {dd}d ago")
+
+        # 4. Sector match (1.5x)
+        if sector and sector == top_sector:
+            score += 1.5
+            evidence.append(f"SECTOR_MATCH: Matches portfolio top sector ({sector})")
+
+        # 5. Theme match (1.5x)
+        if theme and theme == top_theme:
+            score += 1.5
+            evidence.append(f"THEME_MATCH: Matches portfolio theme ({theme})")
+
+        # 6. Topic signal match (1x)
+        if sector in topic_set or theme in topic_set:
+            score += 1.0
+            evidence.append("TOPIC_SIGNAL: Matches client's discussed topics")
+
+        # 7. Recent trade in same sector (1x)
+        if ticker in traded_tickers:
+            score += 1.0
+            evidence.append("TRADE_SIGNAL: Client recently traded this stock")
+
+        # 8. Risk alignment bonus (0.5x)
+        vol = cand.get("vol_60d") or 0
+        if risk_appetite in ["Low", "Conservative"] and vol and vol < 0.2:
+            score += 0.5
+            evidence.append(f"RISK_FIT: Low vol ({vol:.1%}) suits conservative profile")
+        elif risk_appetite in ["High", "Aggressive"] and vol and vol > 0.3:
+            score += 0.5
+            evidence.append(f"RISK_FIT: Higher vol ({vol:.1%}) suits aggressive profile")
+
+        if not evidence:
+            evidence.append("NO_DIRECT_SIGNAL: No direct client signal; evaluate on fundamentals")
+
+        scores[ticker] = {
+            "score": round(score, 1),
+            "evidence": evidence,
+        }
+
+    return scores
 
 
 # =========================
@@ -2304,11 +2484,11 @@ def prompt_for_shortlist(
     max_words: int,
 ) -> str:
     """
-    We ask for strict JSON output to drive the UI cards.
+    Chain-of-Thought shortlist prompt with signal scores and transparent reasoning.
     """
     avoid = client_ctx.get("constraints", {}).get("avoid_tickers", []) or []
 
-    # Compact candidate payload
+    # Compact candidate payload with market data
     cand_payload = []
     for s in candidates:
         sid = int(s["stock_id"])
@@ -2331,6 +2511,19 @@ def prompt_for_shortlist(
             }
         )
 
+    # Pre-compute signal scores for transparency
+    signal_scores = compute_signal_scores(cand_payload, client_ctx)
+
+    # Sort candidates by score for LLM (highest first)
+    scored_candidates = []
+    for c in cand_payload:
+        ticker = (c.get("ticker") or "").upper()
+        ss = signal_scores.get(ticker, {"score": 0, "evidence": []})
+        c["_signal_score"] = ss["score"]
+        c["_signal_evidence"] = ss["evidence"]
+        scored_candidates.append(c)
+    scored_candidates.sort(key=lambda x: x["_signal_score"], reverse=True)
+
     minimal_ctx = {
         "client": client_ctx.get("client", {}),
         "profile": client_ctx.get("profile", {}),
@@ -2339,27 +2532,55 @@ def prompt_for_shortlist(
         "signals": client_ctx.get("signals", {}),
         "holdings": client_ctx.get("holdings", {}),
         "constraints": client_ctx.get("constraints", {}),
-        "candidates": cand_payload,
+        "enhanced": client_ctx.get("enhanced", {}),
+        "candidates_with_scores": scored_candidates,
     }
 
     return f"""
-You are an AI equity sales assistant supporting a sell-side analyst.
+=== CHAIN-OF-THOUGHT SHORTLIST GENERATION ===
 
-CRITICAL DATA RULES
-- Use ONLY the JSON provided.
-- Do NOT invent facts. If missing, write null / "unknown".
-- You MUST select stocks ONLY from candidates[].
+You MUST reason through these 4 steps IN ORDER before producing the final shortlist.
+Your reasoning must be VISIBLE in the output so the analyst can audit your logic.
 
-GOAL
-Create a client-personalized shortlist of exactly 10 stocks for this client, optimized for:
-- client risk_appetite + investment_style
-- their dominant exposure (portfolio_summary top_sector/top_theme) and diversification
-- signals: call notes (notes_raw), call_position_hints, readership_daysdiff (days_diff), recent_trades
-- avoid repeating holdings/recent trades unless clearly justified (avoid_tickers is provided)
+STEP 1: CLIENT DNA ANALYSIS
+Analyze the client's investment profile:
+- What is their risk appetite and investment style?
+- What sectors/themes dominate their portfolio?
+- What behavioral signals are strongest? (calls, reads, trades)
+- What are their constraints (avoid_tickers, compliance)?
+Write a brief "client_analysis" summary (2-3 sentences).
 
-OUTPUT (STRICT JSON ONLY)
-Return ONE JSON object with exactly these keys:
+STEP 2: SIGNAL INTERPRETATION
+Review the pre-computed signal scores (_signal_score and _signal_evidence) for each candidate.
+- Candidates with score >= 3.0 have STRONG direct signals (call mentions, explicit hints)
+- Candidates with score 1.5-3.0 have MODERATE signals (reading activity, sector match)
+- Candidates with score < 1.5 are DIVERSIFIERS (no direct signal but may add value)
+Prioritize high-score candidates but ensure portfolio diversification.
+
+STEP 3: PORTFOLIO CONSTRUCTION
+Select 10 stocks applying these rules:
+- At least 3 stocks from STRONG signal candidates (score >= 3.0)
+- At least 2 stocks for DIVERSIFICATION (different sector from top holdings)
+- Risk-budget: match vol_bucket distribution to client's risk_appetite
+- No more than 3 stocks from the same sector
+- Avoid tickers in avoid_tickers unless strongly justified
+
+STEP 4: EVIDENCE-BASED JUSTIFICATION
+For each stock, write exactly 3 why_bullets that:
+- Bullet 1: Reference the SPECIFIC client signal (call, read, trade, hint)
+- Bullet 2: Explain the fundamental/strategic fit
+- Bullet 3: Address portfolio impact (diversification, risk, timing)
+Each bullet MUST cite its data source in parentheses.
+
+=== OUTPUT FORMAT (STRICT JSON) ===
+Return ONE JSON object:
 {{
+  "reasoning": {{
+    "client_analysis": "<2-3 sentence summary of client DNA>",
+    "signal_summary": "<which signals drove the selection>",
+    "diversification_logic": "<how you balanced concentration vs diversification>",
+    "risk_budget": "<how you matched volatility to client risk appetite>"
+  }},
   "shortlist": [
     {{
       "stock_id": <int>,
@@ -2372,37 +2593,32 @@ Return ONE JSON object with exactly these keys:
       "vol_20d": <number|null>,
       "vol_60d": <number|null>,
       "vol_bucket": <"low"|"medium"|"high"|"unknown">,
+      "signal_score": <number>,
+      "selection_reason": <"STRONG_SIGNAL"|"MODERATE_SIGNAL"|"DIVERSIFIER"|"RISK_BALANCE">,
       "why_bullets": [<string>, <string>, <string>]
     }},
-    ...
+    ... (EXACTLY 10 items, ordered by conviction - highest first)
   ],
   "top_picks": [<ticker1>, <ticker2>],
-  "notes_for_analyst": [<string>, <string>, ...]
+  "notes_for_analyst": [
+    "<actionable insight about timing or approach>",
+    "<risk or concern the analyst should be aware of>",
+    "<suggested conversation starter for the client call>"
+  ]
 }}
 
-RULES
-- shortlist must have EXACTLY 10 items
-- why_bullets must be EXACTLY 3 bullets per stock
-- top_picks must be EXACTLY 2 tickers and must be in shortlist
-- vol_bucket: decide using vol_60d only if present; else "unknown"
-- Do NOT output markdown. Do NOT output extra keys. JSON only.
+=== RULES ===
+- shortlist: EXACTLY 10 items, ordered by conviction
+- why_bullets: EXACTLY 3 per stock, each citing a data source
+- top_picks: EXACTLY 2 tickers from the shortlist
+- notes_for_analyst: at least 3 actionable items
+- vol_bucket: derive from vol_60d (< 0.15 = low, 0.15-0.30 = medium, > 0.30 = high, missing = unknown)
+- JSON only - no markdown, no extra keys
 
-WHY_BULLETS FORMAT REQUIREMENTS:
-Each bullet MUST include a specific data source reference. Examples:
-- "Matches client's Technology sector focus (portfolio top_sector: Technology)"
-- "Discussed in recent call on 2024-01-15 - client expressed interest in AI"
-- "Client read 5 reports on similar stocks in last 30 days (reading_focus_sector)"
-- "Aligns with ESG theme preference (dominant_theme from profile)"
-- "Suitable for Moderate risk profile - volatility 18.5%"
-- "Diversifies away from current top_sector exposure"
-- "Low volatility (12.3%) matches conservative mandate"
-- "Mentioned in position_hints from call notes"
-Do NOT use generic bullets like "Good investment" - always cite specific data!
-
-ANALYST INSTRUCTION:
+=== ANALYST INSTRUCTION ===
 {instruction}
 
-JSON INPUT:
+=== CLIENT DATA WITH PRE-COMPUTED SIGNAL SCORES ===
 {json.dumps(minimal_ctx, ensure_ascii=False)}
 
 Max length guidance: ~{max_words} words worth of JSON strings.
@@ -2498,96 +2714,83 @@ CRITICAL: Use these REAL fundamentals in your story! Reference specific metrics:
 """
 
     return f"""
-You are an elite equity sales storyteller at ODDO BHF. Your job is to craft compelling,
-personalized investment narratives that connect research insights to client needs.
+=== INVESTMENT MEMO: {selected_stock.get('ticker', 'N/A')} for Client {client_ctx.get('client', {}).get('client_name', 'Unknown')} ===
 
 {risk_guidance}
 
 {fundamentals_section}
 
-=== STORYTELLING FRAMEWORK ===
+=== YOUR REASONING PROCESS (SHOW YOUR WORK) ===
 
-Your story MUST follow this structure:
+Before writing the story, you MUST reason through these steps transparently.
+Include your reasoning as labeled evidence blocks [EVIDENCE: ...] in the story.
 
-1. THE HOOK (Opening)
-   - Start with a compelling reason why this stock matters RIGHT NOW
-   - Connect to a macro theme, sector trend, or catalyst the client cares about
-   - Reference their recent reading behavior or call discussions if available
+STEP 1: WHY THIS CLIENT + THIS STOCK?
+- What in their profile makes this stock relevant?
+- What specific signals support this? (calls, reads, trades, hints)
+- How does it fit their risk budget and portfolio?
 
-2. THE INVESTMENT THESIS
-   Write a persuasive narrative explaining:
-   - WHY this stock will perform well (fundamental drivers, catalysts, competitive advantages)
-   - Use SPECIFIC data points from ODDO BHF research when available:
-     * Analyst recommendations and price targets
-     * Earnings momentum and margin expansion
-     * Sector tailwinds and market positioning
-   - If no research data available, focus on the strategic fit with client needs
+STEP 2: WHAT IS THE INVESTMENT CASE?
+- Fundamental drivers (use real data from fundamentals section if available)
+- Catalysts and timing
+- Competitive positioning
 
-3. CLIENT-SPECIFIC FIT
-   Explain why this stock is PERFECT for THIS specific client:
-   - Portfolio context: How it complements their current holdings (top_sector, concentration)
-   - Risk alignment: Match to their risk_appetite and investment_style
-   - Historical patterns: Reference similar successful investments they've made
-   - Preference signals: Use their reading patterns, call discussions, and trade history
+STEP 3: WHAT COULD GO WRONG?
+- Anticipate 2-3 objections based on client profile and market conditions
+- Prepare evidence-backed counter-arguments
 
-   EXAMPLES TO INCLUDE:
-   - "You've shown interest in [SECTOR] through your recent trades in [SIMILAR_STOCKS]..."
-   - "This aligns with the [THEME] focus you mentioned in your [DATE] call..."
-   - "Given your [BUY_RATE]% buy rate in [SECTOR], this fits your conviction style..."
+=== STORYTELLING STRUCTURE ===
 
-4. TIMING & CATALYSTS
-   - Why NOW is the right time to act
-   - Upcoming events (earnings, conferences, regulatory decisions)
-   - Technical or momentum considerations if relevant
+**THE HOOK** (2-3 sentences)
+Open with a compelling, timely reason this stock matters NOW.
+MUST reference at least one client-specific data point.
+Pattern: "[Macro/Sector trend] + [Why this matters for YOUR portfolio specifically]"
 
-5. PORTFOLIO INTEGRATION
-   - Suggested position sizing based on their portfolio concentration
-   - How this affects their sector/theme exposure
-   - Diversification benefits or concentration risks
+**INVESTMENT THESIS** (core argument)
+Build the case using ONLY verifiable data:
+- [EVIDENCE: fundamentals] Cite P/E, ROE, growth rates, analyst targets if available
+- [EVIDENCE: sector] Reference sector positioning and competitive dynamics
+- [EVIDENCE: momentum] Price action, volume trends, institutional flow
 
-6. OBJECTION HANDLING (CRITICAL)
-   Anticipate and address 2-3 likely pushbacks based on:
-   - Their risk profile and past concerns from calls
-   - Current market conditions
-   - Sector-specific risks
+**CLIENT FIT** (personalization - this is what makes ODDO BHF different)
+Connect every argument to THIS client's specific situation:
+- [EVIDENCE: call] Reference actual call discussions: "In your {date} call, you discussed..."
+- [EVIDENCE: reading] Reference reading patterns: "You've been following {sector} research closely (read {n} reports, most recent {days_diff}d ago)"
+- [EVIDENCE: portfolio] Reference holdings: "This complements your {top_sector} exposure..."
+- [EVIDENCE: trades] Reference trading: "Consistent with your recent {action} in {sector}..."
+- [EVIDENCE: risk] Match to risk profile: "With vol of {vol}%, this fits your {risk_appetite} mandate"
 
-   Format:
-   "You might ask: [Objection]"
-   "Here's why that's actually an opportunity: [Response]"
+**TIMING & CATALYSTS**
+- Why NOW, not next month
+- Specific upcoming events or inflection points
 
-7. CALL TO ACTION
-   - 2 specific talking points for the sales call
-   - 1 smart question to gauge client interest
-   - Suggested next steps
+**OBJECTION HANDLING** (2-3 objections)
+Format each as:
+"You might ask: [Specific objection based on their profile]"
+"My response: [Evidence-backed counter with specific data]"
 
-=== CRITICAL DATA RULES ===
-- Use ONLY the JSON provided - do NOT invent facts
-- Reference SPECIFIC evidence from the data:
-  * signals.recent_calls.notes_raw - actual call content
-  * signals.recent_reads_daysdiff - what they're reading (days_diff shows urgency)
-  * signals.recent_trades - their trading patterns
-  * signals.call_position_hints - explicit position signals
-  * enhanced.engagement_momentum - are they accelerating or cooling off?
-  * enhanced.conviction - their top conviction stock and sentiment
-- If data is missing, acknowledge it: "Based on available data..."
-
-=== OUTPUT FORMAT ===
-Mode FULL: Complete narrative story (~{max_words} words)
-Mode BULLETS: 8-10 punchy bullet points for quick call prep
+**CALL TO ACTION**
+- 2 conversation starters for the sales call
+- 1 probing question to gauge interest
+- Clear next step
 
 {objection_block}
 
-=== STYLE GUIDELINES ===
-- Confident but not arrogant
-- Data-driven with specific numbers
-- Client-centric (use "you" and "your portfolio")
-- Actionable and forward-looking
-- No generic statements - everything must be specific to THIS client
+=== OUTPUT FORMAT ===
+Mode: {mode}
+{"FULL: Write a complete narrative (~" + str(max_words) + " words). Weave evidence tags naturally into the text." if mode == "FULL" else "BULLETS: 8-10 punchy bullets. Each bullet starts with [EVIDENCE: source] tag."}
 
-MODE: {mode}
-ANALYST INSTRUCTION: {instruction if instruction else "None - use default storytelling framework"}
+=== CRITICAL RULES ===
+- ONLY use data from the JSON below - NEVER invent facts
+- Every claim must be traceable to a specific data field
+- If data is missing, say "Based on available data..." - never fabricate
+- Address the client as "you" / "your portfolio"
+- Be authoritative but not arrogant
+- No generic filler - every sentence must add specific value
 
-=== CLIENT DATA ===
+ANALYST INSTRUCTION: {instruction if instruction else "None - use the full Investment Memo framework"}
+
+=== CLIENT & STOCK DATA ===
 {json.dumps(pack, ensure_ascii=False, indent=2)}
 """.strip()
 
@@ -3089,6 +3292,7 @@ async def api_shortlist(req: ShortlistRequest):
         shortlist = data.get("shortlist")
         top_picks = data.get("top_picks")
         notes = data.get("notes_for_analyst")
+        reasoning = data.get("reasoning", {})
 
         # Validate shortlist - be lenient (allow 5-15 items, take first 10)
         if not isinstance(shortlist, list) or len(shortlist) < 5:
@@ -3106,7 +3310,6 @@ async def api_shortlist(req: ShortlistRequest):
         for item in shortlist:
             if not isinstance(item, dict):
                 continue
-            # Ensure required keys exist (don’t invent values; default to None/unknown)
             sid = item.get("stock_id")
             try:
                 sid_int = int(sid) if sid is not None else None
@@ -3121,7 +3324,6 @@ async def api_shortlist(req: ShortlistRequest):
             why = item.get("why_bullets")
             if not isinstance(why, list):
                 why = []
-            # Keep exactly 3 strings
             why = [str(x) for x in why][:3]
             while len(why) < 3:
                 why.append("unknown (insufficient evidence in provided signals)")
@@ -3138,11 +3340,12 @@ async def api_shortlist(req: ShortlistRequest):
                     "vol_20d": item.get("vol_20d"),
                     "vol_60d": item.get("vol_60d"),
                     "vol_bucket": bucket,
+                    "signal_score": item.get("signal_score"),
+                    "selection_reason": item.get("selection_reason"),
                     "why_bullets": why,
                 }
             )
 
-        # Keep only 10
         cleaned = cleaned[:10]
 
         # Log to audit trail
@@ -3158,6 +3361,7 @@ async def api_shortlist(req: ShortlistRequest):
         return {
             "client_id": req.client_id,
             "model": OPENAI_MODEL,
+            "reasoning": reasoning,
             "shortlist": cleaned,
             "top_picks": top_picks,
             "notes_for_analyst": notes if isinstance(notes, list) else [],
