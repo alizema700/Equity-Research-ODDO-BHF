@@ -2301,16 +2301,7 @@
       to { transform: rotate(360deg); }
     }
 
-    /* === RESPONSIVE === */
-    @media (max-width: 900px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-      .sidebar {
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-      }
-    }
+    /* === DESKTOP ONLY - no responsive breakpoints === */
 
     /* === DETAILS MODAL === */
     .details-section {
@@ -2985,11 +2976,7 @@
       border-color: var(--primary);
     }
 
-    @media (max-width: 600px) {
-      .stock-detail-metrics {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
+    /* Desktop only - no small-screen overrides */
 
     /* === COMMUNICATION PANEL === */
     .comm-panel {
@@ -7769,153 +7756,18 @@
     .attribution-value.negative { color: #ef4444; }
 
     /* ========================================================================
-       MOBILE / TABLET RESPONSIVE
+       DESKTOP ONLY - All mobile/tablet breakpoints removed
        ======================================================================== */
 
-    @media (max-width: 1200px) {
-      .layout {
-        grid-template-columns: 320px 1fr;
-      }
+    /* Desktop-only: no mobile breakpoints - sidebar and search always visible */
 
-      .monitoring-center {
-        grid-template-columns: 1fr;
-      }
-
-      .metrics-row {
-        grid-template-columns: repeat(2, 1fr) !important;
-      }
-
-      .whatif-impact-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 992px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-
-      .sidebar {
-        display: none;
-      }
-
-      .sidebar.mobile-open {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 85%;
-        max-width: 380px;
-        height: 100vh;
-        z-index: 1000;
-        box-shadow: var(--shadow-deep);
-      }
-
-      .personalized-header {
-        flex-direction: column;
-        gap: var(--space-md);
-      }
-
-      .quick-actions {
-        flex-wrap: wrap;
-      }
-
-      .tabs {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-      }
-
-      .tabs::-webkit-scrollbar {
-        display: none;
-      }
-
-      .dashboard-grid {
-        grid-template-columns: 1fr !important;
-      }
-
-      .widget-half,
-      .widget-third,
-      .widget-two-thirds {
-        grid-column: span 1 !important;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .header {
-        padding: var(--space-sm) var(--space-md);
-      }
-
-      .search-box {
-        display: none;
-      }
-
-      .main {
-        padding: var(--space-md);
-      }
-
-      .main-title {
-        font-size: var(--text-h3);
-      }
-
-      .metrics-row {
-        grid-template-columns: 1fr !important;
-      }
-
-      .stock-grid {
-        grid-template-columns: 1fr !important;
-      }
-
-      .alert-setup-form {
-        grid-template-columns: 1fr !important;
-      }
-
-      .meeting-prep-content {
-        width: 95%;
-        max-height: 90vh;
-      }
-
-      .prep-actions {
-        flex-direction: column;
-      }
-
-      .prep-actions .btn {
-        width: 100%;
-      }
-    }
-
-    /* Mobile Menu Toggle */
+    /* Mobile Menu Toggle - hidden (desktop only) */
     .mobile-menu-toggle {
       display: none;
-      width: 40px;
-      height: 40px;
-      border: none;
-      background: var(--soft-greige);
-      border-radius: var(--radius);
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-    }
-
-    @media (max-width: 992px) {
-      .mobile-menu-toggle {
-        display: flex;
-      }
     }
 
     .mobile-overlay {
       display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 999;
-    }
-
-    .mobile-overlay.active {
-      display: block;
     }
 
     /* ========================================================================
@@ -14593,56 +14445,56 @@ async function healthCheck() {
 }
 
 // ============================================================================
-// EVENT LISTENERS
+// EVENT LISTENERS (null-safe to prevent script crash)
 // ============================================================================
-$('searchInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') search(e.target.value);
-});
+function _on(id, evt, fn) { const el = $(id); if (el) el.addEventListener(evt, fn); }
 
-$('closeModal').addEventListener('click', hideModal);
-$('modalOverlay').addEventListener('click', hideModal);
+_on('searchInput', 'keydown', e => { if (e.key === 'Enter') search(e.target.value); });
+_on('closeModal', 'click', hideModal);
+_on('modalOverlay', 'click', hideModal);
+_on('closeDrawer', 'click', closeDetailsDrawer);
+_on('drawerOverlay', 'click', closeDetailsDrawer);
+_on('closeStockDetail', 'click', closeStockDetailModal);
+_on('stockDetailOverlay', 'click', closeStockDetailModal);
+_on('generateBtn', 'click', generateShortlist);
+_on('storyFullBtn', 'click', () => generateStory('FULL'));
+_on('storyBulletsBtn', 'click', () => generateStory('BULLETS'));
+_on('copyBtn', 'click', copyOutput);
+_on('healthBtn', 'click', healthCheck);
 
-$('closeDrawer').addEventListener('click', closeDetailsDrawer);
-$('drawerOverlay').addEventListener('click', closeDetailsDrawer);
-
-$('closeStockDetail').addEventListener('click', closeStockDetailModal);
-$('stockDetailOverlay').addEventListener('click', closeStockDetailModal);
-
-$('generateBtn').addEventListener('click', generateShortlist);
-$('storyFullBtn').addEventListener('click', () => generateStory('FULL'));
-$('storyBulletsBtn').addEventListener('click', () => generateStory('BULLETS'));
-$('copyBtn').addEventListener('click', copyOutput);
-$('healthBtn').addEventListener('click', healthCheck);
-
+// TAB SWITCHING - must always work
 $$('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
 
 $$('.quick-prompt').forEach(el => {
   el.addEventListener('click', () => {
-    const current = $('instruction').value;
-    $('instruction').value = current ? current + '\n' + el.dataset.prompt : el.dataset.prompt;
+    const inp = $('instruction');
+    if (!inp) return;
+    inp.value = inp.value ? inp.value + '\n' + el.dataset.prompt : el.dataset.prompt;
   });
 });
 
 // Settings (simple prompt for now)
-$('settingsBtn').addEventListener('click', () => {
+_on('settingsBtn', 'click', () => {
   const base = prompt('API Base URL (empty = same-origin):', getApiBase());
   if (base !== null) localStorage.setItem('api_base', base);
 });
 
 // Stock search for analyst override
 let stockSearchDebounce = null;
-$('stockSearchInput').addEventListener('input', (e) => {
+_on('stockSearchInput', 'input', (e) => {
   const query = e.target.value.trim();
   if (stockSearchDebounce) clearTimeout(stockSearchDebounce);
 
   if (query.length < 2) {
-    $('stockSearchResults').style.display = 'none';
+    const sr = $('stockSearchResults');
+    if (sr) sr.style.display = 'none';
     return;
   }
 
   stockSearchDebounce = setTimeout(async () => {
     const stocks = await searchAvailableStocks(query);
-    $('stockSearchResults').style.display = 'block';
+    const sr = $('stockSearchResults');
+    if (sr) sr.style.display = 'block';
     renderStockSearchResults(stocks);
   }, 300);
 });
@@ -14674,7 +14526,7 @@ function toggleTheme() {
   showToast(`${next === 'dark' ? '🌙' : '☀️'} ${next.charAt(0).toUpperCase() + next.slice(1)} Mode`, 'info');
 }
 
-$('themeToggle').addEventListener('click', toggleTheme);
+_on('themeToggle', 'click', toggleTheme);
 initTheme();
 
 // ============================================================================
@@ -14828,7 +14680,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === '2') { e.preventDefault(); switchTab('story'); }
   if (e.key === '3') { e.preventDefault(); switchTab('history'); }
   if (e.key === 'Escape') { closeStockDetailModal(); closeModal(); closeDrawer(); }
-  if (e.key === '/') { e.preventDefault(); $('searchInput').focus(); }
+  if (e.key === '/') { e.preventDefault(); const si = $('searchInput'); if (si) si.focus(); }
 });
 
 // ============================================================================
@@ -14836,7 +14688,7 @@ document.addEventListener('keydown', (e) => {
 // ============================================================================
 let searchDebounce = null;
 
-$('searchInput').addEventListener('input', async (e) => {
+if ($('searchInput')) $('searchInput').addEventListener('input', async (e) => {
   const query = e.target.value.trim();
   if (searchDebounce) clearTimeout(searchDebounce);
 
@@ -14905,7 +14757,8 @@ $('searchInput').addEventListener('input', async (e) => {
 });
 
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.search-box')) $('searchAutocomplete').classList.remove('show');
+  const ac = $('searchAutocomplete');
+  if (ac && !e.target.closest('.search-box')) ac.classList.remove('show');
 });
 
 // Store stocks for filtering
@@ -18682,9 +18535,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Request notification permission after a short delay
   setTimeout(() => {
-    if (Notification.permission === 'default') {
-      showNotificationPrompt();
-    }
+    try {
+      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        showNotificationPrompt();
+      }
+    } catch(e) { /* Notification API not available */ }
   }, 3000);
 });
 
@@ -18825,7 +18680,7 @@ function urlBase64ToUint8Array(base64String) {
 
 // Send local notification (doesn't require push server)
 function sendLocalNotification(title, body, data = {}) {
-  if (Notification.permission !== 'granted') return;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
 
   // Use service worker if available
   if (swRegistration) {
@@ -18861,7 +18716,7 @@ function handleNotificationAction(data) {
 
 // Notification triggers for various events
 function notifyPriceAlert(ticker, message, urgent = false) {
-  if (Notification.permission !== 'granted') return;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
 
   sendLocalNotification(
     `${urgent ? '🚨 ' : '📈 '}${ticker} Price Alert`,
@@ -18871,7 +18726,7 @@ function notifyPriceAlert(ticker, message, urgent = false) {
 }
 
 function notifyEarningsReminder(ticker, companyName, daysUntil) {
-  if (Notification.permission !== 'granted') return;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
 
   sendLocalNotification(
     `⏰ Earnings in ${daysUntil} day${daysUntil !== 1 ? 's' : ''}`,
@@ -18881,7 +18736,7 @@ function notifyEarningsReminder(ticker, companyName, daysUntil) {
 }
 
 function notifyClientActivity(clientName, activity) {
-  if (Notification.permission !== 'granted') return;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
 
   sendLocalNotification(
     `👤 ${clientName}`,
@@ -18891,7 +18746,7 @@ function notifyClientActivity(clientName, activity) {
 }
 
 function notifyResearchUpdate(ticker, headline) {
-  if (Notification.permission !== 'granted') return;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
 
   sendLocalNotification(
     `📊 New Research: ${ticker}`,
@@ -18978,9 +18833,11 @@ window.addEventListener('appinstalled', () => {
 });
 
 // Start notification scheduler if enabled
-if (Notification.permission === 'granted') {
-  startNotificationScheduler();
-}
+try {
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    startNotificationScheduler();
+  }
+} catch(e) { /* Notification API not available */ }
 </script>
 
 <!-- Meeting Prep Modal -->
