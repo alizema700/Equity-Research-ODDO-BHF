@@ -113,6 +113,7 @@ if os.path.isdir(FRONTEND_DIR):
 async def startup_event():
     """Initialize database tables and views on startup."""
     await ensure_audit_table()
+    await ensure_alerts_table()
     await ensure_analytics_views()
 
 
@@ -403,6 +404,26 @@ async def ensure_audit_table():
     await execute_write("""
         CREATE INDEX IF NOT EXISTS idx_gen_history_client
         ON ai_generation_history(client_id, created_at DESC)
+    """)
+
+
+async def ensure_alerts_table():
+    """Create price_alerts table for persistent user alerts."""
+    await execute_write("""
+        CREATE TABLE IF NOT EXISTS price_alerts (
+            alert_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER,
+            ticker TEXT NOT NULL,
+            condition TEXT NOT NULL,
+            value TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now')),
+            triggered_at TEXT
+        )
+    """)
+    await execute_write("""
+        CREATE INDEX IF NOT EXISTS idx_alerts_client
+        ON price_alerts(client_id, is_active)
     """)
 
 
@@ -2472,6 +2493,15 @@ class StoryForStockRequest(BaseModel):
     max_words: int = 260
 
 
+class StoryRefineRequest(BaseModel):
+    """Request to refine an existing story using AI."""
+    current_story: str = Field(..., min_length=10)
+    refine_type: str = Field(..., description="shorter|longer|simpler|risks|bullish|cautious|custom")
+    custom_instruction: Optional[str] = None
+    ticker: Optional[str] = None
+    client_id: Optional[int] = None
+
+
 # =========================
 # Prompt builders (DB-only, no hallucinated fields)
 # =========================
@@ -3449,6 +3479,71 @@ async def api_story_for_stock(req: StoryForStockRequest):
 
 
 # =========================
+# Story Refinement endpoint (AI-powered)
+# =========================
+
+REFINE_PROMPTS = {
+    "shorter": "Make this investment story more concise. Keep the key points and evidence but reduce length by 40%. Maintain professional tone.",
+    "longer": "Expand this investment story with more detail. Add context about market conditions, peer comparison, and additional supporting evidence. Keep the same thesis.",
+    "simpler": "Simplify this investment story for a non-expert reader. Replace jargon with plain language. Keep all key points but make it accessible.",
+    "risks": "Add a comprehensive risk analysis section to this investment story. Include market risks, company-specific risks, and macro headwinds. Be balanced but thorough.",
+    "bullish": "Adjust the tone of this investment story to be more bullish/optimistic. Emphasize upside potential, positive catalysts, and growth opportunities. Stay factual but confident.",
+    "cautious": "Adjust the tone of this investment story to be more cautious/conservative. Highlight risks, uncertainties, and potential headwinds. Be balanced but prudent.",
+}
+
+@app.post("/api/story/refine")
+async def api_story_refine(req: StoryRefineRequest):
+    """Refine an existing story using AI."""
+    try:
+        if oa is None:
+            raise RuntimeError("OPENAI_API_KEY is missing. Cannot refine story without AI.")
+
+        refine_type = req.refine_type.lower()
+
+        # Build the refinement prompt
+        if refine_type == "custom":
+            if not req.custom_instruction:
+                raise ValueError("Custom instruction is required for custom refinement.")
+            instruction = f"Apply this specific refinement to the investment story: {req.custom_instruction}"
+        else:
+            instruction = REFINE_PROMPTS.get(refine_type)
+            if not instruction:
+                raise ValueError(f"Unknown refinement type: {refine_type}. Use: shorter, longer, simpler, risks, bullish, cautious, or custom.")
+
+        prompt = f"""You are an expert equity research editor at ODDO BHF.
+
+TASK: {instruction}
+
+ORIGINAL STORY:
+{req.current_story}
+
+REFINED STORY:"""
+
+        refined = llm_text(prompt, temperature=0.4)
+
+        # Log to audit trail if client_id provided
+        if req.client_id:
+            await log_generation(
+                client_id=req.client_id,
+                generation_type="story_refinement",
+                model_used=OPENAI_MODEL,
+                response_text=refined,
+                ticker=req.ticker,
+                mode=refine_type.upper(),
+                instruction=req.custom_instruction or instruction,
+            )
+
+        return {
+            "refined_story": refined,
+            "refine_type": refine_type,
+            "model": OPENAI_MODEL,
+        }
+
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+# =========================
 # History endpoint (audit trail)
 # =========================
 
@@ -3460,6 +3555,66 @@ async def api_history(client_id: int, limit: int = 50):
         return {"client_id": client_id, "history": history}
     except Exception as e:
         return JSONResponse(status_code=200, content={"error": str(e), "history": []})
+
+
+# =========================
+# Price Alerts CRUD
+# =========================
+
+class AlertCreateRequest(BaseModel):
+    ticker: str = Field(..., min_length=1)
+    condition: str = Field(..., description="price_above|price_below|volume_spike|rsi_oversold|rsi_overbought|moving_avg_cross")
+    value: Optional[str] = None
+    client_id: Optional[int] = None
+
+
+@app.get("/api/alerts")
+async def api_alerts_list(client_id: Optional[int] = None):
+    """Get all active price alerts, optionally filtered by client."""
+    try:
+        if client_id:
+            alerts = await fetch_all(
+                "SELECT * FROM price_alerts WHERE client_id = ? AND is_active = 1 ORDER BY created_at DESC",
+                (client_id,)
+            )
+        else:
+            alerts = await fetch_all(
+                "SELECT * FROM price_alerts WHERE is_active = 1 ORDER BY created_at DESC"
+            )
+        return {"alerts": alerts or []}
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e), "alerts": []})
+
+
+@app.post("/api/alerts")
+async def api_alerts_create(req: AlertCreateRequest):
+    """Create a new price alert."""
+    try:
+        await execute_write(
+            "INSERT INTO price_alerts (client_id, ticker, condition, value) VALUES (?, ?, ?, ?)",
+            (req.client_id, req.ticker.upper(), req.condition, req.value)
+        )
+        # Get the created alert
+        alert = await fetch_one(
+            "SELECT * FROM price_alerts WHERE ticker = ? AND condition = ? ORDER BY alert_id DESC LIMIT 1",
+            (req.ticker.upper(), req.condition)
+        )
+        return {"success": True, "alert": alert}
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+@app.delete("/api/alerts/{alert_id}")
+async def api_alerts_delete(alert_id: int):
+    """Delete (deactivate) a price alert."""
+    try:
+        await execute_write(
+            "UPDATE price_alerts SET is_active = 0 WHERE alert_id = ?",
+            (alert_id,)
+        )
+        return {"success": True, "deleted_id": alert_id}
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
 
 
 # PDF endpoint for shortlist report
@@ -3480,6 +3635,120 @@ async def api_shortlist_pdf(req: ShortlistRequest):
         pdf_bytes = build_shortlist_pdf_bytes(ctx, payload)
 
         filename = f"shortlist_client_{req.client_id}.pdf"
+        return StreamingResponse(
+            BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        return JSONResponse(status_code=200, content={"error": str(e)})
+
+
+# PDF endpoint for story export
+class StoryPDFRequest(BaseModel):
+    story: str = Field(..., min_length=10)
+    title: str = "Investment Story"
+    ticker: Optional[str] = None
+    client_name: Optional[str] = None
+
+
+def build_story_pdf_bytes(req: StoryPDFRequest) -> bytes:
+    """Build a simple A4 PDF with the investment story. Returns raw PDF bytes."""
+    _require_pdf_deps()
+
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    W, H = A4
+
+    def _draw_wrapped_text(y: float, text: str, size: int = 11, max_width: float = 170 * mm) -> float:
+        """Draw text with word wrapping, returns new y position."""
+        c.setFont("Helvetica", size)
+        words = text.split()
+        line = ""
+        line_height = size * 1.4
+
+        for word in words:
+            test_line = f"{line} {word}".strip()
+            if c.stringWidth(test_line, "Helvetica", size) < max_width:
+                line = test_line
+            else:
+                if line:
+                    c.drawString(20 * mm, y, line)
+                    y -= line_height
+                    if y < 30 * mm:
+                        c.showPage()
+                        y = H - 20 * mm
+                        c.setFont("Helvetica", size)
+                line = word
+
+        if line:
+            c.drawString(20 * mm, y, line)
+            y -= line_height
+
+        return y
+
+    y = H - 25 * mm
+
+    # Header
+    c.setFont("Helvetica-Bold", 16)
+    c.setFillColorRGB(0, 0.24, 0.22)  # ODDO green
+    c.drawString(20 * mm, y, "ODDO BHF Equity Research")
+    y -= 12 * mm
+
+    # Title
+    c.setFont("Helvetica-Bold", 14)
+    c.setFillColorRGB(0, 0, 0)
+    c.drawString(20 * mm, y, req.title)
+    y -= 8 * mm
+
+    # Metadata
+    c.setFont("Helvetica", 10)
+    c.setFillColorRGB(0.4, 0.4, 0.4)
+    meta = f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    if req.ticker:
+        meta += f" | Ticker: {req.ticker}"
+    if req.client_name:
+        meta += f" | Client: {req.client_name}"
+    c.drawString(20 * mm, y, meta)
+    y -= 15 * mm
+
+    # Story content - split into paragraphs
+    c.setFillColorRGB(0, 0, 0)
+    paragraphs = req.story.split('\n')
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            y -= 5 * mm
+            continue
+        y = _draw_wrapped_text(y, para, size=11)
+        y -= 3 * mm
+        if y < 30 * mm:
+            c.showPage()
+            y = H - 20 * mm
+
+    # Footer
+    if y < 50 * mm:
+        c.showPage()
+        y = H - 20 * mm
+    y = 20 * mm
+    c.setFont("Helvetica", 8)
+    c.setFillColorRGB(0.5, 0.5, 0.5)
+    c.drawString(20 * mm, y, "ODDO BHF Sales Intelligence Platform | Confidential | For internal use only")
+
+    c.save()
+    return buf.getvalue()
+
+
+@app.post("/api/story.pdf")
+async def api_story_pdf(req: StoryPDFRequest):
+    """Generate a PDF of the investment story and return it as a download."""
+    try:
+        _require_pdf_deps()
+        pdf_bytes = build_story_pdf_bytes(req)
+
+        ticker_part = f"_{req.ticker}" if req.ticker else ""
+        filename = f"story{ticker_part}_{datetime.now().strftime('%Y%m%d')}.pdf"
+
         return StreamingResponse(
             BytesIO(pdf_bytes),
             media_type="application/pdf",

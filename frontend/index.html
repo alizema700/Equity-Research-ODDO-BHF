@@ -7008,6 +7008,11 @@
                 <button class="btn-add-alert" onclick="createPriceAlert()">+ Add Alert</button>
               </div>
             </div>
+
+            <!-- User's Custom Alerts (persisted) -->
+            <div class="monitoring-body" id="userAlerts" style="border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px;">
+              <div style="text-align: center; color: var(--text-muted); padding: 10px; font-size: 12px;">Loading your alerts...</div>
+            </div>
           </div>
 
           <!-- News Feed with Research Context -->
@@ -7317,234 +7322,34 @@
 
       <!-- TAB: REPORTS -->
       <div class="tab-panel" id="panel-reports">
-        <div class="reports-layout">
-          <!-- Report Generator -->
-          <div class="report-generator">
-            <div class="generator-header glass-effect">
-              <div class="generator-title">
-                <span class="generator-icon"></span>
-                <div>
-                  <h3>Report Generator</h3>
-                  <p class="generator-subtitle">Create professional client reports in seconds</p>
-                </div>
-              </div>
-            </div>
-            <div class="generator-body">
-              <div class="report-type-selector">
-                <div class="report-type selected" onclick="selectReportType(this, 'pdf')">
-                  <div class="type-icon pdf">PDF</div>
-                  <div class="type-info">
-                    <span class="type-name">PDF Report</span>
-                    <span class="type-desc">Professional document</span>
-                  </div>
-                </div>
-                <div class="report-type" onclick="selectReportType(this, 'pptx')">
-                  <div class="type-icon pptx">PPT</div>
-                  <div class="type-info">
-                    <span class="type-name">PowerPoint</span>
-                    <span class="type-desc">Presentation deck</span>
-                  </div>
-                </div>
-                <div class="report-type" onclick="selectReportType(this, 'xlsx')">
-                  <div class="type-icon xlsx">XLS</div>
-                  <div class="type-info">
-                    <span class="type-name">Excel Export</span>
-                    <span class="type-desc">Data spreadsheet</span>
-                  </div>
-                </div>
-              </div>
+        <div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+          <!-- Export Center Header -->
+          <div class="glass-effect" style="padding: 24px; border-radius: var(--radius-lg); margin-bottom: 24px;">
+            <h2 style="margin: 0 0 8px 0; color: var(--primary);">Export Center</h2>
+            <p style="margin: 0; color: var(--text-muted);">Download your generated shortlists and investment stories as PDF</p>
+          </div>
 
-              <div class="report-options">
-                <div class="option-group">
-                  <label>Report Template</label>
-                  <select id="reportTemplate" onchange="updateReportSections(this.value)">
-                    <option value="equity-research">Equity Research Report</option>
-                    <option value="executive">Executive Summary</option>
-                    <option value="detailed">Detailed Analysis</option>
-                    <option value="quarterly">Quarterly Review</option>
-                    <option value="portfolio">Portfolio Performance</option>
-                    <option value="custom">Custom Template</option>
-                  </select>
-                </div>
-                <div class="option-group">
-                  <label>Stock / Company</label>
-                  <input type="text" id="reportStockTicker" placeholder="e.g. AAPL, LVMH.PA" style="padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; width: 100%;">
-                </div>
-                <div class="option-group">
-                  <label>Date Range</label>
-                  <select id="reportDateRange">
-                    <option value="mtd">Month to Date</option>
-                    <option value="qtd">Quarter to Date</option>
-                    <option value="ytd">Year to Date</option>
-                    <option value="1y">Last 12 Months</option>
-                    <option value="custom">Custom Range</option>
-                  </select>
-                </div>
-                <div class="option-group">
-                  <label>Include Sections (Equity Research)</label>
-                  <div class="checkbox-grid" id="researchSections">
-                    <label class="checkbox-item"><input type="checkbox" checked data-section="summary"> Executive Summary</label>
-                    <label class="checkbox-item"><input type="checkbox" checked data-section="thesis"> Investment Thesis</label>
-                    <label class="checkbox-item"><input type="checkbox" checked data-section="rating"> Rating & Target Price</label>
-                    <label class="checkbox-item"><input type="checkbox" checked data-section="financials"> Financial Analysis</label>
-                    <label class="checkbox-item"><input type="checkbox" checked data-section="valuation"> Valuation (DCF, Multiples)</label>
-                    <label class="checkbox-item"><input type="checkbox" checked data-section="catalysts"> Catalysts & Risks</label>
-                    <label class="checkbox-item"><input type="checkbox" data-section="industry"> Industry Overview</label>
-                    <label class="checkbox-item"><input type="checkbox" data-section="peers"> Peer Comparison</label>
-                    <label class="checkbox-item"><input type="checkbox" checked data-section="charts"> Price Charts & Technicals</label>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Research Report Preview - Professional Layout -->
-              <div class="research-report-preview" id="researchReportPreview">
-                <div class="research-report-header">
-                  <div class="report-branding">
-                    <img src="/static/Oddo_BHF_logo.svg.png" alt="ODDO BHF" class="report-logo">
-                    <span class="report-division">Equity Research</span>
-                  </div>
-                  <div class="report-meta-info">
-                    <span class="report-date">January 25, 2026</span>
-                    <span class="report-type-label">Initiation of Coverage</span>
-                  </div>
-                </div>
-
-                <div class="research-report-body">
-                  <!-- Rating Banner -->
-                  <div class="rating-banner">
-                    <div class="rating-left">
-                      <span class="company-ticker" id="previewTicker">AAPL</span>
-                      <span class="company-name" id="previewCompanyName">Apple Inc.</span>
-                      <span class="company-sector">Technology / Consumer Electronics</span>
-                    </div>
-                    <div class="rating-center">
-                      <div class="rating-box outperform">
-                        <span class="rating-label">Rating</span>
-                        <span class="rating-value">OUTPERFORM</span>
-                      </div>
-                    </div>
-                    <div class="rating-right">
-                      <div class="target-box">
-                        <span class="target-label">Target Price</span>
-                        <span class="target-value" id="reportTargetPrice">--</span>
-                        <span class="target-upside" id="reportUpside">--</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Key Metrics Strip - populated dynamically -->
-                  <div class="metrics-strip" id="reportMetricsStrip">
-                    <div class="metric-item">
-                      <span class="metric-key">Market Cap</span>
-                      <span class="metric-val" id="reportMktCap">--</span>
-                    </div>
-                    <div class="metric-item">
-                      <span class="metric-key">P/E (FWD)</span>
-                      <span class="metric-val" id="reportPE">--</span>
-                    </div>
-                    <div class="metric-item">
-                      <span class="metric-key">EV/EBITDA</span>
-                      <span class="metric-val" id="reportEVEBITDA">--</span>
-                    </div>
-                    <div class="metric-item">
-                      <span class="metric-key">Dividend Yield</span>
-                      <span class="metric-val" id="reportDivYield">--</span>
-                    </div>
-                    <div class="metric-item">
-                      <span class="metric-key">52W Range</span>
-                      <span class="metric-val" id="report52W">--</span>
-                    </div>
-                  </div>
-
-                  <!-- Executive Summary -->
-                  <div class="report-section">
-                    <h4 class="section-heading">Executive Summary</h4>
-                    <div id="reportSummaryBullets" class="summary-bullets">
-                      <div style="color: var(--text-muted); padding: 12px; text-align: center; font-size: 13px;">
-                        Select a stock and generate a report to see the summary
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Investment Thesis -->
-                  <div class="report-section">
-                    <h4 class="section-heading">Investment Thesis</h4>
-                    <p class="thesis-text" id="reportThesisText" style="color: var(--text-muted);">
-                      Investment thesis will be generated based on the selected stock and analysis parameters.
-                    </p>
-                  </div>
-
-                  <!-- Financial Snapshot -->
-                  <div class="report-section">
-                    <h4 class="section-heading">Financial Forecasts</h4>
-                    <div id="reportFinancialsTable" style="color: var(--text-muted); padding: 12px; text-align: center; font-size: 13px;">
-                      Financial data loads when report is generated
-                    </div>
-                  </div>
-
-                  <!-- Analyst Info -->
-                  <div class="analyst-footer">
-                    <div class="analyst-info">
-                      <span class="analyst-name" id="reportAnalystName">ODDO BHF Research</span>
-                      <span class="analyst-title" id="reportAnalystTitle">Equity Research</span>
-                      <span class="analyst-contact" id="reportAnalystContact">research@oddo-bhf.com</span>
-                    </div>
-                    <div class="disclaimer-mini">
-                      ODDO BHF. This document is for informational purposes only. See full disclosures on page 12.
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="report-preview-section">
-                <div class="preview-header">
-                  <h4>Preview</h4>
-                  <button class="btn-refresh" onclick="refreshPreview()">↻ Refresh</button>
-                </div>
-                <div class="preview-container" id="reportPreview">
-                  <div class="preview-page">
-                    <div class="preview-header-bar">
-                      <img src="https://www.oddo-bhf.com/typo3conf/ext/ob_base/Resources/Public/Images/logo-oddo-bhf.svg" alt="ODDO BHF" class="preview-logo">
-                      <span class="preview-date">January 2026</span>
-                    </div>
-                    <div class="preview-title">Client Portfolio Report</div>
-                    <div class="preview-subtitle">Executive Summary</div>
-                    <div class="preview-content-placeholder">
-                      <div class="placeholder-line full"></div>
-                      <div class="placeholder-line full"></div>
-                      <div class="placeholder-line half"></div>
-                      <div class="placeholder-chart"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="report-actions">
-                <button class="btn-generate" onclick="generateReport()">
-                  <span class="btn-icon"></span>
-                  <span>Generate Report</span>
-                </button>
-                <button class="btn-schedule" onclick="scheduleReport()">
-                  <span class="btn-icon"></span>
-                  <span>Schedule</span>
-                </button>
-              </div>
+          <!-- Quick Export: Current Story -->
+          <div class="glass-effect" style="padding: 20px; border-radius: var(--radius-lg); margin-bottom: 24px;">
+            <h3 style="margin: 0 0 16px 0; font-size: 16px;">Quick Export</h3>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="exportToPDF()" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">📄</span> Export Current Story as PDF
+              </button>
+              <button class="btn btn-secondary" onclick="downloadShortlistPDF()" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 18px;">📊</span> Export Shortlist as PDF
+              </button>
             </div>
           </div>
 
-          <!-- Recent Reports -->
-          <div class="recent-reports">
-            <div class="reports-header glass-effect">
-              <h3>Recent Reports</h3>
-              <div class="reports-filter">
-                <button class="filter-btn active">All</button>
-                <button class="filter-btn">PDF</button>
-                <button class="filter-btn">PPT</button>
-                <button class="filter-btn">Excel</button>
-              </div>
+          <!-- Generation History with Export -->
+          <div class="glass-effect" style="padding: 20px; border-radius: var(--radius-lg);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="margin: 0; font-size: 16px;">Generation History</h3>
+              <button class="btn btn-secondary" onclick="loadExportHistory()" style="font-size: 12px; padding: 6px 12px;">↻ Refresh</button>
             </div>
-            <div class="reports-list" id="recentReportsList">
-              <div style="text-align: center; color: var(--text-muted); padding: 20px;">No reports generated yet. Use the form above to create your first report.</div>
+            <div id="exportHistoryList" style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="text-align: center; color: var(--text-muted); padding: 40px;">Loading history...</div>
             </div>
           </div>
         </div>
@@ -9089,6 +8894,7 @@ async function generateStory(mode) {
 
     $('outputTitle').textContent = mode === 'BULLETS' ? `Bullets - ${selectedTicker}` : `Story - ${selectedTicker}`;
     $('outputText').textContent = data.story || '(No Output)';
+    window._lastStoryTicker = selectedTicker; // Store for refinement
 
     setStatus('Story Ready', 'active');
     switchTab('story');
@@ -11768,64 +11574,152 @@ async function generateAIInsights() {
   showNotification('AI insights generated!', 'success');
 }
 
+
 // ============================================================================
-// REPORTS & EXPORT FEATURES
+// EXPORT CENTER FUNCTIONS
 // ============================================================================
 
-function selectReportType(el, type) {
-  document.querySelectorAll('.report-type').forEach(t => t.classList.remove('selected'));
-  el.classList.add('selected');
-  showNotification(`${type.toUpperCase()} format selected`, 'info');
-}
+async function loadExportHistory() {
+  const container = document.getElementById('exportHistoryList');
+  if (!container) return;
 
-function refreshPreview() {
-  const preview = document.getElementById('reportPreview');
-  preview.style.opacity = '0.5';
-  setTimeout(() => {
-    preview.style.opacity = '1';
-    showNotification('Preview updated', 'success');
-  }, 500);
-}
+  if (!clientId) {
+    container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Select a client first to see generation history</div>';
+    return;
+  }
 
-function generateReport() {
-  const template = document.getElementById('reportTemplate').value;
-  const dateRange = document.getElementById('reportDateRange').value;
-  const selectedType = document.querySelector('.report-type.selected');
-  const format = selectedType ? selectedType.querySelector('.type-icon').textContent.toLowerCase() : 'pdf';
+  container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Loading...</div>';
 
-  showNotification('Generating report...', 'info');
+  try {
+    const res = await fetch(apiUrl(`/api/history/${clientId}`), { headers: authHeaders() });
+    const data = await res.json();
+    const history = data.history || [];
 
-  setTimeout(() => {
-    // Add to recent reports
-    const list = document.getElementById('recentReportsList');
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    if (history.length === 0) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">No generations yet. Use the Shortlist or Story tabs to generate content.</div>';
+      return;
+    }
 
-    list.insertAdjacentHTML('afterbegin', `
-      <div class="report-item animate-in" onclick="openReport('report-${Date.now()}')">
-        <div class="report-type-badge ${format}">${format.toUpperCase()}</div>
-        <div class="report-info">
-          <h4>${template.charAt(0).toUpperCase() + template.slice(1)} Report - ${clientData?.profile?.name || 'Client'}</h4>
-          <span class="report-meta">Generated ${dateStr} • Just now</span>
+    container.innerHTML = history.slice(0, 20).map(item => {
+      const date = new Date(item.created_at).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const type = item.generation_type === 'shortlist' ? 'Shortlist' : item.generation_type === 'story' ? 'Story' : item.generation_type;
+      const ticker = item.ticker || '';
+      const preview = (item.response_text || '').substring(0, 150) + '...';
+
+      return `
+        <div class="glass-effect" style="padding: 16px; border-radius: var(--radius);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${type}</span>
+                ${ticker ? `<span style="color: var(--accent); font-weight: 600;">${ticker}</span>` : ''}
+                <span style="color: var(--text-muted); font-size: 12px;">${date}</span>
+              </div>
+              <p style="margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.4;">${preview}</p>
+            </div>
+            <button class="btn btn-secondary" onclick="exportHistoryItem('${item.generation_id}', '${type}', '${ticker}')" style="white-space: nowrap; font-size: 12px; padding: 6px 12px;">
+              📄 PDF
+            </button>
+          </div>
         </div>
-        <div class="report-actions">
-          <button class="btn-icon" title="Download">↓</button>
-          <button class="btn-icon" title="Share">↗</button>
-        </div>
-      </div>
-    `);
+      `;
+    }).join('');
 
-    showNotification('Report generated successfully!', 'success');
-  }, 2000);
+  } catch (e) {
+    console.error('Error loading export history:', e);
+    container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px;">Failed to load history</div>';
+  }
 }
 
-function scheduleReport() {
-  showNotification('Report scheduling panel opening...', 'info');
+async function exportHistoryItem(generationId, type, ticker) {
+  showNotification('Generating PDF...', 'info');
+
+  try {
+    // Fetch the full generation data
+    const res = await fetch(apiUrl(`/api/history/${clientId}`), { headers: authHeaders() });
+    const data = await res.json();
+    const item = (data.history || []).find(h => String(h.generation_id) === String(generationId));
+
+    if (!item || !item.response_text) {
+      showNotification('Could not find generation data', 'error');
+      return;
+    }
+
+    // Generate PDF
+    const pdfRes = await fetch(apiUrl('/api/story.pdf'), {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        story: item.response_text,
+        title: `${type} - ${ticker || 'Export'}`,
+        ticker: ticker || null,
+        client_name: clientData?.profile?.client_name || null
+      })
+    });
+
+    if (!pdfRes.ok) throw new Error('PDF generation failed');
+
+    const blob = await pdfRes.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type.toLowerCase()}_${ticker || 'export'}_${generationId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showNotification('PDF downloaded', 'success');
+  } catch (e) {
+    console.error('Export error:', e);
+    showNotification('Export failed: ' + e.message, 'error');
+  }
 }
 
-function openReport(reportId) {
-  showNotification(`Opening report: ${reportId}`, 'info');
+async function downloadShortlistPDF() {
+  if (!clientId) {
+    showNotification('Select a client first', 'warning');
+    return;
+  }
+
+  showNotification('Generating shortlist PDF...', 'info');
+
+  try {
+    const res = await fetch(apiUrl('/api/shortlist.pdf'), {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: clientId })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'PDF generation failed');
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shortlist_client_${clientId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showNotification('Shortlist PDF downloaded', 'success');
+  } catch (e) {
+    console.error('Shortlist PDF error:', e);
+    showNotification('Failed to generate shortlist PDF: ' + e.message, 'error');
+  }
 }
+
+// Load export history when switching to Reports tab
+document.addEventListener('DOMContentLoaded', () => {
+  const reportsTab = document.querySelector('[data-tab="reports"]');
+  if (reportsTab) {
+    reportsTab.addEventListener('click', () => setTimeout(loadExportHistory, 100));
+  }
+});
 
 // ============================================================================
 // QUICK COMPARISON FUNCTIONS
@@ -11909,9 +11803,9 @@ function toggleEditMode() {
   showNotification(isEditable ? 'Edit mode disabled' : 'Edit mode enabled - click text to edit', 'info');
 }
 
-function refineStory(type) {
+async function refineStory(type) {
   const currentStory = document.getElementById('outputText').innerText;
-  if (!currentStory) {
+  if (!currentStory || currentStory.length < 20) {
     showNotification('Generate a story first', 'warning');
     return;
   }
@@ -11920,46 +11814,50 @@ function refineStory(type) {
   storyHistory.push(currentStory);
 
   const refinements = {
-    'shorter': 'Making story more concise...',
-    'longer': 'Adding more details...',
-    'simpler': 'Simplifying language...',
-    'risks': 'Adding risk analysis...',
-    'bullish': 'Adjusting tone to bullish...',
-    'cautious': 'Adjusting tone to cautious...'
+    'shorter': 'Making story more concise with AI...',
+    'longer': 'Expanding story with AI...',
+    'simpler': 'Simplifying language with AI...',
+    'risks': 'Adding risk analysis with AI...',
+    'bullish': 'Adjusting tone to bullish with AI...',
+    'cautious': 'Adjusting tone to cautious with AI...'
   };
 
-  showNotification(refinements[type] || 'Refining story...', 'info');
+  showNotification(refinements[type] || 'Refining story with AI...', 'info');
 
-  // Simulate refinement (in real implementation, this would call AI)
-  setTimeout(() => {
-    let refined = currentStory;
+  // Disable buttons during refinement
+  document.querySelectorAll('.refinement-btn').forEach(b => b.disabled = true);
 
-    switch(type) {
-      case 'shorter':
-        // Take first 60% of sentences
-        const sentences = currentStory.split('. ');
-        refined = sentences.slice(0, Math.ceil(sentences.length * 0.6)).join('. ') + '.';
-        break;
-      case 'longer':
-        refined = currentStory + '\n\nAdditional Analysis: Based on current market conditions and the company\'s strategic positioning, we see further upside potential. Key catalysts include upcoming earnings announcements and sector-wide momentum.';
-        break;
-      case 'risks':
-        refined = currentStory + '\n\nKey Risks: Market volatility, sector rotation, regulatory changes, and macroeconomic headwinds could impact performance. Position sizing should reflect client risk tolerance.';
-        break;
-      case 'bullish':
-        refined = currentStory.replace(/neutral/gi, 'positive').replace(/cautious/gi, 'optimistic');
-        break;
-      case 'cautious':
-        refined = currentStory.replace(/strong/gi, 'moderate').replace(/bullish/gi, 'cautiously optimistic');
-        break;
+  try {
+    const res = await fetch(apiUrl('/api/story/refine'), {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        current_story: currentStory,
+        refine_type: type,
+        ticker: window._lastStoryTicker || null,
+        client_id: clientData?.client_id || null
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      showNotification(data.error, 'error');
+      return;
     }
 
-    document.getElementById('outputText').innerText = refined;
-    showNotification('Story refined', 'success');
-  }, 1000);
+    document.getElementById('outputText').innerText = data.refined_story;
+    showNotification(`Story refined (${type}) with ${data.model}`, 'success');
+
+  } catch (e) {
+    console.error('Refinement error:', e);
+    showNotification('Failed to refine story: ' + e.message, 'error');
+  } finally {
+    document.querySelectorAll('.refinement-btn').forEach(b => b.disabled = false);
+  }
 }
 
-function refineStoryCustom() {
+async function refineStoryCustom() {
   const instruction = document.getElementById('customRefinement').value.trim();
   if (!instruction) {
     showNotification('Enter a refinement instruction', 'warning');
@@ -11967,20 +11865,49 @@ function refineStoryCustom() {
   }
 
   const currentStory = document.getElementById('outputText').innerText;
-  if (!currentStory) {
+  if (!currentStory || currentStory.length < 20) {
     showNotification('Generate a story first', 'warning');
     return;
   }
 
   storyHistory.push(currentStory);
-  showNotification(`Applying: "${instruction}"...`, 'info');
+  showNotification(`Applying custom refinement with AI: "${instruction}"...`, 'info');
 
-  // In real implementation, this would call AI with the custom instruction
-  setTimeout(() => {
-    document.getElementById('outputText').innerText = currentStory + `\n\n[Custom refinement applied: ${instruction}]`;
+  // Disable input during refinement
+  document.getElementById('customRefinement').disabled = true;
+  document.querySelector('.apply-custom-btn')?.setAttribute('disabled', 'true');
+
+  try {
+    const res = await fetch(apiUrl('/api/story/refine'), {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        current_story: currentStory,
+        refine_type: 'custom',
+        custom_instruction: instruction,
+        ticker: window._lastStoryTicker || null,
+        client_id: clientData?.client_id || null
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      showNotification(data.error, 'error');
+      return;
+    }
+
+    document.getElementById('outputText').innerText = data.refined_story;
     document.getElementById('customRefinement').value = '';
-    showNotification('Custom refinement applied', 'success');
-  }, 1500);
+    showNotification(`Custom refinement applied with ${data.model}`, 'success');
+
+  } catch (e) {
+    console.error('Custom refinement error:', e);
+    showNotification('Failed to apply custom refinement: ' + e.message, 'error');
+  } finally {
+    document.getElementById('customRefinement').disabled = false;
+    document.querySelector('.apply-custom-btn')?.removeAttribute('disabled');
+  }
 }
 
 // ============================================================================
@@ -12075,196 +12002,70 @@ function addToClientEmail() {
 // EXPORT FUNCTIONS (PDF, Excel, etc.)
 // ============================================================================
 
-function exportToPDF() {
+async function exportToPDF() {
+  const content = document.getElementById('outputText')?.innerText;
+  const title = document.getElementById('outputTitle')?.innerText || 'Investment Story';
+
+  if (!content || content.length < 20) {
+    showNotification('No story to export. Generate a story first.', 'warning');
+    return;
+  }
+
   showNotification('Generating PDF...', 'info');
 
-  setTimeout(() => {
-    // Create a simple PDF-like content
-    const content = document.getElementById('outputText')?.innerText || 'No content to export';
-    const title = document.getElementById('outputTitle')?.innerText || 'Investment Story';
+  try {
+    const res = await fetch(apiUrl('/api/story.pdf'), {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        story: content,
+        title: title,
+        ticker: window._lastStoryTicker || null,
+        client_name: clientData?.profile?.client_name || null
+      })
+    });
 
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${title}</title>
-        <style>
-          body { font-family: 'Lato', Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-          h1 { color: #003D39; border-bottom: 2px solid #003D39; padding-bottom: 10px; }
-          .content { line-height: 1.8; }
-          .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-          @media print { body { padding: 20px; } }
-        </style>
-      </head>
-      <body>
-        <img src="/static/Oddo_BHF_logo.svg.png" alt="ODDO BHF" style="height: 40px; margin-bottom: 20px;">
-        <h1>${title}</h1>
-        <div class="content">${content.replace(/\n/g, '<br>')}</div>
-        <div class="footer">
-          Generated by ODDO BHF Sales Intelligence Platform<br>
-          ${new Date().toLocaleDateString('de-DE')} | Confidential
-        </div>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-
-    showNotification('PDF ready - use browser print dialog', 'success');
-  }, 1000);
-}
-
-function generateReport() {
-  const template = document.getElementById('reportTemplate').value;
-  const ticker = document.getElementById('reportStockTicker')?.value || '';
-  const dateRange = document.getElementById('reportDateRange').value;
-  const selectedType = document.querySelector('.report-type.selected');
-  const format = selectedType ? selectedType.querySelector('.type-icon').textContent.toLowerCase() : 'pdf';
-
-  showNotification('Generating report...', 'info');
-
-  setTimeout(() => {
-    // Generate actual content based on template
-    if (format === 'pdf') {
-      exportReportPDF(template, ticker, dateRange);
-    } else {
-      // Add to recent reports
-      const list = document.getElementById('recentReportsList');
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-      list.insertAdjacentHTML('afterbegin', `
-        <div class="report-item animate-in" onclick="openReport('report-${Date.now()}')">
-          <div class="report-type-badge ${format}">${format.toUpperCase()}</div>
-          <div class="report-info">
-            <h4>${template.charAt(0).toUpperCase() + template.slice(1)} Report ${ticker ? '- ' + ticker : ''}</h4>
-            <span class="report-meta">Generated ${dateStr} • Just now</span>
-          </div>
-          <div class="report-actions">
-            <button class="btn-icon" title="Download" onclick="event.stopPropagation(); downloadReport('${format}')">↓</button>
-            <button class="btn-icon" title="Share" onclick="event.stopPropagation(); shareReport()">↗</button>
-          </div>
-        </div>
-      `);
-
-      showNotification('Report generated successfully!', 'success');
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'PDF generation failed');
     }
-  }, 2000);
+
+    // Download the PDF
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `story_${window._lastStoryTicker || 'export'}_${new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    showNotification('PDF downloaded successfully', 'success');
+
+  } catch (e) {
+    console.error('PDF export error:', e);
+    showNotification('PDF export failed: ' + e.message, 'error');
+  }
 }
 
-function exportReportPDF(template, ticker, dateRange) {
-  const printWindow = window.open('', '_blank');
-  const clientName = clientData?.profile?.name || 'Client';
-
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>ODDO BHF - ${template} Report</title>
-      <style>
-        body { font-family: 'Lato', Arial, sans-serif; padding: 40px; max-width: 900px; margin: 0 auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #003D39; padding-bottom: 15px; margin-bottom: 30px; }
-        .header img { height: 40px; }
-        .header-info { text-align: right; font-size: 12px; color: #666; }
-        h1 { color: #003D39; margin: 0 0 10px 0; }
-        h2 { color: #003D39; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
-        .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
-        .metric-box { background: #f7f4f2; padding: 15px; border-radius: 8px; }
-        .metric-label { font-size: 11px; color: #666; text-transform: uppercase; }
-        .metric-value { font-size: 24px; font-weight: 700; color: #003D39; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background: #003D39; color: white; }
-        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #666; }
-        @media print { body { padding: 20px; } }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <img src="/static/Oddo_BHF_logo.svg.png" alt="ODDO BHF">
-        <div class="header-info">
-          <div>Equity Research Report</div>
-          <div>${new Date().toLocaleDateString('de-DE')}</div>
-        </div>
-      </div>
-
-      <h1>${ticker || 'Portfolio'} - ${template.charAt(0).toUpperCase() + template.slice(1)} Report</h1>
-      <p style="color: #666;">Prepared for: ${clientName} | Period: ${dateRange}</p>
-
-      <div class="metric-grid">
-        <div class="metric-box">
-          <div class="metric-label">Current Price</div>
-          <div class="metric-value">\${(window._lastReportPrice || '--')}</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-label">Target Price</div>
-          <div class="metric-value">\${(window._lastReportTarget || '--')}</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-label">Rating</div>
-          <div class="metric-value" style="color: #10b981;">\${(window._lastReportRating || '--')}</div>
-        </div>
-        <div class="metric-box">
-          <div class="metric-label">Upside</div>
-          <div class="metric-value">\${(window._lastReportUpside || '--')}</div>
-        </div>
-      </div>
-
-      <h2>Executive Summary</h2>
-      <p>${(window._lastReportSummary || 'Report generated by ODDO BHF Equity Research. See full analysis for detailed investment thesis and financial projections.')}</p>
-
-      <h2>Financial Overview</h2>
-      <table>
-        <tr><th>Metric</th><th>FY24A</th><th>FY25E</th><th>FY26E</th></tr>
-        <tr><td>Revenue (€M)</td><td>125,400</td><td>138,200</td><td>152,100</td></tr>
-        <tr><td>EBITDA (€M)</td><td>42,300</td><td>47,500</td><td>53,200</td></tr>
-        <tr><td>Net Income (€M)</td><td>28,100</td><td>31,800</td><td>36,400</td></tr>
-        <tr><td>EPS (€)</td><td>6.42</td><td>7.28</td><td>8.35</td></tr>
-      </table>
-
-      <h2>Investment Thesis</h2>
-      <p>Our conviction is supported by: (1) Market leadership position, (2) Strong cash flow generation, (3) Attractive dividend yield, and (4) Multiple expansion potential.</p>
-
-      <h2>Key Risks</h2>
-      <p>Investors should monitor: macroeconomic headwinds, competitive pressure, regulatory changes, and currency fluctuations.</p>
-
-      <div class="footer">
-        <strong>ODDO BHF</strong> | This document is for informational purposes only and does not constitute investment advice.<br>
-        Generated by ODDO BHF Sales Intelligence Platform | Confidential
-      </div>
-    </body>
-    </html>
-  `);
-  printWindow.document.close();
-  printWindow.print();
-
-  showNotification('Report PDF ready', 'success');
-}
-
-function downloadReport(format) {
-  showNotification(`Downloading ${format.toUpperCase()} report...`, 'info');
-  // In real implementation, this would trigger actual download
-}
-
-function shareReport() {
-  showNotification('Share options', 'info', {
-    title: 'Share Report',
-    actions: [
-      { label: 'Email', onclick: 'composeOutlookEmail("", "ODDO BHF Report", "")', primary: true },
-      { label: 'Teams', onclick: 'openTeamsChat("")' }
-    ]
-  });
-}
+// Report functions removed - Export Center now uses exportToPDF() and /api/story.pdf
 
 // ============================================================================
 // STOCK MONITORING CENTER FUNCTIONS
 // ============================================================================
 
-// Price alert storage
-let priceAlerts = [];
+// Price alert storage (persisted via API)
+const CONDITION_LABELS = {
+  'price_above': 'Price Above',
+  'price_below': 'Price Below',
+  'volume_spike': 'Volume Spike',
+  'rsi_oversold': 'RSI Oversold',
+  'rsi_overbought': 'RSI Overbought',
+  'moving_avg_cross': 'MA Crossover'
+};
 
-function createPriceAlert() {
+async function createPriceAlert() {
   const ticker = document.getElementById('alertTicker').value.toUpperCase().trim();
   const condition = document.getElementById('alertCondition').value;
   const value = document.getElementById('alertValue').value;
@@ -12274,61 +12075,109 @@ function createPriceAlert() {
     return;
   }
 
-  const conditionLabels = {
-    'price_above': 'Price Above',
-    'price_below': 'Price Below',
-    'volume_spike': 'Volume Spike',
-    'rsi_oversold': 'RSI Oversold',
-    'rsi_overbought': 'RSI Overbought',
-    'moving_avg_cross': 'MA Crossover'
-  };
+  try {
+    const res = await fetch(apiUrl('/api/alerts'), {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticker,
+        condition,
+        value: value || null,
+        client_id: clientData?.client_id || null
+      })
+    });
+    const data = await res.json();
+    if (data.error) { showNotification(data.error, 'error'); return; }
 
-  const alert = {
-    id: Date.now(),
-    ticker,
-    condition,
-    value: value || 'N/A',
-    created: new Date()
-  };
-
-  priceAlerts.push(alert);
-
-  // Add visual feedback
-  const alertsContainer = document.getElementById('priceAlerts');
-  const newAlert = document.createElement('div');
-  newAlert.className = 'alert-item info';
-  newAlert.innerHTML = `
-    <div class="alert-icon">+</div>
-    <div class="alert-content">
-      <div class="alert-title"><span class="ticker">${ticker}</span> Alert Created</div>
-      <div class="alert-description">${conditionLabels[condition]}: ${value || 'Triggered'}</div>
-      <div class="alert-meta">
-        <span class="alert-time">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Just now
-        </span>
-        <div class="alert-actions">
-          <button class="alert-action-btn dismiss" onclick="removeAlert(${alert.id}, this)">Remove</button>
+    const alert = data.alert;
+    // Add visual feedback
+    const alertsContainer = document.getElementById('userAlerts');
+    if (alertsContainer) {
+      const newAlert = document.createElement('div');
+      newAlert.className = 'alert-item info';
+      newAlert.id = `user-alert-${alert.alert_id}`;
+      newAlert.innerHTML = `
+        <div class="alert-icon">+</div>
+        <div class="alert-content">
+          <div class="alert-title"><span class="ticker">${ticker}</span> Alert Active</div>
+          <div class="alert-description">${CONDITION_LABELS[condition] || condition}: ${value || 'Triggered'}</div>
+          <div class="alert-meta">
+            <span class="alert-time">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Just now
+            </span>
+            <div class="alert-actions">
+              <button class="alert-action-btn dismiss" onclick="removeAlert(${alert.alert_id})">Remove</button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  `;
+      `;
+      alertsContainer.insertBefore(newAlert, alertsContainer.firstChild);
+    }
 
-  alertsContainer.insertBefore(newAlert, alertsContainer.firstChild);
+    // Clear form
+    document.getElementById('alertTicker').value = '';
+    document.getElementById('alertValue').value = '';
 
-  // Clear form
-  document.getElementById('alertTicker').value = '';
-  document.getElementById('alertValue').value = '';
-
-  showNotification(`Alert created for ${ticker}`, 'success');
+    showNotification(`Alert created for ${ticker}`, 'success');
+  } catch (e) {
+    showNotification('Failed to create alert: ' + e.message, 'error');
+  }
 }
 
-function removeAlert(alertId, btn) {
-  priceAlerts = priceAlerts.filter(a => a.id !== alertId);
-  const alertItem = btn.closest('.alert-item');
-  alertItem.style.opacity = '0';
-  alertItem.style.transform = 'translateX(20px)';
-  setTimeout(() => alertItem.remove(), 300);
+async function removeAlert(alertId) {
+  try {
+    await fetch(apiUrl(`/api/alerts/${alertId}`), {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    const alertItem = document.getElementById(`user-alert-${alertId}`);
+    if (alertItem) {
+      alertItem.style.opacity = '0';
+      alertItem.style.transform = 'translateX(20px)';
+      setTimeout(() => alertItem.remove(), 300);
+    }
+  } catch (e) {
+    showNotification('Failed to remove alert', 'error');
+  }
+}
+
+async function loadUserAlerts() {
+  const container = document.getElementById('userAlerts');
+  if (!container) return;
+
+  try {
+    const clientId = clientData?.client_id || null;
+    const url = clientId ? `/api/alerts?client_id=${clientId}` : '/api/alerts';
+    const data = await apiFetch(url);
+    const alerts = data.alerts || [];
+
+    if (alerts.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:10px;font-size:12px;">No custom alerts. Create one above.</div>';
+      return;
+    }
+
+    container.innerHTML = alerts.map(a => `
+      <div class="alert-item info" id="user-alert-${a.alert_id}">
+        <div class="alert-icon">+</div>
+        <div class="alert-content">
+          <div class="alert-title"><span class="ticker">${a.ticker}</span> Alert Active</div>
+          <div class="alert-description">${CONDITION_LABELS[a.condition] || a.condition}: ${a.value || 'Triggered'}</div>
+          <div class="alert-meta">
+            <span class="alert-time">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              ${a.created_at ? new Date(a.created_at).toLocaleDateString('de-DE') : 'Active'}
+            </span>
+            <div class="alert-actions">
+              <button class="alert-action-btn dismiss" onclick="removeAlert(${a.alert_id})">Remove</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:10px;">Unable to load alerts</div>';
+  }
 }
 
 let WATCHLIST_TICKERS = ['AAPL', 'MSFT', 'LVMH.PA', 'SAP.DE', 'ASML.AS'];
@@ -12464,7 +12313,7 @@ async function loadNewsFeed() {
 }
 
 // Load alerts and news on page load
-setTimeout(() => { loadPriceAlerts(); loadNewsFeed(); }, 1200);
+setTimeout(() => { loadPriceAlerts(); loadNewsFeed(); loadUserAlerts(); }, 1200);
 // Refresh alerts every 5 minutes
 setInterval(loadPriceAlerts, 5 * 60 * 1000);
 
@@ -12543,56 +12392,6 @@ async function addToWatchlist() {
 function openResearchNote(noteId) {
   showNotification(`Opening research note: ${noteId}`, 'info');
 }
-
-// ============================================================================
-// RESEARCH REPORT FUNCTIONS
-// ============================================================================
-
-function updateReportSections(templateType) {
-  const researchPreview = document.getElementById('researchReportPreview');
-  const sectionsContainer = document.getElementById('researchSections');
-
-  if (templateType === 'equity-research') {
-    if (researchPreview) researchPreview.style.display = 'block';
-    // Show equity research sections
-    sectionsContainer.innerHTML = `
-      <label class="checkbox-item"><input type="checkbox" checked data-section="summary"> Executive Summary</label>
-      <label class="checkbox-item"><input type="checkbox" checked data-section="thesis"> Investment Thesis</label>
-      <label class="checkbox-item"><input type="checkbox" checked data-section="rating"> Rating & Target Price</label>
-      <label class="checkbox-item"><input type="checkbox" checked data-section="financials"> Financial Analysis</label>
-      <label class="checkbox-item"><input type="checkbox" checked data-section="valuation"> Valuation (DCF, Multiples)</label>
-      <label class="checkbox-item"><input type="checkbox" checked data-section="catalysts"> Catalysts & Risks</label>
-      <label class="checkbox-item"><input type="checkbox" data-section="industry"> Industry Overview</label>
-      <label class="checkbox-item"><input type="checkbox" data-section="peers"> Peer Comparison</label>
-      <label class="checkbox-item"><input type="checkbox" checked data-section="charts"> Price Charts & Technicals</label>
-    `;
-  } else {
-    if (researchPreview) researchPreview.style.display = 'none';
-    // Show standard report sections
-    sectionsContainer.innerHTML = `
-      <label class="checkbox-item"><input type="checkbox" checked> Market Overview</label>
-      <label class="checkbox-item"><input type="checkbox" checked> Portfolio Holdings</label>
-      <label class="checkbox-item"><input type="checkbox" checked> Performance Charts</label>
-      <label class="checkbox-item"><input type="checkbox" checked> Risk Metrics</label>
-      <label class="checkbox-item"><input type="checkbox"> Transaction History</label>
-      <label class="checkbox-item"><input type="checkbox" checked> Recommendations</label>
-    `;
-  }
-}
-
-// Update report preview when ticker changes
-document.addEventListener('DOMContentLoaded', function() {
-  const tickerInput = document.getElementById('reportStockTicker');
-  if (tickerInput) {
-    tickerInput.addEventListener('input', function() {
-      const ticker = this.value.toUpperCase();
-      const previewTicker = document.getElementById('previewTicker');
-      if (previewTicker && ticker) {
-        previewTicker.textContent = ticker;
-      }
-    });
-  }
-});
 
 // ===============================================
 // NEW FEATURES: Meeting Prep, Risk Score, What-If, etc.
