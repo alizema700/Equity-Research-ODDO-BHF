@@ -2944,12 +2944,12 @@ async def api_analytics():
     Includes client engagement, stock coverage, and activity metrics.
     """
     try:
-        # Client stats
+        # Client stats - use engagement_level column (High/Medium/Low)
         client_stats = await fetch_one("""
             SELECT
                 COUNT(*) as total_clients,
-                COUNT(CASE WHEN engagement_status = 'Active' THEN 1 END) as active_clients,
-                COUNT(CASE WHEN engagement_status = 'Dormant' THEN 1 END) as dormant_clients
+                COUNT(CASE WHEN engagement_level IN ('High', 'Medium') THEN 1 END) as active_clients,
+                COUNT(CASE WHEN engagement_level = 'Low' OR engagement_level IS NULL THEN 1 END) as dormant_clients
             FROM int_client_profile
         """)
 
@@ -2976,14 +2976,14 @@ async def api_analytics():
                 COUNT(*) as total_reads,
                 COUNT(DISTINCT client_id) as readers
             FROM ana_readership_daysdiff
-            WHERE read_date >= date('now', '-30 days')
+            WHERE read_timestamp >= date('now', '-30 days')
         """)
 
         # Top sectors by client interest
         top_sectors = await fetch_all("""
-            SELECT sector, COUNT(*) as count
+            SELECT report_sector as sector, COUNT(*) as count
             FROM ana_readership_daysdiff
-            GROUP BY sector
+            GROUP BY report_sector
             ORDER BY count DESC
             LIMIT 5
         """)
