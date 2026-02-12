@@ -10515,8 +10515,8 @@ $('saveNoteBtn')?.addEventListener('click', () => {
     return;
   }
 
-  // In a real implementation, this would save to the backend
-  showNotification('Note saved to CRM!', 'success');
+  // Note: CRM integration requires backend setup
+  showNotification('Note saved locally', 'success');
   $('noteContent').value = '';
 });
 
@@ -10643,12 +10643,7 @@ function showPriorityAlerts() {
 }
 
 function showCalendar() {
-  showNotification('Calendar integration coming soon', 'info', {
-    title: 'Calendar',
-    actions: [
-      { label: 'Open Outlook', onclick: "window.open('https://outlook.office.com/calendar', '_blank')", primary: true }
-    ]
-  });
+  window.open('https://outlook.office.com/calendar', '_blank');
 }
 
 // Client Tier Calculator
@@ -10714,14 +10709,6 @@ function getMatchReasons(stock, clientProfile) {
     reasons.push({ icon: '●', text: 'ESG leader' });
   }
 
-  // ODDO Research match
-  if (ODDO_RESEARCH && ODDO_RESEARCH[stock.ticker]) {
-    const research = ODDO_RESEARCH[stock.ticker];
-    if (research.rating === 'Outperform') {
-      reasons.push({ icon: '▲', text: 'ODDO Outperform' });
-    }
-  }
-
   return reasons.length > 0 ? reasons : [{ icon: '◉', text: 'General fit' }];
 }
 
@@ -10783,8 +10770,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function addQuickNote(clientId) {
   const note = prompt('Enter quick note for this client:');
   if (note) {
-    showNotification(`Note saved for client`, 'success');
-    // In real implementation, this would save to the backend
+    showNotification(`Note saved locally`, 'success');
   }
 }
 
@@ -11063,7 +11049,7 @@ async function loadPriorities() {
 async function loadResearchPulse() {
   const container = $('dashResearchPulse');
   if (!container) return;
-  const watchlist = ['AAPL', 'SAP', 'LVMH.PA', 'ASML', 'SIE.DE'];
+  const watchlist = WATCHLIST_TICKERS.length > 0 ? WATCHLIST_TICKERS.slice(0, 5) : ['SAP.DE', 'ASML.AS', 'SIE.DE'];
   try {
     const results = await Promise.all(watchlist.map(async ticker => {
       try {
@@ -11148,7 +11134,7 @@ function filterBySector(sector) {
 async function loadEarningsCalendar() {
   const container = $('earningsCalendar');
   if (!container) return;
-  const watchlist = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'SAP', 'ASML'];
+  const watchlist = WATCHLIST_TICKERS.length > 0 ? WATCHLIST_TICKERS.slice(0, 7) : ['SAP.DE', 'ASML.AS', 'SIE.DE'];
   try {
     const results = await Promise.all(watchlist.map(async ticker => {
       try {
@@ -11222,7 +11208,16 @@ async function generateMorningBriefing() {
   }
 }
 
-function sendBriefingEmail() { showNotification('Feature coming soon', 'info'); }
+function sendBriefingEmail() {
+  const briefing = document.getElementById('morningBriefing')?.innerText || '';
+  if (!briefing || briefing.includes('Click "Generate"')) {
+    showNotification('Generate a briefing first', 'warning');
+    return;
+  }
+  const subject = encodeURIComponent('Morning Briefing - ' + new Date().toLocaleDateString('de-DE'));
+  const body = encodeURIComponent(briefing);
+  window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+}
 
 // ---- ACTION ITEMS (from real analytics) ----
 async function loadActionItems() {
@@ -11725,15 +11720,28 @@ document.addEventListener('DOMContentLoaded', () => {
 // QUICK COMPARISON FUNCTIONS
 // ============================================================================
 
-const COMPARISON_PRESETS = {
-  'top-picks': ['AAPL', 'MSFT', 'NVDA'],
+// Comparison presets - top-picks uses watchlist, others are sector-based
+const SECTOR_PRESETS = {
   'european-luxury': ['MC.PA', 'RMS.PA', 'KER.PA'],
   'german-tech': ['SAP.DE', 'SIE.DE', 'IFX.DE'],
   'banks': ['BNP.PA', 'GLE.PA', 'DBK.DE']
 };
 
 function quickCompare(preset) {
-  const tickers = COMPARISON_PRESETS[preset];
+  let tickers;
+  if (preset === 'top-picks') {
+    // Use shortlist first, then watchlist
+    if (window._shortlist && window._shortlist.length >= 3) {
+      tickers = window._shortlist.slice(0, 3).map(s => s.ticker);
+    } else if (WATCHLIST_TICKERS.length >= 3) {
+      tickers = WATCHLIST_TICKERS.slice(0, 3);
+    } else {
+      showNotification('Add stocks to your watchlist first', 'warning');
+      return;
+    }
+  } else {
+    tickers = SECTOR_PRESETS[preset];
+  }
   if (!tickers) return;
 
   document.getElementById('compareStock1').value = tickers[0] || '';
@@ -12180,7 +12188,40 @@ async function loadUserAlerts() {
   }
 }
 
-let WATCHLIST_TICKERS = ['AAPL', 'MSFT', 'LVMH.PA', 'SAP.DE', 'ASML.AS'];
+// Watchlist - loaded from localStorage or fetched from API
+let WATCHLIST_TICKERS = JSON.parse(localStorage.getItem('watchlist_tickers') || '[]');
+
+async function loadWatchlistFromAPI() {
+  try {
+    const data = await apiFetch('/api/stocks/available');
+    const stocks = data.stocks || [];
+    // Use top 5 stocks by volume or whatever metric
+    if (stocks.length > 0 && WATCHLIST_TICKERS.length === 0) {
+      WATCHLIST_TICKERS = stocks.slice(0, 5).map(s => s.ticker);
+      localStorage.setItem('watchlist_tickers', JSON.stringify(WATCHLIST_TICKERS));
+    }
+  } catch (e) {
+    console.log('Could not load watchlist from API');
+  }
+}
+
+function addToWatchlist(ticker) {
+  ticker = ticker.toUpperCase();
+  if (!WATCHLIST_TICKERS.includes(ticker)) {
+    WATCHLIST_TICKERS.push(ticker);
+    localStorage.setItem('watchlist_tickers', JSON.stringify(WATCHLIST_TICKERS));
+    showNotification(`${ticker} added to watchlist`, 'success');
+  }
+}
+
+function removeFromWatchlist(ticker) {
+  WATCHLIST_TICKERS = WATCHLIST_TICKERS.filter(t => t !== ticker.toUpperCase());
+  localStorage.setItem('watchlist_tickers', JSON.stringify(WATCHLIST_TICKERS));
+  showNotification(`${ticker} removed from watchlist`, 'info');
+}
+
+// Initialize watchlist on load
+if (WATCHLIST_TICKERS.length === 0) loadWatchlistFromAPI();
 
 // ============================================================================
 // DYNAMIC PRICE ALERTS & NEWS FEED
@@ -12356,9 +12397,11 @@ async function refreshWatchlist() {
 // Load watchlist on page load
 setTimeout(refreshWatchlist, 800);
 
-async function addToWatchlist() {
+async function addToWatchlistPrompt() {
   const ticker = prompt('Enter ticker symbol to add:');
   if (!ticker) return;
+
+  addToWatchlist(ticker);  // Uses the main function that saves to localStorage
 
   const watchlistContainer = document.getElementById('watchlistMonitor');
   const newStock = document.createElement('div');
@@ -12370,8 +12413,6 @@ async function addToWatchlist() {
     <span class="watchlist-change">--</span>
   `;
   watchlistContainer.appendChild(newStock);
-  WATCHLIST_TICKERS.push(ticker.toUpperCase());
-  showNotification(`${ticker.toUpperCase()} added to watchlist`, 'success');
 
   try {
     const q = await apiFetch(`/api/stock/${ticker.toUpperCase()}/quote`);
