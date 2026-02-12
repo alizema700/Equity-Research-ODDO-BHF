@@ -2307,6 +2307,15 @@ def llm_json(prompt: str, temperature: float = 0.3) -> Dict[str, Any]:
     if oa is None:
         raise RuntimeError("OPENAI_API_KEY is missing. Put it in .env or export it in your shell.")
 
+    def _ensure_dict(result):
+        """Ensure result is a dict, not a string or other type."""
+        if isinstance(result, dict):
+            return result
+        elif isinstance(result, str):
+            raise ValueError(f"LLM returned a string instead of JSON object: {result[:200]}")
+        else:
+            raise ValueError(f"LLM returned unexpected type: {type(result)}")
+
     try:
         resp = oa.chat.completions.create(
             model=OPENAI_MODEL,
@@ -2318,7 +2327,7 @@ def llm_json(prompt: str, temperature: float = 0.3) -> Dict[str, Any]:
             ],
         )
         txt = (resp.choices[0].message.content or "").strip()
-        return json.loads(txt)
+        return _ensure_dict(json.loads(txt))
     except Exception as e:
         # Fallback: try without json_object mode (some models don't support it)
         logger.warning(f"JSON mode failed ({e}), falling back to text extraction")
@@ -2326,18 +2335,20 @@ def llm_json(prompt: str, temperature: float = 0.3) -> Dict[str, Any]:
         if not txt:
             raise ValueError("LLM returned empty output.")
         try:
-            return json.loads(txt)
-        except Exception:
+            return _ensure_dict(json.loads(txt))
+        except json.JSONDecodeError:
+            pass
+        except ValueError:
             pass
         start = txt.find("{")
         end = txt.rfind("}")
         if start != -1 and end != -1 and end > start:
             snippet = txt[start:end + 1]
             try:
-                return json.loads(snippet)
+                return _ensure_dict(json.loads(snippet))
             except Exception:
                 pass
-        raise ValueError("LLM did not return valid JSON.")
+        raise ValueError(f"LLM did not return valid JSON object. Response: {txt[:500]}")
 
 
 # =========================
@@ -2361,7 +2372,15 @@ def compute_signal_scores(
     recent_trades = signals.get("recent_trades", []) or []
     recent_reads = signals.get("recent_reads_daysdiff", []) or []
     call_hints = signals.get("call_position_hints", []) or []
-    topic_signals = signals.get("topic_signals", []) or []
+    topic_signals_raw = signals.get("topic_signals", {})
+    # topic_signals can be a dict with top_topic key, or a list of dicts
+    if isinstance(topic_signals_raw, dict):
+        # Extract top_topic from dict format
+        topic_signals = [{"topic": topic_signals_raw.get("top_topic", "")}] if topic_signals_raw.get("top_topic") else []
+    elif isinstance(topic_signals_raw, list):
+        topic_signals = topic_signals_raw
+    else:
+        topic_signals = []
 
     # Build lookup sets
     call_mentioned = {}
