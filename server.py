@@ -2280,20 +2280,27 @@ Your competitive advantage:
 Your golden rule: Every sentence must either (a) cite specific evidence, (b) connect to the client's needs, \
 or (c) provide actionable insight. Generic filler has zero value."""
 
+# Models that don't support temperature parameter (reasoning models)
+NO_TEMPERATURE_MODELS = {"o1", "o1-mini", "o1-preview", "o3", "o3-mini"}
+
 
 def llm_text(prompt: str, temperature: float = 0.7) -> str:
     """Return plain text from the LLM with configurable temperature."""
     if oa is None:
         raise RuntimeError("OPENAI_API_KEY is missing. Put it in .env or export it in your shell.")
 
-    resp = oa.chat.completions.create(
-        model=OPENAI_MODEL,
-        temperature=temperature,
-        messages=[
+    # Build request params - some models don't support temperature
+    params = {
+        "model": OPENAI_MODEL,
+        "messages": [
             {"role": "system", "content": SYSTEM_PROMPT_STORY},
             {"role": "user", "content": prompt},
         ],
-    )
+    }
+    if OPENAI_MODEL not in NO_TEMPERATURE_MODELS:
+        params["temperature"] = temperature
+
+    resp = oa.chat.completions.create(**params)
 
     txt = (resp.choices[0].message.content or "").strip()
     return txt
@@ -2317,15 +2324,19 @@ def llm_json(prompt: str, temperature: float = 0.3) -> Dict[str, Any]:
             raise ValueError(f"LLM returned unexpected type: {type(result)}")
 
     try:
-        resp = oa.chat.completions.create(
-            model=OPENAI_MODEL,
-            temperature=temperature,
-            response_format={"type": "json_object"},
-            messages=[
+        # Build request params - some models don't support temperature
+        params = {
+            "model": OPENAI_MODEL,
+            "response_format": {"type": "json_object"},
+            "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT_SHORTLIST + "\n\nAlways respond with valid JSON only."},
                 {"role": "user", "content": prompt},
             ],
-        )
+        }
+        if OPENAI_MODEL not in NO_TEMPERATURE_MODELS:
+            params["temperature"] = temperature
+
+        resp = oa.chat.completions.create(**params)
         txt = (resp.choices[0].message.content or "").strip()
         return _ensure_dict(json.loads(txt))
     except Exception as e:
